@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { HiOutlineArrowRight, HiOutlineCheck } from "react-icons/hi2";
 
-type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: "high" | "normal" | "low"; done: boolean };
-export type Mandala = { goal: string; areas: Array<{ title: string; taskIds: string[] }> };
+import type { Task, Mandala } from "../../supabase/functions/_shared/plan";
+import { hasTaskTime, validMandala } from "../../supabase/functions/_shared/plan";
 const emptyMandala = (): Mandala => ({ goal: "", areas: Array.from({ length: 8 }, () => ({ title: "", taskIds: Array(8).fill("") })) });
 export function safeMandala(value: Mandala | undefined): Mandala {
-  return value && typeof value.goal === "string" && Array.isArray(value.areas) && value.areas.length === 8 && value.areas.every((area) => area && typeof area.title === "string" && Array.isArray(area.taskIds) && area.taskIds.length === 8 && area.taskIds.every((id) => typeof id === "string")) ? value : emptyMandala();
+  return validMandala(value) ? value : emptyMandala();
 }
 const positions = [0, 1, 2, 3, 5, 6, 7, 8];
-const validTime = (task: Task) => task.minutes !== null && task.bufferMinutes !== null && task.minutes >= 2 && task.bufferMinutes > 0 && task.bufferMinutes < task.minutes;
+const validTime = hasTaskTime;
 const labels = { high: "높음", normal: "보통", low: "낮음" };
 
 export function MandalaView({ tasks, draft, dirty, onChange, onSave, onEdit, onList }: { tasks: Task[]; draft: Mandala; dirty: boolean; onChange: (value: Mandala) => void; onSave: (value: Mandala) => boolean; onEdit: (task: Task) => void; onList: () => void }) {

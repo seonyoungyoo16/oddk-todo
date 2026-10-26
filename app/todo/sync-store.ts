@@ -1,4 +1,5 @@
 import { syncClient } from "./supabase-client";
+import { validPlan } from "../../supabase/functions/_shared/plan";
 import type { Session as AuthSession } from "@supabase/supabase-js";
 const ENDPOINT = "https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync";
 const LOCAL_KEY = "oddk.todo.v1";
@@ -44,6 +45,7 @@ export function subscribePlan(notify: () => void) {
   return () => { window.removeEventListener("storage", onStorage); window.removeEventListener(CHANGE_EVENT, notify); };
 }
 export function writePlan(plan: unknown) {
+  if (!validPlan(plan)) throw new Error("할 일과 시간 설정을 확인해주세요.");
   const value = JSON.stringify(plan);
   const s = session();
   if (s) { const before = cache(s); localStorage.setItem(cacheKey(s), JSON.stringify({ ...before, plan: value, dirty: true })); }
