@@ -466,7 +466,7 @@ export default function Todo() {
           </main>
         </div>
       </div>
-      <dialog ref={dialogRef} className="oddk-dialog" aria-labelledby="edit-dialog-title" onClose={() => { setEditingId(null); setEditError(""); }}
+      <dialog ref={dialogRef} className="oddk-dialog oddk-taskEditor" aria-labelledby="edit-dialog-title" onClose={() => { setEditingId(null); setEditError(""); }}
         onClick={(event) => { if (event.target === event.currentTarget) setEditingId(null); }}>
         {editingTask && <form onSubmit={updateTask} className="oddk-dialogForm">
           <header className="oddk-dialogHeader"><h2 id="edit-dialog-title">할 일 수정</h2><button type="button" onClick={() => setEditingId(null)} aria-label="수정 창 닫기"><HiOutlineXMark aria-hidden="true" /></button></header>
@@ -526,12 +526,6 @@ export default function Todo() {
               return <span key={link}>{label}<button type="button" aria-label={label + " 연결 해제"} onClick={() => setEditLinks((current) => current.filter((item) => item !== link))}><HiOutlineXMark aria-hidden="true" /></button></span>;
             }) : <small>연결된 목표가 없어요.</small>}</div>
             <p>연결·해제는 저장할 때 반영돼요.{mandalaDraft && " 목표 변경사항도 함께 저장돼요."}</p>
-            </div>
-          </details>
-          <details className="oddk-dialogLinks oddk-dialogAlpen oddk-editorDisclosure">
-            <summary><HiOutlineChevronDown aria-hidden="true" /><span>알펜 연결<small>오늘 계획에 맞춰 시간을 배치하세요</small></span></summary>
-            <div className="oddk-dialogLinkContent">
-              <button type="submit" data-destination="alpen" className="oddk-openAlpen"><HiOutlineClipboardDocumentCheck aria-hidden="true" /><span>저장하고 알펜에서 계획하기</span></button>
             </div>
           </details>
           {editError && <p role="alert" className="oddk-dialogError">{editError}</p>}

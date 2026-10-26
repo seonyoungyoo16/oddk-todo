@@ -1,4 +1,4 @@
-.oddk-dialog {
+.oddk-taskEditor {
   --edit-surface: #fff;
   --edit-field: #fff;
   --edit-heading: #1c2b48;
@@ -15,35 +15,35 @@
   color: var(--edit-heading);
   box-shadow: 0 24px 80px #17223926;
 }
-.oddk-dialog::backdrop {
+.oddk-taskEditor::backdrop {
   background: #24324966;
   backdrop-filter: blur(2px);
 }
-.oddk-dialog .oddk-dialogForm {
+.oddk-taskEditor .oddk-dialogForm {
   display: flex;
   flex-direction: column;
   max-height: calc(100dvh - 50px);
   padding: 0;
 }
-.oddk-dialog .oddk-dialogHeader {
+.oddk-taskEditor .oddk-dialogHeader {
   flex-shrink: 0;
   margin: 0;
   padding: 28px 30px;
 }
-.oddk-dialog .oddk-dialogHeader h2 {
+.oddk-taskEditor .oddk-dialogHeader h2 {
   color: var(--edit-heading);
   font-size: 26px;
   font-weight: 700;
   line-height: 36px;
   letter-spacing: -0.035em;
 }
-.oddk-dialog .oddk-dialogHeader button {
+.oddk-taskEditor .oddk-dialogHeader button {
   width: 32px;
   height: 32px;
   padding: 5px;
   color: var(--edit-muted);
 }
-.oddk-dialog .oddk-dialogHeader button:hover {
+.oddk-taskEditor .oddk-dialogHeader button:hover {
   background: var(--edit-soft);
 }
 .oddk-dialogBody {
@@ -53,7 +53,7 @@
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
-.oddk-dialog .oddk-dialogField {
+.oddk-taskEditor .oddk-dialogField {
   gap: 10px;
   margin: 0;
   color: var(--edit-heading);
@@ -61,8 +61,8 @@
   font-weight: 500;
   line-height: 24px;
 }
-.oddk-dialog .oddk-dialogField input,
-.oddk-dialog .oddk-dialogField select {
+.oddk-taskEditor .oddk-dialogField input,
+.oddk-taskEditor .oddk-dialogField select {
   height: 50px;
   max-width: none;
   padding: 0 16px;
@@ -73,7 +73,7 @@
   font-size: 16px;
   line-height: 24px;
 }
-.oddk-dialog .oddk-editorTitle {
+.oddk-taskEditor .oddk-editorTitle {
   margin-bottom: 26px;
 }
 .oddk-editorMeta {
@@ -127,7 +127,7 @@
   outline: 2px solid var(--edit-accent);
   outline-offset: 3px;
 }
-.oddk-dialog .oddk-editorStatus {
+.oddk-taskEditor .oddk-editorStatus {
   min-width: 0;
   padding-left: 26px;
   border-left: 1px solid var(--edit-border);
@@ -136,7 +136,7 @@
   position: relative;
   display: block;
 }
-.oddk-dialog .oddk-editorSelect select {
+.oddk-taskEditor .oddk-editorSelect select {
   appearance: none;
   width: 100%;
   height: 48px;
@@ -152,7 +152,7 @@
   color: var(--edit-muted);
   pointer-events: none;
 }
-.oddk-dialog .oddk-dialogTimes {
+.oddk-taskEditor .oddk-dialogTimes {
   position: relative;
   margin: 0;
   padding: 20px 0 26px;
@@ -192,7 +192,7 @@
   font-weight: 500;
   line-height: 24px;
 }
-.oddk-dialog .oddk-clearTime {
+.oddk-taskEditor .oddk-clearTime {
   display: grid;
   width: 30px;
   height: 30px;
@@ -209,7 +209,7 @@
   width: 17px;
   height: 17px;
 }
-.oddk-dialog .oddk-clearTime:hover {
+.oddk-taskEditor .oddk-clearTime:hover {
   background: var(--edit-soft);
   color: var(--edit-accent);
 }
@@ -227,7 +227,7 @@
   position: relative;
   display: block;
 }
-.oddk-dialog .oddk-editorNumber input {
+.oddk-taskEditor .oddk-editorNumber input {
   width: 100%;
   padding-right: 55px;
   appearance: textfield;
@@ -277,20 +277,20 @@
   color: #b14747;
   font-size: 13px;
 }
-.oddk-dialog .oddk-startField {
+.oddk-taskEditor .oddk-startField {
   width: min(242px, 100%);
   margin: 24px 0 0;
 }
-.oddk-dialog .oddk-startField input {
+.oddk-taskEditor .oddk-startField input {
   width: 100%;
   max-width: none;
   font-size: 16px;
 }
-.oddk-dialog .oddk-startField input:disabled {
+.oddk-taskEditor .oddk-startField input:disabled {
   background: var(--edit-surface);
   opacity: 0.5;
 }
-.oddk-dialog .oddk-dialogLinks {
+.oddk-taskEditor .oddk-dialogLinks {
   margin: 0;
   padding: 18px 0 12px;
   border: 0;
@@ -316,7 +316,7 @@
 .oddk-dialogLinkContent {
   padding: 18px 0 12px;
 }
-.oddk-dialog .oddk-linkSelectors select {
+.oddk-taskEditor .oddk-linkSelectors select {
   height: 44px;
   border-color: var(--edit-border);
   border-radius: 8px;
@@ -324,27 +324,21 @@
   color: var(--edit-heading);
   font-size: 13px;
 }
-.oddk-dialog .oddk-linkSelectors label {
+.oddk-taskEditor .oddk-linkSelectors label {
   font-size: 13px;
 }
-.oddk-dialog .oddk-linkedGoals > span {
+.oddk-taskEditor .oddk-linkedGoals > span {
   background: var(--edit-soft);
   color: var(--edit-accent);
 }
-.oddk-dialog .oddk-openAlpen {
+.oddk-taskEditor .oddk-openAlpen {
   background: var(--edit-soft);
   color: var(--edit-accent);
 }
-.oddk-dialog .oddk-dialogAlpen {
-  border-top: 1px solid var(--edit-border);
-}
-.oddk-dialogAlpen .oddk-openAlpen {
-  margin-top: 0;
-}
-.oddk-dialog .oddk-dialogError {
+.oddk-taskEditor .oddk-dialogError {
   margin: 10px 0 18px;
 }
-.oddk-dialog .oddk-dialogActions {
+.oddk-taskEditor .oddk-dialogActions {
   flex-shrink: 0;
   gap: 12px;
   margin: 0;
@@ -352,7 +346,7 @@
   border-top: 1px solid var(--edit-border);
   background: var(--edit-surface);
 }
-.oddk-dialog .oddk-dialogActions > button {
+.oddk-taskEditor .oddk-dialogActions > button {
   height: 48px;
   min-width: 94px;
   padding: 0 20px;
@@ -360,7 +354,7 @@
   font-size: 15px;
   font-weight: 500;
 }
-.oddk-dialog .oddk-dialogActions > .oddk-dialogDelete {
+.oddk-taskEditor .oddk-dialogActions > .oddk-dialogDelete {
   min-width: 0;
   margin-right: auto;
   padding: 0;
@@ -368,30 +362,30 @@
   background: transparent;
   color: #ed464b;
 }
-.oddk-dialog .oddk-dialogActions > .oddk-dialogDelete:hover {
+.oddk-taskEditor .oddk-dialogActions > .oddk-dialogDelete:hover {
   background: transparent;
   color: #c62c37;
   text-decoration: underline;
   text-underline-offset: 4px;
 }
-.oddk-dialog .oddk-dialogActions > .oddk-dialogCancel {
+.oddk-taskEditor .oddk-dialogActions > .oddk-dialogCancel {
   border: 1px solid #b8c3d7;
   background: var(--edit-field);
   color: var(--edit-heading);
 }
-.oddk-dialog .oddk-dialogActions > .oddk-primary {
+.oddk-taskEditor .oddk-dialogActions > .oddk-primary {
   border: 1px solid #245dff;
   background: #2460ff;
   color: white;
 }
-.oddk-dialog .oddk-dialogActions > .oddk-primary:hover {
+.oddk-taskEditor .oddk-dialogActions > .oddk-primary:hover {
   background: #154ce9;
 }
-.oddk-dialog :is(input, select, button):focus-visible {
+.oddk-taskEditor :is(input, select, button):focus-visible {
   outline: 2px solid #7099ff;
   outline-offset: 3px;
 }
-.oddk-page[data-theme="dark"] .oddk-dialog {
+.oddk-page[data-theme="dark"] .oddk-taskEditor {
   --edit-surface: #172131;
   --edit-field: #1d293b;
   --edit-heading: #dbe5f5;
@@ -413,24 +407,24 @@
   color: #f1b5b0;
 }
 @media (max-width: 480px) {
-  .oddk-dialog {
+  .oddk-taskEditor {
     width: calc(100% - 24px);
     max-height: calc(100dvh - 24px);
   }
-  .oddk-dialog .oddk-dialogForm {
+  .oddk-taskEditor .oddk-dialogForm {
     max-height: calc(100dvh - 26px);
   }
-  .oddk-dialog .oddk-dialogHeader {
+  .oddk-taskEditor .oddk-dialogHeader {
     padding: 20px;
   }
-  .oddk-dialog .oddk-dialogHeader h2 {
+  .oddk-taskEditor .oddk-dialogHeader h2 {
     font-size: 23px;
     line-height: 32px;
   }
   .oddk-dialogBody {
     padding: 0 20px;
   }
-  .oddk-dialog .oddk-editorTitle {
+  .oddk-taskEditor .oddk-editorTitle {
     margin-bottom: 22px;
   }
   .oddk-editorMeta {
@@ -440,18 +434,18 @@
   .oddk-editorPriority {
     padding-right: 0;
   }
-  .oddk-dialog .oddk-editorStatus {
+  .oddk-taskEditor .oddk-editorStatus {
     margin-top: 20px;
     padding-left: 0;
     border-left: 0;
   }
-  .oddk-dialog .oddk-dialogTimes {
+  .oddk-taskEditor .oddk-dialogTimes {
     padding: 20px 0 24px;
   }
   .oddk-editorTimeGrid {
     gap: 16px;
   }
-  .oddk-dialog .oddk-dialogField {
+  .oddk-taskEditor .oddk-dialogField {
     font-size: 14px;
   }
   .oddk-editorPriority legend {
@@ -462,16 +456,17 @@
     padding-inline: 12px;
     font-size: 12px;
   }
-  .oddk-dialog .oddk-dialogActions {
+  .oddk-taskEditor .oddk-dialogActions {
     padding: 14px 20px;
   }
-  .oddk-dialog .oddk-dialogActions > button {
+  .oddk-taskEditor .oddk-dialogActions > button {
     min-width: 78px;
     padding-inline: 15px;
     font-size: 14px;
   }
-  .oddk-dialog .oddk-dialogActions > .oddk-dialogDelete {
+  .oddk-taskEditor .oddk-dialogActions > .oddk-dialogDelete {
     min-width: 0;
     padding: 0;
   }
 }
+
