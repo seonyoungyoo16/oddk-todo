@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "node --test tests/unit/*.test.mjs",
+    "test:integration": "node tests/run-integration.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.118.0",

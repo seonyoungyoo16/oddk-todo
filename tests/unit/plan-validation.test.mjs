@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { validPlan, hasTaskTime } from "../supabase/functions/_shared/plan.ts";
-import { validPlan as edgeValidPlan } from "../supabase/functions/plan-sync/validate.ts";
-import { parseTaskTimeDraft, workFromStoredTime } from "../app/todo/task-time.ts";
+import { validPlan, hasTaskTime } from "../../supabase/functions/_shared/plan.ts";
+import { validPlan as edgeValidPlan } from "../../supabase/functions/plan-sync/validate.ts";
+import { parseTaskTimeDraft, workFromStoredTime } from "../../app/todo/task-time.ts";
 
 const task = () => ({ id: "synthetic-1", title: "Synthetic task", minutes: null, bufferMinutes: null, startTime: null, priority: "normal", done: false });
 const plan = (changes = {}) => ({ tasks: [{ ...task(), ...changes }], start: "09:00" });
