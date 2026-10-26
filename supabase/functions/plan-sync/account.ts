@@ -35,5 +35,9 @@ Deno.serve(async (req: Request) => {
       return data ? reply(data) : reply({ error: "다른 기기에서 먼저 변경했어요." }, 409);
     }
     return reply({ error: "지원하지 않는 요청이에요." }, 400);
-  } catch { return reply({ error: "서버에 저장하지 못했어요. 내용은 기기에 남아 있어요." }, 500); }
+  } catch (error) {
+    // JSONB formatting can exceed the DB byte limit even below the raw request limit.
+    if (error && typeof error === "object" && "code" in error && error.code === "23514") return reply({ error: "동기화할 데이터가 너무 커요." }, 413);
+    return reply({ error: "서버에 저장하지 못했어요. 내용은 기기에 남아 있어요." }, 500);
+  }
 });
