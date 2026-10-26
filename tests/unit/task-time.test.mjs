@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   parseTaskTimeDraft,
   workFromStoredTime,
-} from "../app/todo/task-time.ts";
+} from "../../app/todo/task-time.ts";
 
 test("work 25 + buffer 5 persists as total 30, and reopens as work 25", () => {
   const draft = parseTaskTimeDraft("25", "5");

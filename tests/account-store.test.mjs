@@ -9,7 +9,7 @@ globalThis.BroadcastChannel = undefined;
 mkdirSync(new URL("../.sync-test-runtime/", import.meta.url), { recursive: true });
 for (const name of ["supabase-client", "sync-store"]) {
   const source = readFileSync(new URL(`../app/todo/${name}.ts`, import.meta.url), "utf8");
-  const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText.replace('"./supabase-client"', '"./supabase-client.mjs"');
+  const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText.replace('"./supabase-client"', '"./supabase-client.mjs"').replace('"../../supabase/functions/_shared/plan"', '"../supabase/functions/_shared/plan.ts"');
   writeFileSync(new URL(`../.sync-test-runtime/${name}.mjs`, import.meta.url), js);
 }
 const store = await import("../.sync-test-runtime/sync-store.mjs");
