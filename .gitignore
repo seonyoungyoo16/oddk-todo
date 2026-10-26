@@ -44,3 +44,6 @@ next-env.d.ts
 .project
 .settings/
 design-qa.md
+.sync-test-cleanup.json
+.sync-auth-fixture.json
+.sync-test-runtime/

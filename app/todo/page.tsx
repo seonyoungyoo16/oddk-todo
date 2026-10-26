@@ -4,13 +4,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent } from "react";
-import { HiOutlinePlus, HiOutlineXMark, HiOutlineCheck, HiOutlineMinus, HiOutlineTrash, HiOutlineArrowUturnLeft, HiOutlineClipboardDocumentCheck, HiOutlineSun, HiOutlineListBullet, HiOutlineSquares2X2, HiOutlineChartBar, HiOutlineClock } from "react-icons/hi2";
+import { HiOutlinePlus, HiOutlineXMark, HiOutlineCheck, HiOutlineMinus, HiOutlineTrash, HiOutlineArrowUturnLeft, HiOutlineClipboardDocumentCheck, HiOutlineSun, HiOutlineListBullet, HiOutlineSquares2X2, HiOutlineChartBar, HiOutlineClock, HiOutlineChevronDown } from "react-icons/hi2";
 import { GoDotFill } from "react-icons/go";
 import "./todo.css";
+import "./task-editor.css";
+import { TaskTimeFields } from "./task-time-fields";
+import { parseTaskTimeDraft, workFromStoredTime } from "./task-time";
 import { layoutTimeline } from "./timeline";
 import { MandalaView, AlpenView, TimeStatsView, safeMandala } from "./planning-views";
 import type { Mandala } from "./planning-views";
 import initialPlan from "./initial-plan.json";
+import { SyncPanel } from "./sync-panel";
+import { getPlanSnapshot, subscribePlan, writePlan } from "./sync-store";
 
 type Priority = "high" | "normal" | "low";
 type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean };
@@ -29,8 +34,6 @@ const viewHeaders: Record<View, { title: string; description: string }> = {
 };
 type Filter = "all" | "active" | "done";
 
-const STORAGE_KEY = "oddk.todo.v1";
-const CHANGE_EVENT = "oddk-todo-change";
 const THEME_KEY = "oddk.theme.v1";
 const THEME_EVENT = "oddk-theme-change";
 const EMPTY_PLAN: Plan = initialPlan as Plan;
@@ -43,20 +46,11 @@ const priorities: Record<Priority, { label: string; order: number }> = {
 
 // 서버와 브라우저의 첫 화면을 일치시키고, 저장된 목록은 브라우저에서 읽는다.
 function subscribe(notify: () => void) {
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === STORAGE_KEY || event.key === null) notify();
-  };
-  window.addEventListener("storage", onStorage);
-  window.addEventListener(CHANGE_EVENT, notify);
-  return () => {
-    window.removeEventListener("storage", onStorage);
-    window.removeEventListener(CHANGE_EVENT, notify);
-  };
+  return subscribePlan(notify);
 }
 
 function getSnapshot() {
-  try { return localStorage.getItem(STORAGE_KEY) ?? EMPTY_SNAPSHOT; }
-  catch { return EMPTY_SNAPSHOT; }
+  return getPlanSnapshot(EMPTY_SNAPSHOT);
 }
 
 function subscribeTheme(notify: () => void) {
@@ -93,23 +87,6 @@ function readPlan(snapshot: string): Plan {
   } catch { return EMPTY_PLAN; }
 }
 
-function getTimeError(total: string, buffer: string) {
-  if (!total.trim() || !buffer.trim()) return "수행 시간과 여유 시간을 모두 입력해주세요.";
-  const totalMinutes = Number(total);
-  const spareMinutes = Number(buffer);
-  if (!Number.isInteger(totalMinutes) || totalMinutes < 2 || totalMinutes > 240) {
-    return "수행 시간은 여유를 포함해 2~240분 사이의 정수로 입력해주세요.";
-  }
-  if (!Number.isInteger(spareMinutes) || spareMinutes < 1) return "여유 시간은 1분 이상의 정수로 입력해주세요.";
-  if (spareMinutes >= totalMinutes) return "여유 시간은 수행 시간보다 짧아야 해요. 작업할 시간을 남겨주세요.";
-  return "";
-}
-
-function isValidTotal(value: string) {
-  const total = Number(value);
-  return value.trim() !== "" && Number.isInteger(total) && total >= 2 && total <= 240;
-}
-
 function hasTime(task: Task): task is Task & { minutes: number; bufferMinutes: number } {
   return task.minutes !== null && task.bufferMinutes !== null && task.minutes >= 2 &&
     task.bufferMinutes >= 1 && task.bufferMinutes < task.minutes;
@@ -136,49 +113,6 @@ function SelectionCheckbox({ label, checked, mixed = false, round = false, disab
   </label>;
 }
 
-function TimeEquation({ prefix, total, buffer, onTotalChange, onBufferChange }: {
-  prefix: string;
-  total: string;
-  buffer: string;
-  onTotalChange: (value: string) => void;
-  onBufferChange: (value: string) => void;
-}) {
-  const bufferEnabled = isValidTotal(total);
-  const issue = total && !bufferEnabled
-    ? "수행 시간은 여유를 포함해 2~240분 사이의 정수로 입력해주세요."
-    : total && buffer ? getTimeError(total, buffer) : "";
-  const work = !getTimeError(total, buffer) ? Number(total) - Number(buffer) : null;
-  const guideId = prefix + "-time-guide";
-
-  return <>
-    <div className="oddk-timeEquation" role="group" aria-label="수행 시간은 작업 시간과 여유 시간의 합계">
-      <label htmlFor={prefix + "-minutes"}>수행
-        <input id={prefix + "-minutes"} aria-label={prefix === "todo" ? "수행 시간" : "수행 시간 수정"} type="number"
-          min={2} max={240} step={1} required={Boolean(total || buffer)} placeholder="전체" value={total} aria-describedby={guideId}
-          aria-invalid={Boolean(total && !bufferEnabled)} onChange={(event) => {
-            onTotalChange(event.target.value);
-            if (!isValidTotal(event.target.value)) onBufferChange("");
-          }} />분
-      </label>
-      <span className="oddk-equationSign" aria-hidden="true">=</span>
-      <span className="oddk-workTerm">작업
-        <output htmlFor={prefix + "-minutes " + prefix + "-buffer"} aria-label="자동 계산된 작업 시간">{work ?? "—"}</output>분
-      </span>
-      <span className="oddk-equationSign oddk-equationPlus" aria-hidden="true">+</span>
-      <label className="oddk-bufferTerm" htmlFor={prefix + "-buffer"}>여유
-        <input id={prefix + "-buffer"} aria-label={prefix === "todo" ? "여유 시간" : "여유 시간 수정"} type="number"
-          min={1} max={bufferEnabled ? Number(total) - 1 : 239} step={1} required={Boolean(total || buffer)} placeholder="필수"
-          disabled={!bufferEnabled} value={buffer} onChange={(event) => onBufferChange(event.target.value)}
-          title={!bufferEnabled ? "수행 시간을 먼저 입력해주세요" : "수행 시간 안에 포함할 여유 시간"}
-          aria-invalid={Boolean(bufferEnabled && issue)} aria-describedby={guideId} />분
-      </label>
-    </div>
-    <p id={guideId} className={issue ? "oddk-timeGuide oddk-timeGuideError" : "oddk-srOnly"} role="status" aria-live="polite">
-      {issue || "수행 시간을 먼저 입력한 다음, 그 안에 포함할 여유 시간을 입력해주세요. 작업 시간은 자동 계산됩니다."}
-    </p>
-  </>;
-}
-
 export default function Todo() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_SNAPSHOT);
   const plan = useMemo(() => readPlan(snapshot), [snapshot]);
@@ -193,7 +127,7 @@ export default function Todo() {
   const [notice, setNotice] = useState<{ message: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
-  const [editMinutes, setEditMinutes] = useState("");
+  const [editWork, setEditWork] = useState("");
   const [editBuffer, setEditBuffer] = useState("");
   const [editStart, setEditStart] = useState("");
   const [editPriority, setEditPriority] = useState<Priority>("normal");
@@ -212,6 +146,7 @@ export default function Todo() {
   const editInputRef = useRef<HTMLInputElement>(null);
   const editingTask = plan.tasks.find((task) => task.id === editingId);
   const editingTaskId = editingTask?.id;
+  const editTime = parseTaskTimeDraft(editWork, editBuffer);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -271,8 +206,7 @@ export default function Todo() {
 
   function save(next: Plan, message: string) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      window.dispatchEvent(new Event(CHANGE_EVENT));
+      writePlan(next);
       setError("");
       setNotice({ message });
       return true;
@@ -356,7 +290,7 @@ export default function Todo() {
 
   function openEditor(task: Task) {
     setEditTitle(task.title);
-    setEditMinutes(task.minutes === null ? "" : String(task.minutes));
+    setEditWork(workFromStoredTime(task.minutes, task.bufferMinutes));
     setEditBuffer(task.bufferMinutes === null ? "" : String(task.bufferMinutes));
     setEditStart(task.startTime ?? "");
     setEditPriority(task.priority);
@@ -373,12 +307,10 @@ export default function Todo() {
     if (!editingTask) { setEditingId(null); return; }
     const task = editingTask;
     const title = editTitle.trim();
-    const configuringTime = Boolean(editMinutes.trim() || editBuffer.trim() || editStart);
-    const duration = configuringTime ? Number(editMinutes) : null;
-    const buffer = configuringTime ? Number(editBuffer) : null;
+    const { minutes: duration, bufferMinutes: buffer, error: timeError } = editTime;
     if (!title) { setEditError("수정할 내용을 입력해주세요."); return; }
-    const timeError = configuringTime ? getTimeError(editMinutes, editBuffer) : "";
     if (timeError) { setEditError(timeError); return; }
+    if (editStart && duration === null) { setEditError("시작 시간을 설정하려면 작업 시간과 여유 시간을 먼저 입력해주세요."); return; }
     if (editStart && !/^([01]\d|2[0-3]):[0-5]\d$/.test(editStart)) { setEditError("시작 시간을 올바르게 입력해주세요."); return; }
     if (!editDone && plan.tasks.some((item) => item.id !== task.id && !item.done && item.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
       setEditError("같은 내용의 할 일이 이미 있어요."); return;
@@ -413,7 +345,7 @@ export default function Todo() {
                 return <button key={item.id} type="button" aria-current={view === item.id ? "page" : undefined} onClick={() => changeView(item.id)}><Icon aria-hidden="true" /><span>{item.label}</span></button>;
               })}
             </nav>
-            <div className="oddk-personalSpace"><span className="oddk-initial" aria-hidden="true">나</span><div><strong>나의 공간</strong><span>내 속도로, 차근차근</span></div></div>
+            <SyncPanel fallback={EMPTY_SNAPSHOT} />
           </aside>
 
           <main className="oddk-workspace">
@@ -538,26 +470,38 @@ export default function Todo() {
         onClick={(event) => { if (event.target === event.currentTarget) setEditingId(null); }}>
         {editingTask && <form onSubmit={updateTask} className="oddk-dialogForm">
           <header className="oddk-dialogHeader"><h2 id="edit-dialog-title">할 일 수정</h2><button type="button" onClick={() => setEditingId(null)} aria-label="수정 창 닫기"><HiOutlineXMark aria-hidden="true" /></button></header>
-          <label className="oddk-dialogField" htmlFor="edit-title">할 일 내용<input ref={editInputRef} id="edit-title" value={editTitle} maxLength={120} required
+          <div className="oddk-dialogBody">
+          <label className="oddk-dialogField oddk-editorTitle" htmlFor="edit-title">할 일<input ref={editInputRef} id="edit-title" value={editTitle} maxLength={120} required
             onChange={(event) => { setEditTitle(event.target.value); setEditError(""); }} onKeyDown={(event) => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }} autoFocus /></label>
-          <label className="oddk-dialogField" htmlFor="edit-priority">우선순위<select id="edit-priority" value={editPriority} onChange={(event) => setEditPriority(event.target.value as Priority)}>
-            <option value="high">높음</option><option value="normal">보통</option><option value="low">낮음</option>
-          </select></label>
-          <label className="oddk-dialogField" htmlFor="edit-status">상태<select id="edit-status" value={editDone ? "done" : "active"} onChange={(event) => setEditDone(event.target.value === "done")}>
-            <option value="active">진행 중</option><option value="done">완료</option>
-          </select></label>
-          <fieldset className="oddk-dialogTimes"><legend>시간 설정 <span>선택</span></legend>
-            <p>나중에 설정해도 돼요. 설정할 때는 수행·여유 시간을 모두 입력해주세요.</p>
-            <TimeEquation prefix="edit" total={editMinutes} buffer={editBuffer}
-              onTotalChange={(value) => { setEditMinutes(value); setEditError(""); }} onBufferChange={(value) => { setEditBuffer(value); setEditError(""); }} />
-            <label className="oddk-dialogField oddk-startField" htmlFor="edit-start">시작 시간
-              <input id="edit-start" type="time" step={60} value={editStart} disabled={Boolean(getTimeError(editMinutes, editBuffer))}
-                onChange={(event) => { setEditStart(event.target.value); setEditError(""); }} />
-              <small>{getTimeError(editMinutes, editBuffer) ? "수행·여유 시간을 먼저 입력해주세요." : editStart ? `종료 ${clockLabel(clockMinutes(editStart) + Number(editMinutes))} · 여유 포함` : "설정하면 오늘의 리듬에 배치돼요."}</small>
+          <div className="oddk-editorMeta">
+            <fieldset className="oddk-editorPriority"><legend>우선순위</legend>
+              <div className="oddk-priorityOptions">{(["low", "normal", "high"] as const).map((priority) => (
+                <label key={priority}><input type="radio" name="edit-priority" value={priority} className="oddk-srOnly"
+                  checked={editPriority === priority} onChange={() => setEditPriority(priority)} /><span>{priorities[priority].label}</span></label>
+              ))}</div>
+            </fieldset>
+            <label className="oddk-dialogField oddk-editorStatus" htmlFor="edit-status">상태
+              <span className="oddk-editorSelect"><select id="edit-status" value={editDone ? "done" : "active"} onChange={(event) => setEditDone(event.target.value === "done")}>
+                <option value="active">진행 중</option><option value="done">완료</option>
+              </select><HiOutlineChevronDown aria-hidden="true" /></span>
             </label>
-            {(editMinutes || editBuffer || editStart) && <button type="button" className="oddk-clearTime" onClick={() => { setEditMinutes(""); setEditBuffer(""); setEditStart(""); setEditError(""); }}>시간 설정 지우기</button>}
-          </fieldset>
-          <fieldset className="oddk-dialogLinks"><legend>만다라트 연결</legend>
+          </div>
+          <details open className="oddk-dialogTimes oddk-editorDisclosure">
+            <summary><HiOutlineChevronDown aria-hidden="true" /><span>시간 설정</span><span className="oddk-editorOptional">선택</span>
+              {(editWork || editBuffer || editStart) && <button type="button" className="oddk-clearTime" aria-label="시간 설정 지우기" title="시간 설정 지우기"
+                onClick={(event) => { event.preventDefault(); setEditWork(""); setEditBuffer(""); setEditStart(""); setEditError(""); }}><HiOutlineArrowUturnLeft aria-hidden="true" /></button>}
+            </summary>
+            <TaskTimeFields work={editWork} buffer={editBuffer}
+              onWorkChange={(value) => { setEditWork(value); setEditError(""); }} onBufferChange={(value) => { setEditBuffer(value); setEditError(""); }} />
+            <label className="oddk-dialogField oddk-startField" htmlFor="edit-start">시작 시간
+              <input id="edit-start" type="time" step={60} lang="ko" value={editStart} disabled={editTime.minutes === null} aria-describedby="edit-start-guide"
+                onChange={(event) => { setEditStart(event.target.value); setEditError(""); }} />
+              <small id="edit-start-guide" className="oddk-srOnly">{editTime.minutes === null ? "작업·여유 시간을 먼저 입력해주세요." : editStart ? `종료 ${clockLabel(clockMinutes(editStart) + editTime.minutes)} · 여유 포함` : "설정하면 오늘의 리듬에 배치돼요."}</small>
+            </label>
+          </details>
+          <details className="oddk-dialogLinks oddk-editorDisclosure" open={editLinks.length > 0}>
+            <summary><HiOutlineChevronDown aria-hidden="true" /><span>만다라트 연결<small>필요할 때 목표와 연결하세요</small></span></summary>
+            <div className="oddk-dialogLinkContent">
             <div className="oddk-linkSelectors">
               <label htmlFor="edit-link-area">세부 목표<select id="edit-link-area" value={linkArea} onChange={(event) => { setLinkArea(event.target.value); setLinkSlot(""); }}>
                 <option value="">목표 선택</option>{mandala.areas.map((area, index) => <option key={index} value={index}>{index + 1}. {area.title || `세부 목표 ${index + 1}`}</option>)}
@@ -582,13 +526,20 @@ export default function Todo() {
               return <span key={link}>{label}<button type="button" aria-label={label + " 연결 해제"} onClick={() => setEditLinks((current) => current.filter((item) => item !== link))}><HiOutlineXMark aria-hidden="true" /></button></span>;
             }) : <small>연결된 목표가 없어요.</small>}</div>
             <p>연결·해제는 저장할 때 반영돼요.{mandalaDraft && " 목표 변경사항도 함께 저장돼요."}</p>
-          </fieldset>
-          <button type="submit" data-destination="alpen" className="oddk-openAlpen"><HiOutlineClipboardDocumentCheck aria-hidden="true" /><span>저장하고 알펜에서 계획하기</span></button>
+            </div>
+          </details>
+          <details className="oddk-dialogLinks oddk-dialogAlpen oddk-editorDisclosure">
+            <summary><HiOutlineChevronDown aria-hidden="true" /><span>알펜 연결<small>오늘 계획에 맞춰 시간을 배치하세요</small></span></summary>
+            <div className="oddk-dialogLinkContent">
+              <button type="submit" data-destination="alpen" className="oddk-openAlpen"><HiOutlineClipboardDocumentCheck aria-hidden="true" /><span>저장하고 알펜에서 계획하기</span></button>
+            </div>
+          </details>
           {editError && <p role="alert" className="oddk-dialogError">{editError}</p>}
+          </div>
           <div className="oddk-dialogActions">
-            <button type="button" className="oddk-dialogDelete" onClick={() => deleteTask(editingTask)}><HiOutlineTrash aria-hidden="true" />삭제</button>
+            <button type="button" className="oddk-dialogDelete" onClick={() => deleteTask(editingTask)}>삭제</button>
             <button type="button" className="oddk-dialogCancel" onClick={() => setEditingId(null)}>취소</button>
-            <button type="submit" className="oddk-primary"><HiOutlineCheck aria-hidden="true" />저장</button>
+            <button type="submit" className="oddk-primary">저장</button>
           </div>
         </form>}
       </dialog>

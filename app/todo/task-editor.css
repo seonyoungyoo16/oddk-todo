@@ -1,0 +1,477 @@
+.oddk-dialog {
+  --edit-surface: #fff;
+  --edit-field: #fff;
+  --edit-heading: #1c2b48;
+  --edit-muted: #7b879e;
+  --edit-border: #dce2ee;
+  --edit-accent: #2460ff;
+  --edit-soft: #ecf3ff;
+  width: min(600px, calc(100% - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow: hidden;
+  border: 1px solid #e4e7ef;
+  border-radius: 12px;
+  background: var(--edit-surface);
+  color: var(--edit-heading);
+  box-shadow: 0 24px 80px #17223926;
+}
+.oddk-dialog::backdrop {
+  background: #24324966;
+  backdrop-filter: blur(2px);
+}
+.oddk-dialog .oddk-dialogForm {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 50px);
+  padding: 0;
+}
+.oddk-dialog .oddk-dialogHeader {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 28px 30px;
+}
+.oddk-dialog .oddk-dialogHeader h2 {
+  color: var(--edit-heading);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 36px;
+  letter-spacing: -0.035em;
+}
+.oddk-dialog .oddk-dialogHeader button {
+  width: 32px;
+  height: 32px;
+  padding: 5px;
+  color: var(--edit-muted);
+}
+.oddk-dialog .oddk-dialogHeader button:hover {
+  background: var(--edit-soft);
+}
+.oddk-dialogBody {
+  min-height: 0;
+  padding: 0 30px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.oddk-dialog .oddk-dialogField {
+  gap: 10px;
+  margin: 0;
+  color: var(--edit-heading);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+}
+.oddk-dialog .oddk-dialogField input,
+.oddk-dialog .oddk-dialogField select {
+  height: 50px;
+  max-width: none;
+  padding: 0 16px;
+  border: 1px solid var(--edit-border);
+  border-radius: 8px;
+  background: var(--edit-field);
+  color: var(--edit-heading);
+  font-size: 16px;
+  line-height: 24px;
+}
+.oddk-dialog .oddk-editorTitle {
+  margin-bottom: 26px;
+}
+.oddk-editorMeta {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--edit-border);
+}
+.oddk-editorPriority {
+  min-width: 0;
+  margin: 0;
+  padding: 0 26px 0 0;
+  border: 0;
+}
+.oddk-editorPriority legend {
+  margin: 0 0 10px;
+  padding: 0;
+  color: var(--edit-heading);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+}
+.oddk-priorityOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.oddk-priorityOptions label {
+  position: relative;
+  cursor: pointer;
+}
+.oddk-priorityOptions label > span {
+  display: grid;
+  height: 48px;
+  place-items: center;
+  border: 1px solid var(--edit-border);
+  border-radius: 8px;
+  background: var(--edit-field);
+  color: #68758d;
+  font-size: 16px;
+  line-height: 24px;
+}
+.oddk-priorityOptions input:checked + span {
+  border-color: #5d89ff;
+  background: var(--edit-soft);
+  color: var(--edit-accent);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 2px var(--edit-surface);
+}
+.oddk-priorityOptions input:focus-visible + span {
+  outline: 2px solid var(--edit-accent);
+  outline-offset: 3px;
+}
+.oddk-dialog .oddk-editorStatus {
+  min-width: 0;
+  padding-left: 26px;
+  border-left: 1px solid var(--edit-border);
+}
+.oddk-editorSelect {
+  position: relative;
+  display: block;
+}
+.oddk-dialog .oddk-editorSelect select {
+  appearance: none;
+  width: 100%;
+  height: 48px;
+  padding-right: 40px;
+}
+.oddk-editorSelect > svg {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+  color: var(--edit-muted);
+  pointer-events: none;
+}
+.oddk-dialog .oddk-dialogTimes {
+  position: relative;
+  margin: 0;
+  padding: 20px 0 26px;
+  border-bottom: 1px solid var(--edit-border);
+}
+.oddk-editorDisclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 30px;
+  list-style: none;
+  color: var(--edit-heading);
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 28px;
+  cursor: pointer;
+}
+.oddk-editorDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+.oddk-editorDisclosure > summary > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.oddk-editorDisclosure > summary:focus-visible {
+  outline: 2px solid var(--edit-accent);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.oddk-editorOptional {
+  padding: 2px 13px;
+  border-radius: 999px;
+  background: var(--edit-soft);
+  color: var(--edit-accent);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 24px;
+}
+.oddk-dialog .oddk-clearTime {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  margin: 0 0 0 auto;
+  padding: 5px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--edit-muted);
+  text-decoration: none;
+}
+.oddk-clearTime svg {
+  width: 17px;
+  height: 17px;
+}
+.oddk-dialog .oddk-clearTime:hover {
+  background: var(--edit-soft);
+  color: var(--edit-accent);
+}
+.oddk-editorTimeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px;
+  margin-top: 18px;
+}
+.oddk-editorTimeGrid .oddk-dialogField {
+  gap: 8px;
+  min-width: 0;
+}
+.oddk-editorNumber {
+  position: relative;
+  display: block;
+}
+.oddk-dialog .oddk-editorNumber input {
+  width: 100%;
+  padding-right: 55px;
+  appearance: textfield;
+  font-variant-numeric: tabular-nums;
+}
+.oddk-editorNumber input::-webkit-inner-spin-button,
+.oddk-editorNumber input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+.oddk-editorUnit {
+  position: absolute;
+  inset: 9px 0 9px auto;
+  display: grid;
+  width: 46px;
+  place-items: center;
+  border-left: 1px solid var(--edit-border);
+  color: #758099;
+  font-weight: 400;
+  pointer-events: none;
+}
+.oddk-editorTimeTotal {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-height: 48px;
+  margin-top: 14px;
+  padding: 12px 18px;
+  border-radius: 9px;
+  background: var(--edit-soft);
+  color: var(--edit-accent);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 24px;
+}
+.oddk-editorTimeTotal > svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+}
+.oddk-editorTimeTotal[data-empty="true"] {
+  color: var(--edit-muted);
+  font-weight: 400;
+}
+.oddk-dialogTimes .oddk-timeGuideError {
+  margin: 10px 0 0;
+  color: #b14747;
+  font-size: 13px;
+}
+.oddk-dialog .oddk-startField {
+  width: min(242px, 100%);
+  margin: 24px 0 0;
+}
+.oddk-dialog .oddk-startField input {
+  width: 100%;
+  max-width: none;
+  font-size: 16px;
+}
+.oddk-dialog .oddk-startField input:disabled {
+  background: var(--edit-surface);
+  opacity: 0.5;
+}
+.oddk-dialog .oddk-dialogLinks {
+  margin: 0;
+  padding: 18px 0 12px;
+  border: 0;
+}
+.oddk-dialogLinks > summary {
+  align-items: flex-start;
+}
+.oddk-dialogLinks > summary > svg {
+  margin-top: 5px;
+}
+.oddk-dialogLinks > summary > span {
+  display: flex;
+  flex-direction: column;
+}
+.oddk-dialogLinks > summary small {
+  display: block;
+  margin-top: 3px;
+  color: var(--edit-muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 22px;
+}
+.oddk-dialogLinkContent {
+  padding: 18px 0 12px;
+}
+.oddk-dialog .oddk-linkSelectors select {
+  height: 44px;
+  border-color: var(--edit-border);
+  border-radius: 8px;
+  background: var(--edit-field);
+  color: var(--edit-heading);
+  font-size: 13px;
+}
+.oddk-dialog .oddk-linkSelectors label {
+  font-size: 13px;
+}
+.oddk-dialog .oddk-linkedGoals > span {
+  background: var(--edit-soft);
+  color: var(--edit-accent);
+}
+.oddk-dialog .oddk-openAlpen {
+  background: var(--edit-soft);
+  color: var(--edit-accent);
+}
+.oddk-dialog .oddk-dialogAlpen {
+  border-top: 1px solid var(--edit-border);
+}
+.oddk-dialogAlpen .oddk-openAlpen {
+  margin-top: 0;
+}
+.oddk-dialog .oddk-dialogError {
+  margin: 10px 0 18px;
+}
+.oddk-dialog .oddk-dialogActions {
+  flex-shrink: 0;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 24px 18px 30px;
+  border-top: 1px solid var(--edit-border);
+  background: var(--edit-surface);
+}
+.oddk-dialog .oddk-dialogActions > button {
+  height: 48px;
+  min-width: 94px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.oddk-dialog .oddk-dialogActions > .oddk-dialogDelete {
+  min-width: 0;
+  margin-right: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ed464b;
+}
+.oddk-dialog .oddk-dialogActions > .oddk-dialogDelete:hover {
+  background: transparent;
+  color: #c62c37;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.oddk-dialog .oddk-dialogActions > .oddk-dialogCancel {
+  border: 1px solid #b8c3d7;
+  background: var(--edit-field);
+  color: var(--edit-heading);
+}
+.oddk-dialog .oddk-dialogActions > .oddk-primary {
+  border: 1px solid #245dff;
+  background: #2460ff;
+  color: white;
+}
+.oddk-dialog .oddk-dialogActions > .oddk-primary:hover {
+  background: #154ce9;
+}
+.oddk-dialog :is(input, select, button):focus-visible {
+  outline: 2px solid #7099ff;
+  outline-offset: 3px;
+}
+.oddk-page[data-theme="dark"] .oddk-dialog {
+  --edit-surface: #172131;
+  --edit-field: #1d293b;
+  --edit-heading: #dbe5f5;
+  --edit-muted: #a2b3ce;
+  --edit-border: #3b4c66;
+  --edit-accent: #94b8ff;
+  --edit-soft: #233958;
+}
+.oddk-page[data-theme="dark"] .oddk-priorityOptions label > span {
+  color: #afbed5;
+}
+.oddk-page[data-theme="dark"] .oddk-priorityOptions input:checked + span {
+  color: var(--edit-accent);
+}
+.oddk-page[data-theme="dark"] .oddk-editorUnit {
+  color: #a2b3ce;
+}
+.oddk-page[data-theme="dark"] .oddk-dialogTimes .oddk-timeGuideError {
+  color: #f1b5b0;
+}
+@media (max-width: 480px) {
+  .oddk-dialog {
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+  .oddk-dialog .oddk-dialogForm {
+    max-height: calc(100dvh - 26px);
+  }
+  .oddk-dialog .oddk-dialogHeader {
+    padding: 20px;
+  }
+  .oddk-dialog .oddk-dialogHeader h2 {
+    font-size: 23px;
+    line-height: 32px;
+  }
+  .oddk-dialogBody {
+    padding: 0 20px;
+  }
+  .oddk-dialog .oddk-editorTitle {
+    margin-bottom: 22px;
+  }
+  .oddk-editorMeta {
+    grid-template-columns: 1fr;
+    padding-bottom: 22px;
+  }
+  .oddk-editorPriority {
+    padding-right: 0;
+  }
+  .oddk-dialog .oddk-editorStatus {
+    margin-top: 20px;
+    padding-left: 0;
+    border-left: 0;
+  }
+  .oddk-dialog .oddk-dialogTimes {
+    padding: 20px 0 24px;
+  }
+  .oddk-editorTimeGrid {
+    gap: 16px;
+  }
+  .oddk-dialog .oddk-dialogField {
+    font-size: 14px;
+  }
+  .oddk-editorPriority legend {
+    font-size: 14px;
+  }
+  .oddk-editorTimeTotal {
+    gap: 9px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+  .oddk-dialog .oddk-dialogActions {
+    padding: 14px 20px;
+  }
+  .oddk-dialog .oddk-dialogActions > button {
+    min-width: 78px;
+    padding-inline: 15px;
+    font-size: 14px;
+  }
+  .oddk-dialog .oddk-dialogActions > .oddk-dialogDelete {
+    min-width: 0;
+    padding: 0;
+  }
+}
