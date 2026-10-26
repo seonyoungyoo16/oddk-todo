@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
+import { loadPlan, upgradeStoredPlan } from "../../supabase/functions/_shared/plan-migration.ts";
 
 test("invalid plans cannot mutate local storage or notify subscribers", () => {
   const values = new Map();
@@ -14,6 +15,7 @@ test("invalid plans cannot mutate local storage or notify subscribers", () => {
   vm.runInNewContext(js, {
     exports,
     require: (name) => {
+      if (name.includes("_shared/plan-migration")) return { loadPlan, upgradeStoredPlan };
       if (name.includes("_shared/plan")) return { validPlan };
       if (name === "./supabase-client") return { syncClient: () => { throw new Error("Offline test must not access auth/network"); } };
       throw new Error(`Unexpected dependency: ${name}`);
@@ -28,4 +30,10 @@ test("invalid plans cannot mutate local storage or notify subscribers", () => {
   assert.throws(() => exports.writePlan({ ...plan, tasks: [{ id: "x", title: "Synthetic", done: false, priority: "normal", minutes: 25, bufferMinutes: 30, startTime: null }] }));
   assert.equal(values.get("oddk.todo.v1"), before);
   assert.equal(notifications, 1);
+  values.set("oddk.todo.v1", "{");
+  assert.throws(() => exports.writePlan(plan));
+  assert.equal(values.get("oddk.todo.v1"), "{");
+  exports.restoreLastValidPlan();
+  assert.equal(values.get("oddk.todo.v1"), before);
+  assert.ok([...values.entries()].some(([key, raw]) => key.startsWith("oddk.todo.v1.recovery-original.") && raw === "{"));
 });

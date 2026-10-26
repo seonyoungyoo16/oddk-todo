@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import ts from "typescript";
+import { loadPlan } from "../supabase/functions/_shared/plan-migration.ts";
 const values = new Map();
 globalThis.localStorage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value), removeItem: (key) => values.delete(key) };
 globalThis.window = Object.assign(new EventTarget(), { location: { href: "http://localhost:3000/todo/", hash: "", search: "" }, localStorage });
@@ -10,7 +11,7 @@ mkdirSync(new URL("../.sync-test-runtime/", import.meta.url), { recursive: true 
 for (const name of ["supabase-client", "sync-store"]) {
   const source = readFileSync(new URL(`../app/todo/${name}.ts`, import.meta.url), "utf8");
   const configuredSource = source.replaceAll("https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync", `https://synxmskamifpovuziecx.supabase.co/functions/v1/${process.env.ODDK_TEST_EDGE_FUNCTION ?? "plan-sync"}`);
-  const js = ts.transpileModule(configuredSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText.replace('"./supabase-client"', '"./supabase-client.mjs"').replace('"../../supabase/functions/_shared/plan"', '"../supabase/functions/_shared/plan.ts"');
+  const js = ts.transpileModule(configuredSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText.replace('"./supabase-client"', '"./supabase-client.mjs"').replace('"../../supabase/functions/_shared/plan"', '"../supabase/functions/_shared/plan.ts"').replace('"../../supabase/functions/_shared/plan-migration"', '"../supabase/functions/_shared/plan-migration.ts"');
   writeFileSync(new URL(`../.sync-test-runtime/${name}.mjs`, import.meta.url), js);
 }
 const store = await import("../.sync-test-runtime/sync-store.mjs");
@@ -39,7 +40,7 @@ try {
   globalThis.fetch = async (url, options) => { if (String(url).includes("/functions/")) throw new TypeError("offline"); return originalFetch(url, options); };
   store.writePlan(local); await store.syncNow();
   assert.equal(JSON.parse(store.getSyncSnapshot()).phase, "waiting");
-  assert.deepEqual(JSON.parse(store.getPlanSnapshot(fallback)), local);
+  assert.deepEqual(JSON.parse(store.getPlanSnapshot(fallback)), loadPlan(JSON.stringify(local)).plan);
   globalThis.fetch = originalFetch; await store.syncNow();
   assert.equal(JSON.parse(store.getSyncSnapshot()).phase, "conflict");
   assert.ok(store.conflictPreview().local.includes("오프라인 변경"));

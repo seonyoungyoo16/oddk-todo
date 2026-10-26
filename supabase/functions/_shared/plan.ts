@@ -1,8 +1,10 @@
 // Pure contract for Next.js, Node tests and Deno; no runtime-specific APIs.
 export type Priority = "high" | "normal" | "low";
-export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean };
+export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean; plannedDate: string | null };
 export type Mandala = { goal: string; areas: Array<{ title: string; taskIds: string[] }> };
-export type Plan = { tasks: Task[]; start: string; mandala?: Mandala; review?: string };
+export type Plan = { schemaVersion: 2; tasks: Task[]; start: string; mandala?: Mandala; review?: string; reviewsByDate: Record<string, string> };
+export type LegacyPlan = { tasks: Array<Omit<Task, "plannedDate">>; start: string; mandala?: Mandala; review?: string };
+export type PlanData = Plan | LegacyPlan;
 
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -30,17 +32,29 @@ export function validMandala(value: unknown): value is Mandala {
       Array.isArray(area.taskIds) && area.taskIds.length === 8 && area.taskIds.every((id: unknown) => typeof id === "string" && id.length <= 100));
 }
 
-export function validPlan(value: unknown): value is Plan {
+export function isPlanDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  if (year < 1 || month < 1 || month > 12 || day < 1) return false;
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  return day <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+}
+
+export function validPlan(value: unknown): value is PlanData {
   if (!record(value) || !Array.isArray(value.tasks) || value.tasks.length > 5000 || !isClock(value.start)) return false;
+  if (value.schemaVersion !== undefined && value.schemaVersion !== 2) return false;
   const ids = new Set<string>();
   for (const task of value.tasks) {
     if (!record(task) || typeof task.id !== "string" || !task.id || ids.has(task.id) ||
       typeof task.title !== "string" || !task.title.trim() || task.title.length > 120 ||
       typeof task.done !== "boolean" || typeof task.priority !== "string" || !["high", "normal", "low"].includes(task.priority) ||
-      !validTaskTime(task.minutes, task.bufferMinutes, task.startTime ?? null)) return false;
+      !validTaskTime(task.minutes, task.bufferMinutes, task.startTime ?? null) ||
+      (value.schemaVersion === 2 && task.startTime === undefined) ||
+      (value.schemaVersion === 2 && task.plannedDate !== null && !isPlanDate(task.plannedDate))) return false;
     ids.add(task.id);
   }
   if (value.review != null && (typeof value.review !== "string" || value.review.length > 2000)) return false;
   if (value.mandala != null && !validMandala(value.mandala)) return false;
+  if (value.schemaVersion === 2 && (!record(value.reviewsByDate) || !Object.entries(value.reviewsByDate).every(([date, review]) => isPlanDate(date) && typeof review === "string" && review.length <= 2000))) return false;
   return true;
 }

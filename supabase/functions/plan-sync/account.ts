@@ -30,8 +30,16 @@ Deno.serve(async (req: Request) => {
       return data ? reply({ id: user.id, plan: data.plan, version: data.version, updated_at: data.updated_at }) : reply({ error: "처음 로그인한 기기에서 데이터를 불러오는 중이에요." }, 404);
     }
     if (body.action === "push") {
-      const { data, error } = await db.from("account_plans").update({ plan: body.plan, version: body.version + 1, updated_at: new Date().toISOString() }).eq("user_id", user.id).eq("version", body.version).select("plan,version,updated_at").maybeSingle();
+      let update = db.from("account_plans").update({ plan: body.plan, version: body.version + 1, updated_at: new Date().toISOString() }).eq("user_id", user.id).eq("version", body.version);
+      // Per-step releases must never let an older client erase V2 date fields.
+      if (!("schemaVersion" in body.plan)) update = update.is("plan->>schemaVersion", null);
+      const { data, error } = await update.select("plan,version,updated_at").maybeSingle();
       if (error) throw error;
+      if (!data && !("schemaVersion" in body.plan)) {
+        const current = await db.from("account_plans").select("plan").eq("user_id", user.id).maybeSingle();
+        if (current.error) throw current.error;
+        if (current.data?.plan?.schemaVersion === 2) return reply({ error: "새 데이터 형식을 사용하고 있어요. 새로고침 후 다시 시도해주세요." }, 426);
+      }
       return data ? reply(data) : reply({ error: "다른 기기에서 먼저 변경했어요." }, 409);
     }
     return reply({ error: "지원하지 않는 요청이에요." }, 400);

@@ -1,5 +1,6 @@
 import { syncClient } from "./supabase-client";
 import { validPlan } from "../../supabase/functions/_shared/plan";
+import { loadPlan, upgradeStoredPlan } from "../../supabase/functions/_shared/plan-migration";
 import type { Session as AuthSession } from "@supabase/supabase-js";
 const ENDPOINT = "https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync";
 const LOCAL_KEY = "oddk.todo.v1";
@@ -46,12 +47,34 @@ export function subscribePlan(notify: () => void) {
 }
 export function writePlan(plan: unknown) {
   if (!validPlan(plan)) throw new Error("할 일과 시간 설정을 확인해주세요.");
-  const value = JSON.stringify(plan);
+  const loaded = loadPlan(JSON.stringify(plan));
+  if (!loaded.ok) throw new Error(loaded.error);
+  const value = JSON.stringify(loaded.plan);
   const s = session();
+  const key = s ? cacheKey(s) : LOCAL_KEY;
+  const oldRaw = s ? cache(s).plan : localStorage.getItem(LOCAL_KEY);
+  if (oldRaw !== null) {
+    const old = loadPlan(oldRaw);
+    if (!old.ok) throw new Error(old.error);
+    if (old.migrated && localStorage.getItem(`${key}.before-v2`) === null) localStorage.setItem(`${key}.before-v2`, oldRaw);
+    localStorage.setItem(`${key}.last-valid`, JSON.stringify(old.plan));
+  } else localStorage.setItem(`${key}.last-valid`, value);
   if (s) { const before = cache(s); localStorage.setItem(cacheKey(s), JSON.stringify({ ...before, plan: value, dirty: true })); }
   else localStorage.setItem(LOCAL_KEY, value);
   changed();
   if (s && !conflict) { status(s, "waiting", "기기에 저장됨 · 동기화 대기"); clearTimeout(timer); timer = setTimeout(() => { void syncNow(); }, 400); }
+}
+export function restoreLastValidPlan() {
+  const s = session();
+  const key = s ? cacheKey(s) : LOCAL_KEY;
+  const backup = localStorage.getItem(`${key}.last-valid`) ?? localStorage.getItem(`${key}.before-v2`);
+  const result = backup ? loadPlan(backup) : null;
+  if (!result?.ok) throw new Error("이 기기에 정상 저장본이 없어요. 원본 백업 파일을 보관해주세요.");
+  const raw = s ? cache(s).plan : localStorage.getItem(LOCAL_KEY);
+  if (raw !== null) localStorage.setItem(`${key}.recovery-original.${Date.now()}`, raw);
+  if (s) localStorage.setItem(key, JSON.stringify({ ...cache(s), plan: JSON.stringify(result.plan), dirty: true }));
+  else localStorage.setItem(key, JSON.stringify(result.plan));
+  changed();
 }
 export async function syncNow() {
   if (busy || conflict) return;
@@ -97,6 +120,13 @@ export async function syncNow() {
 }
 export function startSync(fallback: string) {
   if (stop) return () => {};
+  try {
+    const upgraded = upgradeStoredPlan(localStorage, LOCAL_KEY);
+    if (upgraded?.ok && upgraded.migrated) changed();
+  } catch {
+    publish({ ...INITIAL, phase: "error", message: "형식을 이전하지 못했어요. 원본은 보존돼 있어요. 저장 공간을 확인해주세요." });
+    return () => {};
+  }
   const check = () => { if (document.visibilityState === "visible") void syncNow(); };
   const storage = (event: StorageEvent) => { if (event.key === SESSION_KEY) { conflict = null; if (!session()) publish(INITIAL); check(); changed(); } };
   const interval = setInterval(check, 5000);
