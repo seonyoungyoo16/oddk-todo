@@ -30,10 +30,12 @@ test("invalid plans cannot mutate local storage or notify subscribers", () => {
   assert.throws(() => exports.writePlan({ ...plan, tasks: [{ id: "x", title: "Synthetic", done: false, priority: "normal", minutes: 25, bufferMinutes: 30, startTime: null }] }));
   assert.equal(values.get("oddk.todo.v1"), before);
   assert.equal(notifications, 1);
+  exports.writePlan({ ...plan, review: "Latest validated content" });
+  const latest = values.get("oddk.todo.v1");
   values.set("oddk.todo.v1", "{");
   assert.throws(() => exports.writePlan(plan));
   assert.equal(values.get("oddk.todo.v1"), "{");
   exports.restoreLastValidPlan();
-  assert.equal(values.get("oddk.todo.v1"), before);
+  assert.equal(values.get("oddk.todo.v1"), latest);
   assert.ok([...values.entries()].some(([key, raw]) => key.startsWith("oddk.todo.v1.recovery-original.") && raw === "{"));
 });

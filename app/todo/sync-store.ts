@@ -57,8 +57,9 @@ export function writePlan(plan: unknown) {
     const old = loadPlan(oldRaw);
     if (!old.ok) throw new Error(old.error);
     if (old.migrated && localStorage.getItem(`${key}.before-v2`) === null) localStorage.setItem(`${key}.before-v2`, oldRaw);
-    localStorage.setItem(`${key}.last-valid`, JSON.stringify(old.plan));
-  } else localStorage.setItem(`${key}.last-valid`, value);
+  }
+  // Keep the validated candidate durable before replacing the visible snapshot.
+  localStorage.setItem(`${key}.last-valid`, value);
   if (s) { const before = cache(s); localStorage.setItem(cacheKey(s), JSON.stringify({ ...before, plan: value, dirty: true })); }
   else localStorage.setItem(LOCAL_KEY, value);
   changed();
