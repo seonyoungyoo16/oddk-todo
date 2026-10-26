@@ -9,16 +9,17 @@ globalThis.BroadcastChannel = undefined;
 mkdirSync(new URL("../.sync-test-runtime/", import.meta.url), { recursive: true });
 for (const name of ["supabase-client", "sync-store"]) {
   const source = readFileSync(new URL(`../app/todo/${name}.ts`, import.meta.url), "utf8");
-  const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText.replace('"./supabase-client"', '"./supabase-client.mjs"').replace('"../../supabase/functions/_shared/plan"', '"../supabase/functions/_shared/plan.ts"');
+  const configuredSource = source.replaceAll("https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync", `https://synxmskamifpovuziecx.supabase.co/functions/v1/${process.env.ODDK_TEST_EDGE_FUNCTION ?? "plan-sync"}`);
+  const js = ts.transpileModule(configuredSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText.replace('"./supabase-client"', '"./supabase-client.mjs"').replace('"../../supabase/functions/_shared/plan"', '"../supabase/functions/_shared/plan.ts"');
   writeFileSync(new URL(`../.sync-test-runtime/${name}.mjs`, import.meta.url), js);
 }
 const store = await import("../.sync-test-runtime/sync-store.mjs");
 const { syncClient } = await import("../.sync-test-runtime/supabase-client.mjs");
 const users = JSON.parse(readFileSync(new URL("../.sync-auth-fixture.json", import.meta.url), "utf8"));
-const initial = JSON.parse(readFileSync(new URL("../app/todo/initial-plan.json", import.meta.url), "utf8"));
+const initial = { tasks: [], start: "09:00" };
 const fallback = JSON.stringify(initial);
 const originalFetch = fetch;
-const endpoint = "https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync";
+const endpoint = `https://synxmskamifpovuziecx.supabase.co/functions/v1/${process.env.ODDK_TEST_EDGE_FUNCTION ?? "plan-sync"}`;
 async function api(action, body, token) {
   const response = await originalFetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ action, ...body }) });
   assert.equal(response.status, 200); return response.json();

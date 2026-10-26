@@ -47,3 +47,4 @@ design-qa.md
 .sync-test-cleanup.json
 .sync-auth-fixture.json
 .sync-test-runtime/
+supabase/.temp/

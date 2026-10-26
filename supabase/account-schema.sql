@@ -5,9 +5,7 @@ create table public.account_plans (
   updated_at timestamptz not null default now()
 );
 alter table public.account_plans enable row level security;
-revoke all on public.account_plans from anon;
-grant select, insert, update on public.account_plans to authenticated;
+revoke all on public.account_plans from public, anon, authenticated;
+grant select on public.account_plans to authenticated;
 grant all on public.account_plans to service_role;
 create policy "Read own plan" on public.account_plans for select to authenticated using ((select auth.uid()) = user_id);
-create policy "Create own plan" on public.account_plans for insert to authenticated with check ((select auth.uid()) = user_id);
-create policy "Update own plan" on public.account_plans for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
