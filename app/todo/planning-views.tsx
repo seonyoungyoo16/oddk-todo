@@ -5,6 +5,7 @@ import { HiOutlineArrowRight, HiOutlineCheck } from "react-icons/hi2";
 
 import type { Task, Mandala } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, validMandala } from "../../supabase/functions/_shared/plan";
+import type { DayPlan } from "./day-selectors";
 const emptyMandala = (): Mandala => ({ goal: "", areas: Array.from({ length: 8 }, () => ({ title: "", taskIds: Array(8).fill("") })) });
 export function safeMandala(value: Mandala | undefined): Mandala {
   return validMandala(value) ? value : emptyMandala();
@@ -46,9 +47,10 @@ export function MandalaView({ tasks, draft, dirty, onChange, onSave, onEdit, onL
   </section>;
 }
 
-export function AlpenView({ tasks, review, onReview, onEdit, onList, onRhythm, selectedTaskId }: { tasks: Task[]; review: string; onReview: (text: string) => boolean; onEdit: (task: Task) => void; onList: () => void; onRhythm: () => void; selectedTaskId: string | null }) {
+export function AlpenView({ day, review, onReview, onEdit, onList, onRhythm, selectedTaskId }: { day: DayPlan; review: string; onReview: (text: string) => boolean; onEdit: (task: Task) => void; onList: () => void; onRhythm: () => void; selectedTaskId: string | null }) {
   const [note, setNote] = useState(review);
   const [message, setMessage] = useState("");
+  const { tasks, active, activeTotal: total, activeBuffer: buffer } = day;
   const selectedTask = tasks.find((task) => task.id === selectedTaskId);
   const selectedButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -56,18 +58,14 @@ export function AlpenView({ tasks, review, onReview, onEdit, onList, onRhythm, s
     const frame = requestAnimationFrame(() => { selectedButton.current?.focus(); selectedButton.current?.scrollIntoView({ block: "nearest" }); });
     return () => cancelAnimationFrame(frame);
   }, [selectedTaskId]);
-  const active = tasks.filter((task) => !task.done);
-  const timed = active.filter(validTime);
-  const total = timed.reduce((sum, task) => sum + task.minutes!, 0);
-  const buffer = timed.reduce((sum, task) => sum + task.bufferMinutes!, 0);
   return <section className="oddk-planningView" aria-labelledby="alpen-title">
     <h2 id="alpen-title" className="oddk-srOnly">알펜 계획</h2>
     {selectedTask && <div className="oddk-alpenSelected"><div><small>이어서 계획할 일{selectedTask.done ? " · 완료" : ""}</small><strong>{selectedTask.title}</strong><span>{validTime(selectedTask) ? `작업 ${selectedTask.minutes! - selectedTask.bufferMinutes!}분 + 여유 ${selectedTask.bufferMinutes}분` : "작업·여유 시간을 설정해주세요."}</span></div><button ref={selectedButton} type="button" onClick={() => onEdit(selectedTask)}>시간·우선순위 수정<HiOutlineArrowRight aria-hidden="true" /></button></div>}
     <div className="oddk-alpenGrid">
-      <article><span className="oddk-step">A</span><h3>할 일 모으기</h3><p>진행 중 {active.length}개 · 완료 {tasks.length - active.length}개</p><button type="button" onClick={onList}>목록에서 추가하기<HiOutlineArrowRight /></button></article>
-      <article><span className="oddk-step">L</span><h3>소요 시간 정하기</h3><p>계획한 수행 시간 <strong>{total}분</strong></p>{active.filter((task) => !validTime(task)).length > 0 && <p>시간을 정하지 않은 일 {active.length - timed.length}개</p>}<small>아래 할 일을 눌러 시간을 설정하세요.</small></article>
-      <article><span className="oddk-step">P</span><h3>여유 확보하기</h3><p>작업 {total - buffer}분 + 여유 <strong>{buffer}분</strong></p><small>입력한 여유는 수행 시간에 포함돼요.</small></article>
-      <article><span className="oddk-step">E</span><h3>우선순위와 시간 배치</h3><p>우선순위 높음 {active.filter((task) => task.priority === "high").length}개 · 배치 완료 {timed.filter((task) => task.startTime).length}개</p><button type="button" onClick={onRhythm}>시간표 확인하기<HiOutlineArrowRight /></button></article>
+      <article><span className="oddk-step">A</span><h3>할 일 모으기</h3><p>진행 중 {active.length}개 · 완료 {day.completedCount}개</p><button type="button" onClick={onList}>목록에서 추가하기<HiOutlineArrowRight /></button></article>
+      <article><span className="oddk-step">L</span><h3>소요 시간 정하기</h3><p>계획한 수행 시간 <strong>{total}분</strong></p>{day.activeUntimedCount > 0 && <p>시간을 정하지 않은 일 {day.activeUntimedCount}개</p>}<small>아래 할 일을 눌러 시간을 설정하세요.</small></article>
+      <article><span className="oddk-step">P</span><h3>여유 확보하기</h3><p>작업 {day.activeWork}분 + 여유 <strong>{buffer}분</strong></p><small>입력한 여유는 수행 시간에 포함돼요.</small></article>
+      <article><span className="oddk-step">E</span><h3>우선순위와 시간 배치</h3><p>우선순위 높음 {day.highPriorityCount}개 · 배치 완료 {day.scheduled.length}개</p><button type="button" onClick={onRhythm}>시간표 확인하기<HiOutlineArrowRight /></button></article>
     </div>
     <h3 className="oddk-viewSubheading">실행할 일</h3>
     {active.length ? <ul className="oddk-planTaskList">{[...active].sort((a, b) => ["high", "normal", "low"].indexOf(a.priority) - ["high", "normal", "low"].indexOf(b.priority)).map((task) => <li key={task.id}><button type="button" onClick={() => onEdit(task)}><strong>{task.title}</strong><span>{labels[task.priority]} · {validTime(task) ? `작업 ${task.minutes! - task.bufferMinutes!} + 여유 ${task.bufferMinutes}분` : "시간 설정"} · {task.startTime || "시작 시간 설정"}</span></button></li>)}</ul> : <p className="oddk-viewEmpty">진행 중인 일이 없어요. 목록에서 할 일을 추가해주세요.</p>}
@@ -75,16 +73,13 @@ export function AlpenView({ tasks, review, onReview, onEdit, onList, onRhythm, s
   </section>;
 }
 
-export function TimeStatsView({ tasks }: { tasks: Task[] }) {
-  const timed = tasks.filter(validTime);
-  const total = timed.reduce((sum, task) => sum + task.minutes!, 0);
-  const buffer = timed.reduce((sum, task) => sum + task.bufferMinutes!, 0);
-  const done = timed.filter((task) => task.done).reduce((sum, task) => sum + task.minutes!, 0);
+export function TimeStatsView({ day }: { day: DayPlan }) {
+  const { tasks, total, buffer, completedMinutes: done } = day;
   return <section className="oddk-planningView" aria-labelledby="stats-title"><h2 id="stats-title" className="oddk-srOnly">일일 시간통계</h2>
     <div className="oddk-viewContext"><span className="oddk-contextBadge">계획 시간 기준</span><span>선택 날짜 기준 · 완료 포함 · 실제 측정 시간 제외</span></div>
-    <div className="oddk-statCards">{[["총 수행", total], ["작업", total - buffer], ["여유", buffer], ["완료한 일의 계획 시간", done]].map(([label, value]) => <article key={label}><span>{label}</span><strong>{value}<small>분</small></strong></article>)}</div>
+    <div className="oddk-statCards">{[["총 계획 시간", total], ["작업", day.work], ["여유", buffer], ["완료한 일의 계획 시간", done]].map(([label, value]) => <article key={label}><span>{label}</span><strong>{value}<small>분</small></strong></article>)}</div>
     <h3 className="oddk-viewSubheading">작업과 여유의 비율</h3>{total ? <><div className="oddk-statRatio" role="img" aria-label={`작업 ${total - buffer}분, 여유 ${buffer}분`}><span style={{ width: `${(total - buffer) / total * 100}%` }} /><span style={{ width: `${buffer / total * 100}%` }} /></div><p>작업 {Math.round((total - buffer) / total * 100)}% · 여유 {Math.round(buffer / total * 100)}%</p></> : <p className="oddk-viewEmpty">할 일에 시간을 설정하면 통계가 표시돼요.</p>}
-    <h3 className="oddk-viewSubheading">우선순위별 계획 시간</h3><div className="oddk-statPriorities">{(["high", "normal", "low"] as const).map((priority) => { const minutes = timed.filter((task) => task.priority === priority).reduce((sum, task) => sum + task.minutes!, 0); return <div key={priority}><span>{labels[priority]}</span><progress aria-label={`${labels[priority]} 우선순위 계획 시간`} value={minutes} max={total || 1} /><strong>{minutes}분</strong></div>; })}</div>
-    <p>완료 {tasks.filter((task) => task.done).length} / 전체 {tasks.length}개 · 시간 미설정 {tasks.length - timed.length}개</p>
+    <h3 className="oddk-viewSubheading">우선순위별 계획 시간</h3><div className="oddk-statPriorities">{(["high", "normal", "low"] as const).map((priority) => { const minutes = day.byPriority[priority]; return <div key={priority}><span>{labels[priority]}</span><progress aria-label={`${labels[priority]} 우선순위 계획 시간`} value={minutes} max={total || 1} /><strong>{minutes}분</strong></div>; })}</div>
+    <p>완료 {day.completedCount} / 전체 {tasks.length}개 · 시간 미설정 {day.untimedCount}개</p>
   </section>;
 }

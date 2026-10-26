@@ -10,7 +10,8 @@ import "./todo.css";
 import "./task-editor.css";
 import { TaskTimeFields } from "./task-time-fields";
 import { parseTaskTimeDraft, workFromStoredTime } from "./task-time";
-import { layoutTimeline } from "./timeline";
+import { layoutTimeline, clockMinutes, clockLabel } from "./timeline";
+import { selectDay } from "./day-selectors";
 import { MandalaView, AlpenView, TimeStatsView, safeMandala } from "./planning-views";
 import type { Mandala, Plan, Task, Priority } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, isClock, isPlanDate, validPlan } from "../../supabase/functions/_shared/plan";
@@ -73,16 +74,6 @@ function subscribeToday(notify: () => void) {
   const timer = window.setInterval(notify, 60000);
   document.addEventListener("visibilitychange", notify);
   return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", notify); };
-}
-
-function clockMinutes(time: string) {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-}
-
-function clockLabel(minutes: number) {
-  const clock = `${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
-  return minutes >= 1440 ? `다음 날 ${clock}` : clock;
 }
 
 function SelectionCheckbox({ label, checked, mixed = false, round = false, disabled = false, onChange, id }: {
@@ -156,16 +147,10 @@ export default function Todo() {
 
   const active = plan.tasks.filter((task) => !task.done);
   const doneCount = plan.tasks.length - active.length;
-  const dayTasks = plan.tasks.filter((task) => task.plannedDate === planDate);
-  const dayActive = dayTasks.filter((task) => !task.done);
-  const timedTasks = dayActive.filter(hasTime);
-  const workMinutes = timedTasks.reduce((sum, task) => sum + task.minutes, 0);
-  const bufferMinutes = timedTasks.reduce((sum, task) => sum + task.bufferMinutes, 0);
-  const noKnownTimes = dayActive.length > 0 && timedTasks.length === 0;
+  const day = useMemo(() => selectDay(plan.tasks, planDate), [plan.tasks, planDate]);
+  const noKnownTimes = day.active.length > 0 && day.timedActive.length === 0;
   const progress = plan.tasks.length ? Math.round(doneCount / plan.tasks.length * 100) : 0;
-  const rhythmTasks = timedTasks.filter((task) => task.startTime !== null)
-    .map((task) => ({ ...task, start: clockMinutes(task.startTime!), end: clockMinutes(task.startTime!) + task.minutes }))
-    .sort((a, b) => a.start - b.start);
+  const rhythmTasks = day.scheduled;
   const timeline = layoutTimeline(rhythmTasks);
   const pixelsPerMinute = 3;
   const visibleTasks = plan.tasks
@@ -423,12 +408,12 @@ export default function Todo() {
 
               <aside hidden={view !== "rhythm"} className="oddk-rhythm" aria-labelledby="rhythm-title">
                 <h2 id="rhythm-title" className="oddk-srOnly">오늘의 리듬</h2>
-                <div className="oddk-timeSummary" aria-label="진행 중인 할 일의 설정된 시간">
-                  <div><span>수행</span><strong>{noKnownTimes ? "—" : workMinutes}<small>분</small></strong></div>
-                  <div><span>작업</span><strong>{noKnownTimes ? "—" : workMinutes - bufferMinutes}<small>분</small></strong></div>
-                  <div><span>여유</span><strong>{noKnownTimes ? "—" : bufferMinutes}<small>분</small></strong></div>
+                <div className="oddk-timeSummary" aria-label="선택 날짜의 미완료 업무 계획 시간">
+                  <div><span>수행</span><strong>{noKnownTimes ? "—" : day.activeTotal}<small>분</small></strong></div>
+                  <div><span>작업</span><strong>{noKnownTimes ? "—" : day.activeWork}<small>분</small></strong></div>
+                  <div><span>여유</span><strong>{noKnownTimes ? "—" : day.activeBuffer}<small>분</small></strong></div>
                 </div>
-                {rhythmTasks.length === 0 ? <div className="oddk-rhythmEmpty"><HiOutlineClock aria-hidden="true" /><p>목록에서 계획 날짜와<br />시작 시간을 정해주세요.</p></div> : <>
+                {rhythmTasks.length === 0 ? <div className="oddk-rhythmEmpty"><HiOutlineClock aria-hidden="true" /><p>{day.tasks.length > 0 && day.active.length === 0 ? "선택한 날짜의 할 일을 모두 마쳤어요." : day.active.length > 0 ? "할 일에 작업·여유 시간과 시작 시간을 정해주세요." : "목록에서 계획 날짜와 시작 시간을 정해주세요."}</p></div> : <>
                   <div className="oddk-timelineLegend" aria-label="시간표 구분"><span><i />작업</span><span><i />여유</span></div>
                   <div className="oddk-timelineScroll" tabIndex={0} role="region" aria-label={`${planDate} 시간표. 일정을 누르면 수정할 수 있어요.`}>
                     <div className="oddk-timeline" style={{ height: (timeline.end - timeline.start) * pixelsPerMinute + 24, minWidth: 62 + timeline.columns * 84 }}>
@@ -461,8 +446,8 @@ export default function Todo() {
                 <p className="oddk-rhythmNote"><GoDotFill aria-hidden="true" />여유도 계획의 일부예요.</p>
               </aside>
               <div hidden={view !== "mandala"}><MandalaView tasks={plan.tasks} draft={mandala} dirty={mandalaDraft !== null} onChange={setMandalaDraft} onSave={(mandala) => { const saved = save({ ...plan, mandala }, "만다라트를 저장했어요."); if (saved) setMandalaDraft(null); return saved; }} onEdit={openEditor} onList={() => changeView("list")} /></div>
-              <div hidden={view !== "alpen"}><AlpenView key={JSON.stringify(plan.review) ?? "new-review"} tasks={dayTasks} review={typeof plan.review === "string" ? plan.review : ""} onReview={(review) => save({ ...plan, review }, "날짜 없는 점검을 저장했어요.")} onEdit={openEditor} onList={() => changeView("list")} onRhythm={() => changeView("rhythm")} selectedTaskId={view === "alpen" ? alpenTaskId : null} /></div>
-              <div hidden={view !== "stats"}><TimeStatsView tasks={dayTasks} /></div>
+              <div hidden={view !== "alpen"}><AlpenView key={JSON.stringify(plan.review) ?? "new-review"} day={day} review={typeof plan.review === "string" ? plan.review : ""} onReview={(review) => save({ ...plan, review }, "날짜 없는 점검을 저장했어요.")} onEdit={openEditor} onList={() => changeView("list")} onRhythm={() => changeView("rhythm")} selectedTaskId={view === "alpen" ? alpenTaskId : null} /></div>
+              <div hidden={view !== "stats"}><TimeStatsView day={day} /></div>
             </div>
           </main>
         </div>

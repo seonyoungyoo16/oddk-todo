@@ -1,5 +1,15 @@
 type Interval = { id: string; start: number; end: number };
 
+export function clockMinutes(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+export function clockLabel(minutes: number) {
+  const clock = `${String(Math.floor(minutes / 60) % 24).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+  return minutes >= 1440 ? `다음 날 ${clock}` : clock;
+}
+
 // 같은 날 시작하는 일정의 구간을 비교한다. 자정 이후 종료도 연속된 분으로 유지한다.
 export function layoutTimeline<T extends Interval>(intervals: T[]) {
   const sorted = [...intervals].sort((a, b) => a.start - b.start || a.end - b.end);
