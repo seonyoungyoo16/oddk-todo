@@ -7,7 +7,7 @@ import {
 
 test("work 25 + buffer 5 persists as total 30, and reopens as work 25", () => {
   const draft = parseTaskTimeDraft("25", "5");
-  assert.deepEqual(draft, { minutes: 31, bufferMinutes: 5, error: "" });
+  assert.deepEqual(draft, { minutes: 30, bufferMinutes: 5, error: "" });
   assert.equal(workFromStoredTime(draft.minutes, draft.bufferMinutes), "25");
 });
 test("an existing total 60 with buffer 10 reopens without changing its duration", () => {
