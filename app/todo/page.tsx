@@ -12,14 +12,12 @@ import { TaskTimeFields } from "./task-time-fields";
 import { parseTaskTimeDraft, workFromStoredTime } from "./task-time";
 import { layoutTimeline } from "./timeline";
 import { MandalaView, AlpenView, TimeStatsView, safeMandala } from "./planning-views";
-import type { Mandala } from "./planning-views";
+import type { Mandala, Plan, Task, Priority } from "../../supabase/functions/_shared/plan";
+import { hasTaskTime, isClock, validPlan } from "../../supabase/functions/_shared/plan";
 import initialPlan from "./initial-plan.json";
 import { SyncPanel } from "./sync-panel";
 import { getPlanSnapshot, subscribePlan, writePlan } from "./sync-store";
 
-type Priority = "high" | "normal" | "low";
-type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean };
-type Plan = { tasks: Task[]; start: string; mandala?: Mandala; review?: string };
 type View = "list" | "rhythm" | "mandala" | "alpen" | "stats";
 const views: Array<{ id: View; label: string }> = [
   { id: "list", label: "할 일 리스트" }, { id: "rhythm", label: "오늘의 리듬" },
@@ -87,10 +85,7 @@ function readPlan(snapshot: string): Plan {
   } catch { return EMPTY_PLAN; }
 }
 
-function hasTime(task: Task): task is Task & { minutes: number; bufferMinutes: number } {
-  return task.minutes !== null && task.bufferMinutes !== null && task.minutes >= 2 &&
-    task.bufferMinutes >= 1 && task.bufferMinutes < task.minutes;
-}
+const hasTime = hasTaskTime;
 
 function clockMinutes(time: string) {
   const [hours, minutes] = time.split(":").map(Number);
@@ -205,6 +200,7 @@ export default function Todo() {
   }
 
   function save(next: Plan, message: string) {
+    if (!validPlan(next)) { setError("할 일과 시간 설정을 확인해주세요."); return false; }
     try {
       writePlan(next);
       setError("");
@@ -311,7 +307,7 @@ export default function Todo() {
     if (!title) { setEditError("수정할 내용을 입력해주세요."); return; }
     if (timeError) { setEditError(timeError); return; }
     if (editStart && duration === null) { setEditError("시작 시간을 설정하려면 작업 시간과 여유 시간을 먼저 입력해주세요."); return; }
-    if (editStart && !/^([01]\d|2[0-3]):[0-5]\d$/.test(editStart)) { setEditError("시작 시간을 올바르게 입력해주세요."); return; }
+    if (editStart && !isClock(editStart)) { setEditError("시작 시간을 올바르게 입력해주세요."); return; }
     if (!editDone && plan.tasks.some((item) => item.id !== task.id && !item.done && item.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
       setEditError("같은 내용의 할 일이 이미 있어요."); return;
     }

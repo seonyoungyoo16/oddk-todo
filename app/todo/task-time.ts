@@ -1,3 +1,5 @@
+import { hasTaskTime, validTaskTime } from "../../supabase/functions/_shared/plan.ts";
+
 export type TaskTimeDraft = {
   minutes: number | null;
   bufferMinutes: number | null;
@@ -23,7 +25,7 @@ export function parseTaskTimeDraft(
     return { ...empty, error: "여유 시간은 1분 이상의 정수로 입력해주세요." };
   }
   const minutes = workMinutes + bufferMinutes;
-  if (minutes > 240) {
+  if (!validTaskTime(minutes, bufferMinutes)) {
     return {
       ...empty,
       error: "작업 시간과 여유 시간의 합계는 240분 이하여야 해요.",
@@ -36,5 +38,6 @@ export function workFromStoredTime(
   minutes: number | null,
   bufferMinutes: number | null,
 ): string {
-  return minutes === null ? "" : String(minutes - (bufferMinutes ?? 0));
+  const time = { minutes, bufferMinutes };
+  return hasTaskTime(time) ? String(time.minutes - time.bufferMinutes) : "";
 }
