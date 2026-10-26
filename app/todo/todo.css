@@ -439,3 +439,15 @@
 .oddk-recoveryActions button { padding: 10px 14px; border: 1px solid #cbd4e5; border-radius: 6px; cursor: pointer; }
 .oddk-recoveryActions button:focus-visible { outline: 2px solid #496dcc; outline-offset: 3px; }
 .oddk-recovery[data-theme="dark"] .oddk-recoveryCard { background: #171f2e; color: #e2e7f1; border-color: #344057; }
+.oddk-dateToolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin-top: 24px; }
+.oddk-dateToolbar label { display: grid; gap: 6px; font-size: 13px; }
+.oddk-dateToolbar input, .oddk-editorDate input { min-height: 40px; padding: 8px 10px; border: 1px solid var(--oddk-border, #dbe2ee); border-radius: 6px; background: var(--oddk-surface, #fff); color: inherit; }
+.oddk-dateToolbar button, .oddk-editorDate button { min-height: 40px; padding: 8px 12px; border: 1px solid var(--oddk-border, #dbe2ee); border-radius: 6px; }
+.oddk-dateToolbar > span, .oddk-intro .oddk-dateGuide { font-size: 12px; color: #76859a; }
+.oddk-dateToolbar > span { padding-bottom: 10px; }
+.oddk-editorDate { display: grid; gap: 8px; }
+.oddk-editorDate > div { display: flex; gap: 8px; }
+.oddk-editorDate small { font-size: 12px; color: #76859a; line-height: 1.6; }
+.oddk-editorDate input { background: var(--edit-surface, #fff); color: var(--edit-heading, #243047); border-color: var(--edit-border, #dbe2ee); }
+.oddk-editorDate button { color: var(--edit-heading, #243047); border-color: var(--edit-border, #dbe2ee); }
+.oddk-taskDate { font-size: 11px; color: #76859a; }

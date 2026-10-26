@@ -13,7 +13,8 @@ import { parseTaskTimeDraft, workFromStoredTime } from "./task-time";
 import { layoutTimeline } from "./timeline";
 import { MandalaView, AlpenView, TimeStatsView, safeMandala } from "./planning-views";
 import type { Mandala, Plan, Task, Priority } from "../../supabase/functions/_shared/plan";
-import { hasTaskTime, isClock, validPlan } from "../../supabase/functions/_shared/plan";
+import { hasTaskTime, isClock, isPlanDate, validPlan } from "../../supabase/functions/_shared/plan";
+import { koreanToday } from "./plan-date";
 import { loadPlan } from "../../supabase/functions/_shared/plan-migration";
 import initialPlan from "./initial-plan.json";
 import { SyncPanel } from "./sync-panel";
@@ -68,6 +69,12 @@ function getThemeSnapshot() {
 
 const hasTime = hasTaskTime;
 
+function subscribeToday(notify: () => void) {
+  const timer = window.setInterval(notify, 60000);
+  document.addEventListener("visibilitychange", notify);
+  return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", notify); };
+}
+
 function clockMinutes(time: string) {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
@@ -93,12 +100,17 @@ export default function Todo() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_SNAPSHOT);
   const planLoad = useMemo(() => loadPlan(snapshot), [snapshot]);
   const plan = planLoad.ok ? planLoad.plan : EMPTY_PLAN;
+  const today = useSyncExternalStore(subscribeToday, koreanToday, () => "");
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const planDate = selectedDate ?? today;
   const savedTheme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "light");
   const [themeOverride, setThemeOverride] = useState<"light" | "dark" | null>(null);
   const theme = themeOverride ?? savedTheme;
   const [input, setInput] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [view, setView] = useState<View>("list");
+  const datedView = view === "rhythm" || view === "alpen" || view === "stats";
+  const headerTitle = datedView && !planDate ? "계획할 날짜를 선택해주세요." : datedView && planDate !== today ? `${planDate} · ${viewHeaders[view].title.replaceAll("오늘의 ", "").replaceAll("오늘 ", "")}` : viewHeaders[view].title;
   const [selectionMode, setSelectionMode] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<{ message: string } | null>(null);
@@ -107,6 +119,7 @@ export default function Todo() {
   const [editWork, setEditWork] = useState("");
   const [editBuffer, setEditBuffer] = useState("");
   const [editStart, setEditStart] = useState("");
+  const [editDate, setEditDate] = useState("");
   const [editPriority, setEditPriority] = useState<Priority>("normal");
   const [editDone, setEditDone] = useState(false);
   const [editError, setEditError] = useState("");
@@ -143,10 +156,12 @@ export default function Todo() {
 
   const active = plan.tasks.filter((task) => !task.done);
   const doneCount = plan.tasks.length - active.length;
-  const timedTasks = active.filter(hasTime);
+  const dayTasks = plan.tasks.filter((task) => task.plannedDate === planDate);
+  const dayActive = dayTasks.filter((task) => !task.done);
+  const timedTasks = dayActive.filter(hasTime);
   const workMinutes = timedTasks.reduce((sum, task) => sum + task.minutes, 0);
   const bufferMinutes = timedTasks.reduce((sum, task) => sum + task.bufferMinutes, 0);
-  const noKnownTimes = active.length > 0 && timedTasks.length === 0;
+  const noKnownTimes = dayActive.length > 0 && timedTasks.length === 0;
   const progress = plan.tasks.length ? Math.round(doneCount / plan.tasks.length * 100) : 0;
   const rhythmTasks = timedTasks.filter((task) => task.startTime !== null)
     .map((task) => ({ ...task, start: clockMinutes(task.startTime!), end: clockMinutes(task.startTime!) + task.minutes }))
@@ -272,6 +287,7 @@ export default function Todo() {
     setEditWork(workFromStoredTime(task.minutes, task.bufferMinutes));
     setEditBuffer(task.bufferMinutes === null ? "" : String(task.bufferMinutes));
     setEditStart(task.startTime ?? "");
+    setEditDate(task.plannedDate ?? "");
     setEditPriority(task.priority);
     setEditDone(task.done);
     setEditLinks(mandala.areas.flatMap((area, a) => area.taskIds.flatMap((id, c) => id === task.id ? [`${a}:${c}`] : [])));
@@ -289,6 +305,7 @@ export default function Todo() {
     const { minutes: duration, bufferMinutes: buffer, error: timeError } = editTime;
     if (!title) { setEditError("수정할 내용을 입력해주세요."); return; }
     if (timeError) { setEditError(timeError); return; }
+    if (editDate && !isPlanDate(editDate)) { setEditError("계획 날짜를 올바르게 선택해주세요."); return; }
     if (editStart && duration === null) { setEditError("시작 시간을 설정하려면 작업 시간과 여유 시간을 먼저 입력해주세요."); return; }
     if (editStart && !isClock(editStart)) { setEditError("시작 시간을 올바르게 입력해주세요."); return; }
     if (!editDone && plan.tasks.some((item) => item.id !== task.id && !item.done && item.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
@@ -304,7 +321,7 @@ export default function Todo() {
     if (occupied) { setEditError("선택한 실행 칸에 다른 할 일이 있어요. 빈 칸을 선택해주세요."); return; }
     const nextMandala = linksChanged ? { ...mandala, areas: mandala.areas.map((area, a) => ({ ...area, taskIds: area.taskIds.map((id, c) => editLinks.includes(`${a}:${c}`) ? task.id : id === task.id ? "" : id) })) } : plan.mandala;
     const destination = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("data-destination");
-    if (save({ ...plan, mandala: nextMandala, tasks: plan.tasks.map((item) => item.id === task.id ? { ...item, title, minutes: duration, bufferMinutes: buffer, startTime: editStart || null, priority: editPriority, done: editDone } : item) }, "내용을 수정했어요.")) {
+    if (save({ ...plan, mandala: nextMandala, tasks: plan.tasks.map((item) => item.id === task.id ? { ...item, title, minutes: duration, bufferMinutes: buffer, startTime: editStart || null, plannedDate: editDate || null, priority: editPriority, done: editDone } : item) }, "내용을 수정했어요.")) {
       if (linksChanged) setMandalaDraft(null);
       setEditingId(null); setSelectedIds(new Set());
       if (destination === "alpen") { setAlpenTaskId(task.id); changeView("alpen"); }
@@ -333,8 +350,10 @@ export default function Todo() {
             <button type="button" className="oddk-themeToggle" onClick={toggleTheme} aria-pressed={theme === "dark"}
               aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"} title={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}><HiOutlineSun aria-hidden="true" /></button>
             <header className="oddk-intro">
-              <h1>{viewHeaders[view].title}</h1>
+              <h1>{headerTitle}</h1>
               <p>{viewHeaders[view].description}</p>
+              {datedView && <div className="oddk-dateToolbar"><label htmlFor="plan-date">계획 날짜<input id="plan-date" type="date" min="0001-01-01" max="9999-12-31" value={planDate} onChange={(event) => setSelectedDate(event.target.value)} /></label><button type="button" disabled={!today} onClick={() => setSelectedDate(today)}>오늘</button><span>한국 시간 기준</span></div>}
+              {datedView && plan.tasks.some((task) => task.plannedDate === null) && <p className="oddk-dateGuide">날짜가 없는 할 일은 시간표·일별 집계에서 제외돼요. 목록을 눌러 계획 날짜를 정해주세요.</p>}
             </header>
 
             <div className="oddk-contentGrid oddk-singleView">
@@ -382,6 +401,7 @@ export default function Todo() {
                           {hasTime(task) ? <>{task.minutes - task.bufferMinutes} / {task.minutes}<small>분</small></> : "시간 미설정"}
                         </span>
                         {task.startTime && <span className="oddk-taskStart"><HiOutlineClock aria-hidden="true" />{task.startTime}</span>}
+                        {task.plannedDate && <time dateTime={task.plannedDate} className="oddk-taskDate">{task.plannedDate}</time>}
                       </span>
                     </button>
                     {task.done && <span className="oddk-doneBadge">완료</span>}
@@ -408,9 +428,9 @@ export default function Todo() {
                   <div><span>작업</span><strong>{noKnownTimes ? "—" : workMinutes - bufferMinutes}<small>분</small></strong></div>
                   <div><span>여유</span><strong>{noKnownTimes ? "—" : bufferMinutes}<small>분</small></strong></div>
                 </div>
-                {rhythmTasks.length === 0 ? <div className="oddk-rhythmEmpty"><HiOutlineClock aria-hidden="true" /><p>진행 중인 일을 눌러<br />시작 시간을 정해주세요.</p></div> : <>
+                {rhythmTasks.length === 0 ? <div className="oddk-rhythmEmpty"><HiOutlineClock aria-hidden="true" /><p>목록에서 계획 날짜와<br />시작 시간을 정해주세요.</p></div> : <>
                   <div className="oddk-timelineLegend" aria-label="시간표 구분"><span><i />작업</span><span><i />여유</span></div>
-                  <div className="oddk-timelineScroll" tabIndex={0} role="region" aria-label="오늘의 시간표. 일정을 누르면 수정할 수 있어요.">
+                  <div className="oddk-timelineScroll" tabIndex={0} role="region" aria-label={`${planDate} 시간표. 일정을 누르면 수정할 수 있어요.`}>
                     <div className="oddk-timeline" style={{ height: (timeline.end - timeline.start) * pixelsPerMinute + 24, minWidth: 62 + timeline.columns * 84 }}>
                       {Array.from({ length: (timeline.end - timeline.start) / 30 + 1 }, (_, index) => {
                         const minute = timeline.start + index * 30;
@@ -441,8 +461,8 @@ export default function Todo() {
                 <p className="oddk-rhythmNote"><GoDotFill aria-hidden="true" />여유도 계획의 일부예요.</p>
               </aside>
               <div hidden={view !== "mandala"}><MandalaView tasks={plan.tasks} draft={mandala} dirty={mandalaDraft !== null} onChange={setMandalaDraft} onSave={(mandala) => { const saved = save({ ...plan, mandala }, "만다라트를 저장했어요."); if (saved) setMandalaDraft(null); return saved; }} onEdit={openEditor} onList={() => changeView("list")} /></div>
-              <div hidden={view !== "alpen"}><AlpenView key={JSON.stringify(plan.review) ?? "new-review"} tasks={plan.tasks} review={typeof plan.review === "string" ? plan.review : ""} onReview={(review) => save({ ...plan, review }, "하루 점검을 저장했어요.")} onEdit={openEditor} onList={() => changeView("list")} onRhythm={() => changeView("rhythm")} selectedTaskId={view === "alpen" ? alpenTaskId : null} /></div>
-              <div hidden={view !== "stats"}><TimeStatsView tasks={plan.tasks} /></div>
+              <div hidden={view !== "alpen"}><AlpenView key={JSON.stringify(plan.review) ?? "new-review"} tasks={dayTasks} review={typeof plan.review === "string" ? plan.review : ""} onReview={(review) => save({ ...plan, review }, "날짜 없는 점검을 저장했어요.")} onEdit={openEditor} onList={() => changeView("list")} onRhythm={() => changeView("rhythm")} selectedTaskId={view === "alpen" ? alpenTaskId : null} /></div>
+              <div hidden={view !== "stats"}><TimeStatsView tasks={dayTasks} /></div>
             </div>
           </main>
         </div>
@@ -467,6 +487,7 @@ export default function Todo() {
               </select><HiOutlineChevronDown aria-hidden="true" /></span>
             </label>
           </div>
+          <div className="oddk-editorDate"><label className="oddk-dialogField" htmlFor="edit-date">계획 날짜<input id="edit-date" type="date" min="0001-01-01" max="9999-12-31" value={editDate} onChange={(event) => { setEditDate(event.target.value); setEditError(""); }} aria-describedby="edit-date-guide" /></label><div><button type="button" disabled={!today} onClick={() => setEditDate(today)}>오늘로 지정</button><button type="button" disabled={!editDate} onClick={() => setEditDate("")}>날짜 해제</button></div><small id="edit-date-guide">{editDate ? "이 날짜의 시간표·계획·통계에 포함돼요." : "날짜를 정하기 전에는 목록에만 보관해요. 시간 설정은 유지돼요."}</small></div>
           <details open className="oddk-dialogTimes oddk-editorDisclosure">
             <summary><HiOutlineChevronDown aria-hidden="true" /><span>시간 설정</span><span className="oddk-editorOptional">선택</span>
               {(editWork || editBuffer || editStart) && <button type="button" className="oddk-clearTime" aria-label="시간 설정 지우기" title="시간 설정 지우기"
@@ -509,8 +530,8 @@ export default function Todo() {
             <p>연결·해제는 저장할 때 반영돼요.{mandalaDraft && " 목표 변경사항도 함께 저장돼요."}</p>
             </div>
           </details>
-          {editError && <p role="alert" className="oddk-dialogError">{editError}</p>}
           </div>
+          {editError && <p role="alert" className="oddk-dialogError">{editError}</p>}
           <div className="oddk-dialogActions">
             <button type="button" className="oddk-dialogDelete" onClick={() => deleteTask(editingTask)}>삭제</button>
             <button type="button" className="oddk-dialogCancel" onClick={() => setEditingId(null)}>취소</button>

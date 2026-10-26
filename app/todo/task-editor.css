@@ -335,7 +335,10 @@
   color: var(--edit-accent);
 }
 .oddk-taskEditor .oddk-dialogError {
-  margin: 10px 0 18px;
+  flex-shrink: 0;
+  margin: 12px 30px;
+  font-size: 13px;
+  line-height: 1.6;
 }
 .oddk-taskEditor .oddk-dialogActions {
   flex-shrink: 0;
