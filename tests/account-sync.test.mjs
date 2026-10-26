@@ -60,6 +60,10 @@ for (const [body, status] of [["{", 400], ["null", 400], ["[]", 400], ["x".repea
   assert.equal(response.status, status);
   assert.deepEqual(await stored(), unchanged);
 }
+const jsonbLimitPlan = { tasks: Array.from({ length: 4300 }, (_, index) => ({ ...task, id: String(index), title: "x".repeat(120), minutes: null, bufferMinutes: null, startTime: null })), start: "09:00" };
+assert.ok(new TextEncoder().encode(JSON.stringify({ action: "push", plan: jsonbLimitPlan, version: saved.version })).length < 1000000);
+await api("push", { plan: jsonbLimitPlan, version: saved.version }, a.token, 413);
+assert.deepEqual(await stored(), unchanged);
 for (const client of [anonymous, a.client, other.client]) {
   assert.ok((await client.from(table).insert({ user_id: users[0].id, plan: initial })).error);
   assert.ok((await client.from(table).update({ plan: initial }).eq("user_id", users[0].id)).error);
