@@ -18,4 +18,6 @@ Pages 정적 빌드: PowerShell에서 `$env:GITHUB_PAGES='true'` 설정 → `npm
 
 현재 시험은 계정 계획을 쓰므로 반드시 전용 계정에서만 실행한다. 계정 시험은 빈 계정에서 시작하고 두 번째 계정의 격리를 확인한다. 완료 후 테스트 사용자의 세션을 종료하고 해당 테스트 계획과 테스트 계정을 정리한 뒤 fixture 및 `.sync-test-runtime/`을 제거한다. 테스트 계정의 ID와 비밀번호·토큰·실제 업무 내용은 커밋/로그/스크린샷에 넣지 않는다.
 
-DB 직접 쓰기 권한 강화에 따른 기대값 및 잘못된 JSON/400/413/409 불변성 시험은 T03에서 갱신한다. OAuth/두 프로필 전체 인수시험은 T09이며 `npm test` 결과로 대체하지 않는다.
+`account-sync`는 직접 INSERT/UPDATE 차단, 소유자 SELECT, JSON/시간 오류 400, 용량 413, 동시 저장 409와 plan/version/updated_at 불변성을 검사한다. OAuth/두 프로필 전체 인수시험은 T09이며 `npm test` 결과로 대체하지 않는다.
+
+분리 검증은 `ODDK_TEST_EDGE_FUNCTION=plan-sync-t03-verification`, `ODDK_TEST_TABLE=account_plans_t03_verification` 환경 변수를 사용한다. 같은 프로젝트 안의 별도 테이블/Function 환경이므로 운영과 별도 프로젝트라고 표현하지 않는다. 기본값은 운영 함수/테이블이지만 대상 행은 fixture의 전용 테스트 사용자 두 개뿐이다. 시험 전 해당 fixture 사용자에게 남은 테스트 계획만 정리하고, 다른 사용자의 계획은 조회/수정하지 않는다.

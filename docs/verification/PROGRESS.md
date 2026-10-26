@@ -36,3 +36,21 @@
 - 의도적 불변식 실패 확인: 초안 PR #4의 첫 커밋에서 25+5의 기대 총시간을 31로 변경. Actions [40415380326](https://github.com/seonyoungyoo16/oddk-todo/actions/runs/40415380326)의 npm test가 1개 실패로 종료 코드 1, 뒤의 빌드와 배포는 skipped. 운영 master에는 반영하지 않았다.
 - 이 커밋에서 기대값을 30으로 복구했다. 로컬 정상본 시험 12개 및 타입 검사 통과. 인증 fixture 없는 통합 명령은 명시적 안내 후 종료 코드 1이며 시험 미실행이다.
 - ALPEN: 집중 90분+예비30분. T01 배포 확인 후 T02 시작. 정상 CI와 배포 확인 후 다음 단계로 진행한다.
+
+### T02 배포 후 확인 — 완료
+
+- PR #4 병합, SHA `acf974e521bfed7c83b6725c1f701e74bff2865e`.
+- master [40415626608](https://github.com/seonyoungyoo16/oddk-todo/actions/runs/40415626608)에서 검증 → 배포 순서로 성공. deployment `7345576593` 동일 SHA.
+- 배포 화면 새로고침 후 합성 할 일·시간 표시 유지, 콘솔 오류 0. PR/배포 CI의 깨끗한 Node24 체크아웃에서 모든 검사를 실행했다.
+- 관측 실행 구간 약 07:48~07:53 KST. 정밀 집중 시간 계측은 아니며 예산90분 이내. 외부 인증 대기 없음.
+
+## T03 검증 환경 결과
+
+- 잘못된 JSON/요청은400, UTF8 1,000,000바이트 초과는413. ensure와 push 모두 공통 Plan 검증을 먼저 통과한다. 사용자 ID는 검증된 Auth 사용자만 사용하며 version의 안전한 정수 범위를 검사한다.
+- CLI 2.122.0 `supabase migration new restrict_account_plan_writes`로 마이그레이션 파일을 생성했다. owner SELECT/RLS를 유지하고 public/anon/authenticated의 직접 쓰기를 회수한다. service_role 서버 경로를 유지한다. 스키마 파일도 같은 모델로 갱신했다.
+- Docker Desktop은 기존 런타임 소켓 접근 오류로 시작 실패. 컨테이너/VM 초기화나 삭제를 하지 않았고, 이 실행에서 시작한 Docker 프로세스만 종료했다. 런타임 소켓 폴더는 백업 이름으로 보존했다. 이 오류를 애플리케이션 결함으로 분류하지 않는다.
+- 대안: 같은 Supabase 프로젝트의 별도 `account_plans_t03_verification` 테이블과 `plan-sync-t03-verification` 함수, 새로 만든 일회용 테스트 계정 두 개로 격리했다. 별도 프로젝트/로컬 Supabase 검증이라고 표현하지 않는다. 운영 사용자 행은 시험하지 않았다.
+- 격리 환경에서 `npm run test:integration` 두 시험 모두 통과: ensure 동시 생성, 같은 계정의 태스크/만다라트 반영, 기존 서버 보존, 타 계정 격리, owner SELECT, 익명/로그인 직접 INSERT/UPDATE 거부, 400/413에서 plan/version/updated_at 불변, 동시 push 200+409, 본문 user_id 무시, 오프라인·충돌 선택/백업·로그아웃 분리.
+- `npm test` 15개, lint/typecheck, Deno 진입점 검사 통과. PR에서 정적 빌드까지 재검사 후 운영 반영한다.
+- 기존 보안 권고: 유출 비밀번호 보호가 비활성 상태라는 Auth advisor WARN 1개. 이번에 인증 설정을 낮추거나 변경하지 않았으며 [공식 조치 안내](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)를 참조한다.
+- ALPEN: 집중90분+예비30분. T02 배포 확인 뒤 시작, Docker 준비 오류를 기록하고 분리 검증으로 전환했다. 운영 반영 결과와 정리는 이후 기록에 보완한다.
