@@ -71,7 +71,7 @@ export function AlpenView({ tasks, review, onReview, onEdit, onList, onRhythm, s
     </div>
     <h3 className="oddk-viewSubheading">실행할 일</h3>
     {active.length ? <ul className="oddk-planTaskList">{[...active].sort((a, b) => ["high", "normal", "low"].indexOf(a.priority) - ["high", "normal", "low"].indexOf(b.priority)).map((task) => <li key={task.id}><button type="button" onClick={() => onEdit(task)}><strong>{task.title}</strong><span>{labels[task.priority]} · {validTime(task) ? `작업 ${task.minutes! - task.bufferMinutes!} + 여유 ${task.bufferMinutes}분` : "시간 설정"} · {task.startTime || "시작 시간 설정"}</span></button></li>)}</ul> : <p className="oddk-viewEmpty">진행 중인 일이 없어요. 목록에서 할 일을 추가해주세요.</p>}
-    <form className="oddk-review" onSubmit={(event) => { event.preventDefault(); setMessage(onReview(note) ? "하루 점검을 저장했어요." : "저장하지 못했어요. 다시 시도해주세요."); }}><label htmlFor="alpen-review"><span className="oddk-step">N</span>하루 점검<textarea id="alpen-review" maxLength={2000} value={note} onChange={(event) => { setNote(event.target.value); setMessage(""); }} placeholder="끝낸 일, 막힌 이유, 다음에 이어 할 일을 적어보세요." /></label><button className="oddk-primary" type="submit">점검 저장</button><span role="status">{message}</span></form>
+    <form className="oddk-review" onSubmit={(event) => { event.preventDefault(); setMessage(onReview(note) ? "날짜 없는 점검을 저장했어요." : "저장하지 못했어요. 다시 시도해주세요."); }}><label htmlFor="alpen-review"><span className="oddk-step">N</span>날짜 없는 기존 점검<textarea id="alpen-review" maxLength={2000} value={note} onChange={(event) => { setNote(event.target.value); setMessage(""); }} placeholder="끝낸 일, 막힌 이유, 다음에 이어 할 일을 적어보세요." /></label><button className="oddk-primary" type="submit">점검 저장</button><span role="status">{message}</span></form>
   </section>;
 }
 
@@ -81,7 +81,7 @@ export function TimeStatsView({ tasks }: { tasks: Task[] }) {
   const buffer = timed.reduce((sum, task) => sum + task.bufferMinutes!, 0);
   const done = timed.filter((task) => task.done).reduce((sum, task) => sum + task.minutes!, 0);
   return <section className="oddk-planningView" aria-labelledby="stats-title"><h2 id="stats-title" className="oddk-srOnly">일일 시간통계</h2>
-    <div className="oddk-viewContext"><span className="oddk-contextBadge">계획 시간 기준</span><span>현재 목록 기준 · 실제 측정 시간 제외</span></div>
+    <div className="oddk-viewContext"><span className="oddk-contextBadge">계획 시간 기준</span><span>선택 날짜 기준 · 완료 포함 · 실제 측정 시간 제외</span></div>
     <div className="oddk-statCards">{[["총 수행", total], ["작업", total - buffer], ["여유", buffer], ["완료한 일의 계획 시간", done]].map(([label, value]) => <article key={label}><span>{label}</span><strong>{value}<small>분</small></strong></article>)}</div>
     <h3 className="oddk-viewSubheading">작업과 여유의 비율</h3>{total ? <><div className="oddk-statRatio" role="img" aria-label={`작업 ${total - buffer}분, 여유 ${buffer}분`}><span style={{ width: `${(total - buffer) / total * 100}%` }} /><span style={{ width: `${buffer / total * 100}%` }} /></div><p>작업 {Math.round((total - buffer) / total * 100)}% · 여유 {Math.round(buffer / total * 100)}%</p></> : <p className="oddk-viewEmpty">할 일에 시간을 설정하면 통계가 표시돼요.</p>}
     <h3 className="oddk-viewSubheading">우선순위별 계획 시간</h3><div className="oddk-statPriorities">{(["high", "normal", "low"] as const).map((priority) => { const minutes = timed.filter((task) => task.priority === priority).reduce((sum, task) => sum + task.minutes!, 0); return <div key={priority}><span>{labels[priority]}</span><progress aria-label={`${labels[priority]} 우선순위 계획 시간`} value={minutes} max={total || 1} /><strong>{minutes}분</strong></div>; })}</div>
