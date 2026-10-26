@@ -1,7 +1,7 @@
 import { validPlan } from "../_shared/plan.ts";
-import type { Plan } from "../_shared/plan.ts";
+import type { PlanData } from "../_shared/plan.ts";
 
-export type PlanRequest = { action: "pull" } | { action: "ensure"; plan: Plan } | { action: "push"; plan: Plan; version: number };
+export type PlanRequest = { action: "pull" } | { action: "ensure"; plan: PlanData } | { action: "push"; plan: PlanData; version: number };
 export type ParsedRequest = { ok: true; body: PlanRequest } | { ok: false; status: 400 | 413; error: string };
 
 export function parsePlanRequest(text: string): ParsedRequest {

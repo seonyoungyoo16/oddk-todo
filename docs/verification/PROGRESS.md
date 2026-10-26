@@ -54,3 +54,23 @@
 - `npm test` 15개, lint/typecheck, Deno 진입점 검사 통과. PR에서 정적 빌드까지 재검사 후 운영 반영한다.
 - 기존 보안 권고: 유출 비밀번호 보호가 비활성 상태라는 Auth advisor WARN 1개. 이번에 인증 설정을 낮추거나 변경하지 않았으며 [공식 조치 안내](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)를 참조한다.
 - ALPEN: 집중90분+예비30분. T02 배포 확인 뒤 시작, Docker 준비 오류를 기록하고 분리 검증으로 전환했다. 운영 반영 결과와 정리는 이후 기록에 보완한다.
+
+### T03 배포 후 확인 — 완료
+
+- PR #5 병합 SHA `302f47f26d501812e5b103b097dafc3d2153d90f`。 PR 검사 [40417054239](https://github.com/seonyoungyoo16/oddk-todo/actions/runs/40417054239) 성공.
+- 운영 migration `restrict_account_plan_writes` 적용, `plan-sync` ACTIVE version4 배포. authenticated는 owner SELECT만, 쓰기 정책은 제거된 상태를 메타데이터로 재확인했다.
+- 운영에서도 전용 테스트 계정으로 API/저장소 통합시험을 통과했다. JSONB 저장 크기가 원문 요청보다 커지는 경계도413이며 기존 plan/version/updated_at 유지.
+- 적용 전후 및 테스트 계정 정리 후 운영 데이터의 행 수/집계 지문이 같았다. 실제 사용자 내용을 출력하지 않았다. 테스트 사용자·세션·계획 및 분리 테이블은 정리 완료, fixture/생성 실행파일 제거. 분리 함수는 인증 게이트 및410 종료 응답으로 닫았다.
+- Pages [40417310975](https://github.com/seonyoungyoo16/oddk-todo/actions/runs/40417310975) 성공, deployment `7345801024` 동일 SHA. 배포 새로고침 후 기존 합성 목록/시간 유지 및 콘솔 오류0.
+- 관측 구간 약07:53~08:07 KST(정밀 집중 계측 아님), 예산90분 이내. Docker 준비 오류에 약4분을 쓴 뒤 격리 원격 시험으로 전환했다. 원본 사용자 작업 폴더의 세 소스 해시도 시작 시점과 일치했다.
+
+## T04 구현·검증
+
+- Plan `schemaVersion:2`, Task `plannedDate`, `reviewsByDate`를 추가했다. 날짜는 실제 달력 유효성을 검사한다. V1의 ID/제목/완료/시간/시작 시각/목표 참조와 날짜 없는 review를 보존하고 모든 기존 업무 날짜는 null이다.
+- 순수 `loadPlan`으로 읽기/이전 및 계정 캐시 사용 경계를 공유한다. 익명 로컬 이전은 원문 `.before-v2` 보관 후 새 값 저장 순서다. 잘못된 JSON/필수 필드/미래 버전은 원문을 바꾸지 않는다.
+- 저장 전 원문/이전 정상본을 보관한다. 읽기 오류에는 초기 목록 대신 백업/복구 안내를 표시한다. 정상본 복구 전 손상 원문도 별도 키에 보관한다.
+- 단위시험19개, lint/typecheck/정적 빌드 통과. V1→V2 보존/반복 실행/빈 계획/목표 포함, 잘못된 날짜, JSON/미래 버전, 백업 또는 새 값 저장 실패 시 원문 보존을 시험했다.
+- 포트3100의 합성 목록으로 기존 목록 유지 → 손상 JSON 상태 → 복구 안내 → 이전 정상 저장본 복구 → QA 시작 전 목록 복원을 확인했다. 임시 QA 페이지는 삭제했고 배포하지 않는다. 증거 `evidence/T04-recovery.png`.
+- **단계별 배포에 필요한 선행 보호**: 사용자의 각 단계 배포 요청 때문에 T08 중 V2→V1 퇴행 차단만 앞당겼다. V1 push의 UPDATE 자체에 원격 schemaVersion 부재 조건을 걸어 경합에서도 날짜 필드를 지우지 못한다. V2가 있으면426/새로고침 안내다. 나머지 자동 계정 이전·오프라인/충돌 호환 인수시험은 T08이다.
+- 같은 프로젝트의 별도 T04 테이블/함수에서 API·저장소·스키마 통합시험3개 통과. V2 날짜/점검 저장 후 V1 push426, 불가능한 날짜400이며 plan/version/updated_at 유지.
+- ALPEN: 집중120분+예비40분. T03 배포 확인 뒤 시작. PR 검사 후 백엔드 호환 보호 → 프런트 순으로 배포하고 결과를 보완한다.

@@ -14,9 +14,10 @@ import { layoutTimeline } from "./timeline";
 import { MandalaView, AlpenView, TimeStatsView, safeMandala } from "./planning-views";
 import type { Mandala, Plan, Task, Priority } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, isClock, validPlan } from "../../supabase/functions/_shared/plan";
+import { loadPlan } from "../../supabase/functions/_shared/plan-migration";
 import initialPlan from "./initial-plan.json";
 import { SyncPanel } from "./sync-panel";
-import { getPlanSnapshot, subscribePlan, writePlan } from "./sync-store";
+import { getPlanSnapshot, subscribePlan, writePlan, exportPlanBackup, restoreLastValidPlan } from "./sync-store";
 
 type View = "list" | "rhythm" | "mandala" | "alpen" | "stats";
 const views: Array<{ id: View; label: string }> = [
@@ -65,26 +66,6 @@ function getThemeSnapshot() {
   catch { return "light"; }
 }
 
-function readPlan(snapshot: string): Plan {
-  try {
-    const value = JSON.parse(snapshot);
-    if (!value || !Array.isArray(value.tasks) ||
-      typeof value.start !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value.start)) return EMPTY_PLAN;
-    const ids = new Set<string>();
-    const valid = value.tasks.every((task: Task) => {
-      if (!task || typeof task.id !== "string" || !task.id || ids.has(task.id) ||
-        typeof task.title !== "string" || !task.title.trim() || task.title.length > 120 ||
-        (task.minutes != null && (!Number.isInteger(task.minutes) || task.minutes < 1 || task.minutes > 240)) ||
-        (task.bufferMinutes != null && (!Number.isInteger(task.bufferMinutes) || task.bufferMinutes < 1 || task.bufferMinutes > 240)) ||
-        !Object.hasOwn(priorities, task.priority) || typeof task.done !== "boolean") return false;
-      ids.add(task.id);
-      return true;
-    });
-    // 기존 목록은 보존하고, 이전에 입력받지 않았던 여유 시간은 미설정으로 둔다.
-    return valid ? { ...value, tasks: value.tasks.map((task: Task) => ({ ...task, minutes: task.minutes ?? null, bufferMinutes: task.bufferMinutes ?? null, startTime: typeof task.startTime === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(task.startTime) ? task.startTime : null })) } : EMPTY_PLAN;
-  } catch { return EMPTY_PLAN; }
-}
-
 const hasTime = hasTaskTime;
 
 function clockMinutes(time: string) {
@@ -110,7 +91,8 @@ function SelectionCheckbox({ label, checked, mixed = false, round = false, disab
 
 export default function Todo() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_SNAPSHOT);
-  const plan = useMemo(() => readPlan(snapshot), [snapshot]);
+  const planLoad = useMemo(() => loadPlan(snapshot), [snapshot]);
+  const plan = planLoad.ok ? planLoad.plan : EMPTY_PLAN;
   const savedTheme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "light");
   const [themeOverride, setThemeOverride] = useState<"light" | "dark" | null>(null);
   const theme = themeOverride ?? savedTheme;
@@ -200,6 +182,7 @@ export default function Todo() {
   }
 
   function save(next: Plan, message: string) {
+    if (!planLoad.ok) { setError(planLoad.error); return false; }
     if (!validPlan(next)) { setError("할 일과 시간 설정을 확인해주세요."); return false; }
     try {
       writePlan(next);
@@ -219,7 +202,7 @@ export default function Todo() {
     if (plan.tasks.some((task) => !task.done && task.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
       setError("이미 남아 있는 할 일이에요. 기존 목록을 확인해주세요."); return;
     }
-    const task: Task = { id: crypto.randomUUID(), title, minutes: null, bufferMinutes: null, startTime: null, priority: "normal", done: false };
+    const task: Task = { id: crypto.randomUUID(), title, minutes: null, bufferMinutes: null, startTime: null, priority: "normal", done: false, plannedDate: null };
     if (save({ ...plan, tasks: [...plan.tasks, task] }, "할 일을 추가했어요.")) {
       setInput(""); setFilter("all"); setSelectedIds(new Set()); setSelectionMode(false); inputRef.current?.focus();
     }
@@ -328,6 +311,8 @@ export default function Todo() {
     }
     else setEditError("저장하지 못했어요. 브라우저의 저장 공간이나 사이트 저장 권한을 확인해주세요.");
   }
+
+  if (!planLoad.ok) return <main className="oddk-page oddk-recovery font-sans" data-theme={theme}><section className="oddk-recoveryCard" role="alert"><h1>저장된 내용을 복구해야 해요</h1><p>{planLoad.error}</p><p>원본은 바꾸지 않았어요. 먼저 백업을 받고 최근 정상 저장본을 복구해보세요. 정상 저장본이 없으면 백업 파일을 보관한 채 데이터 형식 확인이 필요해요.</p><div className="oddk-recoveryActions"><button type="button" onClick={() => exportPlanBackup(EMPTY_SNAPSHOT)}>원본 백업 받기</button><button type="button" onClick={() => { try { restoreLastValidPlan(); } catch (error) { setError((error as Error).message); } }}>최근 정상 저장본 복구</button></div>{error && <p role="status">{error}</p>}</section></main>;
 
   return (
     <div className="oddk-page font-sans" data-theme={theme}>

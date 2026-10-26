@@ -431,3 +431,11 @@
 .oddk-page[data-theme="dark"] .oddk-addForm { border-color: #3b4c66; }
 .oddk-page[data-theme="dark"] .oddk-error,
 .oddk-page[data-theme="dark"] .oddk-dialogError { background: #402d37; color: #f1b5b0; }
+.oddk-recovery { min-height: 100svh; display: grid; place-items: center; padding: 24px; }
+.oddk-recoveryCard { width: min(100%, 560px); padding: 28px; border: 1px solid #e2e5ee; border-radius: 12px; background: #fff; color: #17243b; }
+.oddk-recoveryCard h1 { font-size: 22px; font-weight: 600; line-height: 1.5; margin-bottom: 16px; }
+.oddk-recoveryCard p { font-size: 14px; line-height: 1.8; margin-bottom: 12px; }
+.oddk-recoveryActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.oddk-recoveryActions button { padding: 10px 14px; border: 1px solid #cbd4e5; border-radius: 6px; cursor: pointer; }
+.oddk-recoveryActions button:focus-visible { outline: 2px solid #496dcc; outline-offset: 3px; }
+.oddk-recovery[data-theme="dark"] .oddk-recoveryCard { background: #171f2e; color: #e2e7f1; border-color: #344057; }
