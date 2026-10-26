@@ -22,6 +22,26 @@
 .oddk-profileFields > div { display: grid; grid-template-columns: 95px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-top: 1px solid var(--oddk-border); font-size: 13px; }
 .oddk-profileFields dt { color: #8794a6; }
 .oddk-profileFields dd { margin: 0; overflow-wrap: anywhere; }
+.oddk-profileDialog { width: min(420px, calc(100% - 32px)); }
+.oddk-profileDialog .oddk-dialogForm { padding: 26px; }
+.oddk-profileDialog .oddk-dialogHeader { margin-bottom: 20px; }
+.oddk-profileDialog .oddk-dialogHeader h2 { font-size: 16px; font-weight: 600; }
+.oddk-profileIdentity { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 8px 0 26px; }
+.oddk-providerMark { display: flex; align-items: center; justify-content: center; width: 62px; height: 62px; border: 1px solid var(--oddk-border); border-radius: 18px; background: var(--oddk-soft); }
+.oddk-providerMark svg { width: 28px; height: 28px; }
+.oddk-profileIdentity strong { max-width: 100%; overflow-wrap: anywhere; font-size: 21px; font-weight: 600; line-height: 1.4; text-align: center; }
+.oddk-providerBadge { color: #8a97aa; font-size: 12px; }
+.oddk-profileDetails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; padding: 16px; gap: 20px 16px; border: 1px solid var(--oddk-border); border-radius: 8px; }
+.oddk-profileDetails .oddk-profileEmail { grid-column: 1 / -1; padding-bottom: 16px; border-bottom: 1px solid var(--oddk-border); }
+.oddk-profileDetails dt { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: #8a97aa; font-size: 11px; }
+.oddk-profileDetails dt svg { width: 14px; height: 14px; }
+.oddk-profileDetails dd { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; line-height: 1.7; }
+.oddk-profileFooter { display: grid; gap: 10px; margin-top: 24px; text-align: center; }
+.oddk-logoutButton { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 42px; border: 1px solid var(--oddk-border); border-radius: 6px; color: var(--oddk-heading); font-size: 13px; }
+.oddk-logoutButton svg { width: 17px; height: 17px; }
+.oddk-logoutButton:hover { background: var(--oddk-soft); }
+.oddk-logoutButton:disabled { opacity: .5; cursor: wait; }
+.oddk-profileFooter small { font-size: 10px; color: #9ba6b7; }
 .oddk-sidebar:has(.oddk-syncTrigger) .oddk-personalSpace { margin-top: 0; }
 .oddk-syncHelp { color: #8c99ad; font-size: 12px; line-height: 1.8; margin: 12px 0 20px; }
 .oddk-syncStatus { background: var(--oddk-soft); padding: 10px 12px; border-radius: 5px; font-size: 13px; }
