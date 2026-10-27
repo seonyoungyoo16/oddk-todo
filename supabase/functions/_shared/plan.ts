@@ -1,13 +1,16 @@
 // Pure contract for Next.js, Node tests and Deno; no runtime-specific APIs.
 import { isClock, isPlanDate } from "./calendar.ts";
+import { calculateSchedule, validAvailability } from "./schedule.ts";
+import type { Availability } from "./schedule.ts";
 export { isClock, isPlanDate } from "./calendar.ts";
 export type Priority = "high" | "normal" | "low";
-export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean; plannedDate: string | null; notes?: string };
+export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean; plannedDate: string | null; notes?: string; endTime?: string | null; endDate?: string | null; endDayOffset?: 0 | 1 | null };
 export type Mandala = { goal: string; areas: Array<{ title: string; taskIds: string[] }> };
-export type Plan = { schemaVersion: 3; tasks: Task[]; start: string; mandala?: Mandala; review?: string; reviewsByDate: Record<string, string> };
+export type Plan = { schemaVersion: 4; tasks: Task[]; start: string; mandala?: Mandala; review?: string; reviewsByDate: Record<string, string>; availabilityByDate?: Record<string, Availability> };
 export type LegacyPlan = { tasks: Array<Omit<Task, "plannedDate">>; start: string; mandala?: Mandala; review?: string };
 export type PlanV2 = Omit<Plan, "schemaVersion"> & { schemaVersion: 2 };
-export type PlanData = Plan | PlanV2 | LegacyPlan;
+export type PlanV3 = Omit<Plan, "schemaVersion"> & { schemaVersion: 3 };
+export type PlanData = Plan | PlanV3 | PlanV2 | LegacyPlan;
 
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -35,21 +38,32 @@ export function validMandala(value: unknown): value is Mandala {
 
 export function validPlan(value: unknown): value is PlanData {
   if (!record(value) || !Array.isArray(value.tasks) || value.tasks.length > 5000 || !isClock(value.start)) return false;
-  if (value.schemaVersion !== undefined && value.schemaVersion !== 2 && value.schemaVersion !== 3) return false;
+  if (value.schemaVersion !== undefined && (typeof value.schemaVersion !== "number" || ![2, 3, 4].includes(value.schemaVersion))) return false;
   const ids = new Set<string>();
   for (const task of value.tasks) {
     if (!record(task) || typeof task.id !== "string" || !task.id || ids.has(task.id) ||
       typeof task.title !== "string" || !task.title.trim() || task.title.length > 120 ||
       typeof task.done !== "boolean" || typeof task.priority !== "string" || !["high", "normal", "low"].includes(task.priority) ||
       !validTaskTime(task.minutes, task.bufferMinutes, task.startTime ?? null) ||
-      ((value.schemaVersion === 2 || value.schemaVersion === 3) && task.startTime === undefined) ||
-      ((value.schemaVersion === 2 || value.schemaVersion === 3) && task.plannedDate !== null && !isPlanDate(task.plannedDate)) ||
+      (value.schemaVersion !== undefined && task.startTime === undefined) ||
+      (value.schemaVersion !== undefined && task.plannedDate !== null && !isPlanDate(task.plannedDate)) ||
       (task.notes !== undefined && (typeof task.notes !== "string" || task.notes.length > 2000)) ||
-      (value.schemaVersion === 3 && typeof task.notes !== "string")) return false;
+      ((value.schemaVersion === 3 || value.schemaVersion === 4) && typeof task.notes !== "string")) return false;
+    const explicitEnd = value.schemaVersion === 4 || ["endTime", "endDate", "endDayOffset"].some(key => Object.hasOwn(task, key));
+    if (explicitEnd) {
+      if (task.startTime === null) {
+        if (task.endTime !== null || task.endDate !== null || task.endDayOffset !== null) return false;
+      } else {
+        if (typeof task.endTime !== "string" || (task.endDate !== null && !isPlanDate(task.endDate)) || (task.endDayOffset !== 0 && task.endDayOffset !== 1) || typeof task.bufferMinutes !== "number") return false;
+        const result = calculateSchedule({ date: task.plannedDate as string | null, start: task.startTime as string, endDate: task.endDate as string | null, end: task.endTime, endDayOffset: task.endDayOffset, buffer: task.bufferMinutes });
+        if (!result.ok || result.minutes !== task.minutes) return false;
+      }
+    }
     ids.add(task.id);
   }
   if (value.review != null && (typeof value.review !== "string" || value.review.length > 2000)) return false;
   if (value.mandala != null && !validMandala(value.mandala)) return false;
-  if ((value.schemaVersion === 2 || value.schemaVersion === 3) && (!record(value.reviewsByDate) || !Object.entries(value.reviewsByDate).every(([date, review]) => isPlanDate(date) && typeof review === "string" && review.length <= 2000))) return false;
+  if (value.schemaVersion !== undefined && (!record(value.reviewsByDate) || !Object.entries(value.reviewsByDate).every(([date, review]) => isPlanDate(date) && typeof review === "string" && review.length <= 2000))) return false;
+  if (value.availabilityByDate !== undefined && (!record(value.availabilityByDate) || Object.keys(value.availabilityByDate).length > 3660 || !Object.entries(value.availabilityByDate).every(([date, availability]) => isPlanDate(date) && validAvailability(availability)))) return false;
   return true;
 }

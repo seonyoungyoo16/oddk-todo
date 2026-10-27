@@ -1,5 +1,21 @@
 import { isClock, isPlanDate, clockMinute, dateOrdinal, addCalendarDays } from "./calendar.ts";
 
+export type FixedTime = { id: string; title: string; start: string; end: string };
+export type Availability = { start: string; end: string; fixed: FixedTime[] };
+export const defaultAvailability: Availability = { start: "09:00", end: "18:00", fixed: [] };
+export function endBoundaryMinute(clock: string): number { return clock === "24:00" ? 1440 : clockMinute(clock); }
+const validDayInterval = (value: { start?: unknown; end?: unknown }) => isClock(value.start) && (isClock(value.end) || value.end === "24:00") && endBoundaryMinute(value.end as string) > clockMinute(value.start);
+export function validAvailability(value: unknown): value is Availability {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const v = value as Availability;
+  if (!validDayInterval(v) || !Array.isArray(v.fixed) || v.fixed.length > 30) return false;
+  const ids = new Set<string>();
+  return v.fixed.every(interval => {
+    if (!interval || typeof interval !== "object" || typeof interval.id !== "string" || !interval.id || interval.id.length > 100 || ids.has(interval.id) || typeof interval.title !== "string" || !interval.title.trim() || interval.title.length > 60 || !validDayInterval(interval)) return false;
+    ids.add(interval.id); return true;
+  });
+}
+
 export type ScheduleInput = { date: string | null; start: string; endDate: string | null; end: string; endDayOffset: number; buffer: number };
 export type ScheduleResult = { ok: true; minutes: number; work: number; buffer: number; endDayOffset: 0 | 1 } | { ok: false; error: string };
 

@@ -105,3 +105,9 @@ PR #21 병합e7791953011e44be5ded23ab84f0f0eb1329380a. PR40601979236 success, ma
 ### UX04 공통 계산 준비
 
 calendar.ts로기존날짜·시각검사를분리(동일검증의재사용), schedule.ts에명시적시작/종료·날짜/일수차·여유의계산, 기존수행길이에서종료복원, 구간합집합·교집합·빈시간대계산을추가했다. Node61단위/lint/typecheck통과, Deno account/schedule check와공통9개통과. 09~10시/여유10=60/50/10, 2·240분경계, 잘못된시각·날짜·여유, 자정명시·윤일·연말·연도상한, 겹침합계120/점유90·고정휴식제외빈구간을검사했다. 아직Plan형식은V3이고신규계산을UI/서버검증에연결하지않았다. V4이전/캐시·초안·undo호환→실제서버시험→UI/일별자정분할→배포게이트가남아있다. 이번계산준비를UX04완료로처리하지않는다.
+
+### UX04 V4 계약·이전 및 서버 준비
+
+V4에endTime/endDate/endDayOffset와날짜별availabilityByDate선택설정을검증한다. V1~V3읽기와V3메모보존, V4필수끝정보일치·소요시간만/날짜없는시간보존, 백업.before-v4선행·구백업비덮기·연도상한원문보호를구현했다. V3 undo Task기준값도V4로변환해비교하고후속실제변경은차단한다. 공통66단위/lint/typecheck/Deno account check통과, Deno공통14개통과. 실제서버시험은아직미실행이다.
+
+서버배포전원격plan-sync version6/verify_jwt=false/번들86ed857...확인. 기존body의getUser검증/CORS/소유권/version조건을유지한다. DB제약은object·1MB와PK/FK뿐이어서DDL변경없음. Changelog.md를HTTP200으로확인했으며기존SDK2.118.0/Node24/TS5및기존.or JSONB조건확장을사용한다. SDK업그레이드·RLS/인증설정변경없다. 앞으로V4가저장된계정의V1~V3쓰기426을실제격리계정으로검증한다.

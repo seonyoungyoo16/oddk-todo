@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
-import { loadPlan } from "../supabase/functions/_shared/plan-migration.ts";
+import { loadPlan, taskToV4 } from "../supabase/functions/_shared/plan-migration.ts";
 import { rescheduleTask, saveDatedReview } from "../app/todo/planning-actions.ts";
 const url = "https://synxmskamifpovuziecx.supabase.co";
 const key = "sb_publishable_ACwZjSLbL_dU9hilmAV7CQ_FEH8AT29";
@@ -17,10 +17,10 @@ async function api(body, expected = 200) {
 try {
   const before = await api({ action: "pull" });
   const loaded = loadPlan(JSON.stringify(before.plan)); assert.equal(loaded.ok, true);
-  const plan = { ...loaded.plan, tasks: [{ id: "synthetic-date", title: "Synthetic date", notes: "", minutes: 30, bufferMinutes: 5, startTime: "09:00", plannedDate: "2026-10-27", priority: "normal", done: false }], reviewsByDate: { "2026-10-27": "Synthetic review" } };
+  const plan = { ...loaded.plan, tasks: [taskToV4({ id: "synthetic-date", title: "Synthetic date", notes: "", minutes: 30, bufferMinutes: 5, startTime: "09:00", plannedDate: "2026-10-27", priority: "normal", done: false })], reviewsByDate: { "2026-10-27": "Synthetic review" } };
   const saved = await api({ action: "push", plan, version: before.version });
   const v1 = structuredClone(plan); delete v1.schemaVersion; delete v1.reviewsByDate;
-  for (const task of v1.tasks) delete task.plannedDate;
+  for (const task of v1.tasks) { delete task.plannedDate; delete task.endTime; delete task.endDate; delete task.endDayOffset; }
   await api({ action: "push", plan: v1, version: saved.version }, 426);
   assert.deepEqual(await api({ action: "pull" }), { ...saved, id: user.id });
   const invalid = structuredClone(plan); invalid.tasks[0].plannedDate = "2026-02-30";
@@ -29,6 +29,7 @@ try {
   const dated = structuredClone(plan);
   dated.tasks[0].plannedDate = "2026-10-26";
   dated.tasks[0].startTime = "23:30";
+  dated.tasks[0] = taskToV4(dated.tasks[0]);
   dated.mandala = { goal: "Synthetic goal", areas: Array.from({ length: 8 }, (_, i) => ({ title: `Area ${i}`, taskIds: [i === 0 ? "synthetic-date" : "", ...Array(7).fill("")] })) };
   const linked = await api({ action: "push", plan: dated, version: saved.version });
   let replanned = rescheduleTask(dated, "synthetic-date", "2026-10-28", "2026-10-27");
@@ -37,7 +38,7 @@ try {
   const resaved = await api({ action: "push", plan: replanned, version: linked.version });
   const pulled = await api({ action: "pull" });
   assert.deepEqual(pulled, { ...resaved, id: user.id });
-  assert.deepEqual(pulled.plan.tasks, [{ ...dated.tasks[0], plannedDate: "2026-10-28", startTime: null }]);
+  assert.deepEqual(pulled.plan.tasks, [{ ...dated.tasks[0], plannedDate: "2026-10-28", startTime: null, endTime: null, endDate: null, endDayOffset: null }]);
   assert.deepEqual(pulled.plan.mandala, dated.mandala);
   assert.deepEqual(pulled.plan.reviewsByDate, { "2026-10-26": "Yesterday review", "2026-10-27": "Today review" });
   console.log("PASS: dated plan/reviews retained, V1 downgrade=426 and invalid calendar=400 preserve plan/version/updated_at");

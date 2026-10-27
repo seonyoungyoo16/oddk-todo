@@ -1,6 +1,7 @@
 import { sameValue } from "./json-equality.ts";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan.ts";
+import { taskToV4 } from "../../supabase/functions/_shared/plan-migration.ts";
 export type TaskChange = { id: string; before: Task | null; after: Task | null; index: number };
 export type PlanUndo = { version: 1; label: string; tasks: TaskChange[]; fields: Array<{ key: string; before: unknown; after: unknown; beforePresent: boolean; afterPresent: boolean }>; order: { before: string[]; after: string[] } | null };
 const equal = sameValue;
@@ -13,7 +14,10 @@ export function makeUndo(before: Plan, after: Plan, label: string): PlanUndo | n
   return tasks.length || fields.length || order ? { version: 1, label, tasks, fields, order } : null;
 }
 export function applyUndo(current: Plan, undo: PlanUndo): Plan {
-  if (!validUndo(undo) || current.schemaVersion !== 3 || !validPlan(current)) throw new Error("실행 취소 기록과 현재 계획을 확인해주세요.");
+  if (!validUndo(undo) || current.schemaVersion !== 4 || !validPlan(current)) throw new Error("실행 취소 기록과 현재 계획을 확인해주세요.");
+  const tasksBeforeMigration = undo.tasks;
+  undo = { ...undo, tasks: undo.tasks.map(change => ({ ...change, before: change.before === null ? null : taskToV4(change.before), after: change.after === null ? null : taskToV4(change.after) })) };
+  if (undo.tasks.some((change, index) => (tasksBeforeMigration[index].before !== null && change.before === null) || (tasksBeforeMigration[index].after !== null && change.after === null))) throw new Error("이전 실행 취소 기록의 날짜를 변환할 수 없어요. 원본을 백업한 뒤 확인해주세요.");
   for (const t of undo.tasks) if (!equal(current.tasks.find(v => v.id === t.id) ?? null, t.after)) throw new Error("해당 할 일이 이후에 변경됐어요. 최신 내용을 보호하기 위해 실행 취소를 멈췄어요.");
   for (const field of undo.fields) if ((Object.hasOwn(current, field.key) && current[field.key as keyof Plan] !== undefined) !== field.afterPresent || !equal(current[field.key as keyof Plan] ?? null, field.after)) throw new Error("관련 계획이 이후에 변경됐어요. 최신 내용을 먼저 확인해주세요.");
   if (undo.order && !equal(current.tasks.map(t => t.id), undo.order.after)) throw new Error("목록 순서가 이후에 바뀌었어요. 실행 취소 전에 확인해주세요.");
@@ -28,7 +32,7 @@ export function applyUndo(current: Plan, undo: PlanUndo): Plan {
   const nextIds = new Set(next.tasks.map(t => t.id)), currentIds = new Set(current.tasks.map(t => t.id));
   const currentRefs = new Set(current.mandala?.areas.flatMap(a => a.taskIds) ?? []);
   if (next.mandala?.areas.some(a => a.taskIds.some(id => id && !nextIds.has(id) && (currentIds.has(id) || !currentRefs.has(id))))) throw new Error("목표 연결이 이후에 바뀌었어요. 연결된 할 일을 보호하기 위해 실행 취소를 멈췄어요.");
-  if (next.schemaVersion !== 3 || !validPlan(next)) throw new Error("복원할 계획의 형식을 확인해주세요.");
+  if (next.schemaVersion !== 4 || !validPlan(next)) throw new Error("복원할 계획의 형식을 확인해주세요.");
   const activeTitles = next.tasks.filter(t => !t.done).map(t => t.title.trim().toLocaleLowerCase());
   if (new Set(activeTitles).size !== activeTitles.length) throw new Error("같은 내용의 미완료 업무가 있어 복원할 수 없어요.");
   return next;
