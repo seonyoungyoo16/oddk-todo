@@ -27,12 +27,20 @@ async function api(action, body, token) {
 }
 async function until(test) { const deadline = Date.now() + 10000; while (!test()) { if (Date.now() > deadline) throw new Error("state wait timed out"); await new Promise((resolve) => setTimeout(resolve, 20)); } }
 store.writePlan({ ...initial, review: "로그인 전 목록" });
+const initialAuth = await syncClient().auth.signInWithPassword({ email: users[0].email, password: users[0].password });
+assert.equal(initialAuth.error, null);
+const legacyServer = await api("pull", {}, initialAuth.data.session.access_token);
+assert.equal(legacyServer.plan.schemaVersion, undefined);
 const stop = store.startSync(fallback);
 try {
   const auth = await syncClient().auth.signInWithPassword({ email: users[0].email, password: users[0].password }); assert.equal(auth.error, null);
-  await until(() => JSON.parse(store.getSyncSnapshot()).connected);
-  assert.equal(JSON.parse(values.get("oddk.sync.backup.v1")).review, "로그인 전 목록");
+  await until(() => JSON.parse(store.getSyncSnapshot()).phase === "synced");
+  assert.equal(JSON.parse(values.get(`oddk.sync.plan.${users[0].id}.backup`)).review, "로그인 전 목록");
   const before = await api("pull", {}, auth.data.session.access_token);
+  assert.equal(before.plan.schemaVersion, 2);
+  assert.equal(before.version, legacyServer.version + 1);
+  assert.deepEqual(before.plan, loadPlan(JSON.stringify(legacyServer.plan)).plan);
+  assert.deepEqual(JSON.parse(values.get(`oddk.sync.plan.${users[0].id}.before-v2`)), legacyServer.plan);
   assert.deepEqual(JSON.parse(store.getPlanSnapshot(fallback)), before.plan);
   const remote = { ...before.plan, review: "다른 기기 변경" };
   await api("push", { plan: remote, version: before.version }, auth.data.session.access_token);
@@ -45,7 +53,7 @@ try {
   assert.equal(JSON.parse(store.getSyncSnapshot()).phase, "conflict");
   assert.ok(store.conflictPreview().local.includes("오프라인 변경"));
   await store.resolveSyncConflict("cloud"); assert.equal(JSON.parse(store.getPlanSnapshot(fallback)).review, "다른 기기 변경");
-  assert.equal(JSON.parse(values.get("oddk.sync.backup.v1")).review, "오프라인 변경");
+  assert.equal(JSON.parse(values.get(`oddk.sync.plan.${users[0].id}.backup`)).review, "오프라인 변경");
   store.writePlan({ ...remote, review: "동기화할 최종 내용" }); await store.syncNow();
   assert.equal((await api("pull", {}, auth.data.session.access_token)).plan.review, "동기화할 최종 내용");
   await store.disconnectSync(); assert.equal(JSON.parse(store.getSyncSnapshot()).phase, "local");

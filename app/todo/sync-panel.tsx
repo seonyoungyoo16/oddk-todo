@@ -39,6 +39,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
     <dialog ref={dialog} className="oddk-dialog oddk-syncDialog" aria-labelledby="sync-title" onClick={(event) => { if (event.target === event.currentTarget && !busy) dialog.current?.close(); }}>
       <div className="oddk-dialogForm"><header className="oddk-dialogHeader"><h2 id="sync-title">기기 동기화</h2><button type="button" aria-label="동기화 창 닫기" onClick={() => dialog.current?.close()}><HiOutlineXMark /></button></header>
         <p className="oddk-syncStatus" role="status">{state.message}</p>
+        {state.refreshRequired && <button type="button" className="oddk-syncLogin" onClick={() => window.location.reload()}>새로고침하고 다시 연결</button>}
         {!state.connected ? <>
           <p className="oddk-syncHelp">다른 기기에서도 같은 계정으로 로그인하면 할 일·만다라트·하루 점검을 함께 볼 수 있어요.</p>
           <button className="oddk-syncLogin" type="button" disabled={busy} onClick={() => void perform(() => loginSync("google"))}><SiGoogle aria-hidden="true" />Google로 계속하기</button>
@@ -46,7 +47,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
           <p className="oddk-syncHelp">첫 로그인에는 이 기기의 저장된 내용을 동기화해요. 계정에 기존 데이터가 있으면 그 내용을 불러오고, 이 기기 내용은 백업해요.</p>
         </> : <>
           <p className="oddk-syncHelp">{state.name}<br />변경한 내용은 자동 저장하며, 다른 기기의 변경은 약 5초마다 확인해요.</p>
-          {state.phase === "conflict" && <div className="oddk-syncConflict"><strong>어느 내용을 저장할까요?</strong><p>선택 전에는 양쪽 내용을 덮어쓰지 않아요. 이 기기 내용은 백업할 수 있어요.</p><details><summary>두 기기 내용 비교</summary><h3>이 기기</h3><pre>{preview?.local}</pre><h3>다른 기기</h3><pre>{preview?.cloud}</pre></details><button type="button" disabled={busy} onClick={() => void perform(() => resolveSyncConflict("local"))}>이 기기 내용을 저장</button><button type="button" disabled={busy} onClick={() => void perform(() => resolveSyncConflict("cloud"))}>다른 기기 내용을 사용</button></div>}
+          {state.phase === "conflict" && <div className="oddk-syncConflict"><strong>어느 내용을 저장할까요?</strong><p>날짜가 달라도 전체 계획 중 하나를 선택해요. 선택하지 않은 내용은 이 계정의 백업으로 보관해요.</p><details><summary>두 기기 내용 비교</summary><h3>이 기기</h3><pre>{preview?.local}</pre><h3>다른 기기</h3><pre>{preview?.cloud}</pre></details><button type="button" disabled={busy} onClick={() => void perform(() => resolveSyncConflict("local"))}>이 기기 내용을 저장</button><button type="button" disabled={busy} onClick={() => void perform(() => resolveSyncConflict("cloud"))}>다른 기기 내용을 사용</button></div>}
           <div className="oddk-syncActions"><button type="button" disabled={busy} onClick={() => void perform(syncNow)}><HiOutlineArrowPath aria-hidden="true" />지금 동기화</button><button type="button" disabled={busy} onClick={() => void perform(disconnectSync)}>이 기기에서 로그아웃</button></div>
           <p className="oddk-syncHelp">로그아웃하면 로그인 전 이 기기의 목록으로 돌아가요. 계정 데이터는 서버에 남아 있어요.</p>
         </>}
