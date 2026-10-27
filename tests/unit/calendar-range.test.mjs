@@ -10,6 +10,7 @@ test("supported calendar boundaries and invalid dates never create malformed dat
   assert.equal(shiftDate("0001-01-01", -1), null); assert.equal(shiftDate("9999-12-31", 1), null);
   assert.equal(weekDates("0001-01-01")[0], "0001-01-01"); assert.equal(weekDates("9999-12-31").at(-1), "9999-12-31");
   assert.deepEqual(weekDates("2026-02-30"), []); assert.equal(shiftDate("", 1), null); assert.equal(shiftDate("2026-10-28", 1.5), null);
+  assert.equal(shiftDate("2026-10-28", 1e100), null);
 });
 test("day/week/all filters share task identities and do not silently assign undated tasks", () => {
   const tasks = [{ id: "a", plannedDate: "2026-10-28" }, { id: "b", plannedDate: "2026-10-29" }, { id: "c", plannedDate: null }, { id: "d", plannedDate: "2026-11-02" }];

@@ -8,20 +8,21 @@ import { HiOutlinePlus, HiOutlineXMark, HiOutlineCheck, HiOutlineMinus, HiOutlin
 import { GoDotFill } from "react-icons/go";
 import "./todo.css";
 import "./task-editor.css";
-import { TaskTimeFields } from "./task-time-fields";
-import { parseTaskTimeDraft, workFromStoredTime } from "./task-time";
-import { layoutTimeline, clockMinutes, clockLabel } from "./timeline";
+import { TaskScheduleFields } from "./task-schedule-fields";
+import { parseEditorSchedule, retargetEditorDate } from "./editor-schedule";
+import { workFromStoredTime } from "./task-time";
+import { layoutTimeline, clockLabel } from "./timeline";
 import { selectDay } from "./day-selectors";
 import { DailyReview } from "./daily-review";
 import { keepFocusInDialog } from "./dialog-focus";
 import { rescheduleTask, saveDatedReview, moveLegacyReview } from "./planning-actions";
 import { MandalaView, AlpenView, TimeStatsView, safeMandala } from "./planning-views";
 import type { Mandala, Plan, Task, Priority } from "../../supabase/functions/_shared/plan";
-import { hasTaskTime, isClock, isPlanDate, validPlan } from "../../supabase/functions/_shared/plan";
+import { hasTaskTime, isPlanDate, validPlan } from "../../supabase/functions/_shared/plan";
 import { koreanToday } from "./plan-date";
 import { dayLabel, weekDates, shiftDate, selectRangeTasks } from "./calendar-range";
 import type { RangeScope } from "./calendar-range";
-import { loadPlan } from "../../supabase/functions/_shared/plan-migration";
+import { loadPlan, taskToV4 } from "../../supabase/functions/_shared/plan-migration";
 import { AutoTextarea } from "./auto-textarea";
 import { sameValue } from "./json-equality";
 import { makeUndo, applyUndo, validUndo } from "./plan-history";
@@ -139,10 +140,10 @@ function TodoWorkspace() {
   }
   const [editTitle, setEditTitle] = editField("title", "");
   const [editNotes, setEditNotes] = editField("notes", "");
-  const [editWork, setEditWork] = editField("work", "");
-  const [editBuffer, setEditBuffer] = editField("buffer", "");
-  const [editStart, setEditStart] = editField("start", "");
-  const [editDate, setEditDate] = editField("date", "");
+  const [editWork] = editField("work", "");
+  const [editBuffer] = editField("buffer", "");
+  const [editStart] = editField("start", "");
+  const [editDate] = editField("date", "");
   const [editPriority, setEditPriority] = editField("priority", "normal");
   const [editDone, setEditDone] = editField("done", false);
   const [editError, setEditError] = useState("");
@@ -164,7 +165,7 @@ function TodoWorkspace() {
   const replanTask = plan.tasks.find((task) => task.id === replanId);
   const replanTaskId = replanTask?.id;
   const editingTaskId = editingTask?.id;
-  const editTime = parseTaskTimeDraft(editWork, editBuffer);
+  const editTime = parseEditorSchedule({ work: editWork, buffer: editBuffer, start: editStart, date: editDate, timeMode: editor?.timeMode, end: editor?.end, endDate: editor?.endDate, endDay: editor?.endDay });
 
   useEffect(() => {
     const dialog = replanDialogRef.current;
@@ -251,7 +252,7 @@ function TodoWorkspace() {
     if (plan.tasks.some((task) => !task.done && task.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
       setError("이미 남아 있는 할 일이에요. 기존 목록을 확인해주세요."); return;
     }
-    const task: Task = { id: crypto.randomUUID(), title, minutes: null, bufferMinutes: null, startTime: null, priority: "normal", done: false, plannedDate: range === "all" ? null : planDate, notes: "" };
+    const task: Task = { id: crypto.randomUUID(), title, minutes: null, bufferMinutes: null, startTime: null, endTime: null, endDate: null, endDayOffset: null, priority: "normal", done: false, plannedDate: range === "all" ? null : planDate, notes: "" };
     if (save({ ...plan, tasks: [...plan.tasks, task] }, "할 일을 추가했어요.")) {
       setInput(""); setFilter("all"); setSelectedIds(new Set()); setSelectionMode(false); inputRef.current?.focus();
     }
@@ -361,7 +362,7 @@ function TodoWorkspace() {
   }
 
   function editorFrom(task: Task): EditorDraft {
-    return { base: task, baseMandala: safeMandala(plan.mandala), title: task.title, notes: task.notes ?? "", work: workFromStoredTime(task.minutes, task.bufferMinutes), buffer: task.bufferMinutes === null ? "" : String(task.bufferMinutes), start: task.startTime ?? "", date: task.plannedDate ?? "", priority: task.priority, done: task.done, links: mandala.areas.flatMap((area, a) => area.taskIds.flatMap((id, c) => id === task.id ? [a + ":" + c] : [])) };
+    return { base: task, baseMandala: safeMandala(plan.mandala), title: task.title, notes: task.notes ?? "", work: workFromStoredTime(task.minutes, task.bufferMinutes), buffer: task.bufferMinutes === null ? "" : String(task.bufferMinutes), start: task.startTime ?? "", date: task.plannedDate ?? "", timeMode: task.startTime || task.minutes === null ? "clock" : "duration", end: task.endTime ?? "", endDate: task.endDate ?? task.plannedDate ?? "", endDay: String(task.endDayOffset ?? 0), priority: task.priority, done: task.done, links: mandala.areas.flatMap((area, a) => area.taskIds.flatMap((id, c) => id === task.id ? [a + ":" + c] : [])) };
   }
   function openEditor(task: Task) {
     // Timeline entries also carry layout fields; compare drafts with the saved task only.
@@ -371,7 +372,14 @@ function TodoWorkspace() {
     setLinkArea(""); setLinkSlot(""); setEditError("");
   }
   function discardEditor() { if (editingId) workspace.set(current => withoutEditor(current, editingId)); setEditError(""); }
-  const editorConflict = Boolean(editor && editingTask && (!sameValue(editor.base, editingTask) || !sameValue(editor.baseMandala, safeMandala(plan.mandala))));
+  function patchEditor(patch: Partial<EditorDraft>) {
+    workspace.set(current => { const id = current.editingId; if (!id || !current.editors[id]) return current; return { ...current, editors: { ...current.editors, [id]: { ...current.editors[id], ...patch } } }; });
+    setEditError("");
+  }
+  function changeEditorDate(date: string) {
+    if (editor) patchEditor(retargetEditorDate(editor, date));
+  }
+  const editorConflict = Boolean(editor && editingTask && (!sameValue(taskToV4(editor.base), editingTask) || !sameValue(editor.baseMandala, safeMandala(plan.mandala))));
   const goalConflict = Boolean(mandalaDraft && workspace.value.mandalaBase && !sameValue(workspace.value.mandalaBase, safeMandala(plan.mandala)));
 
   function updateTask(event: FormEvent<HTMLFormElement>) {
@@ -385,8 +393,6 @@ function TodoWorkspace() {
     if (!title) { setEditError("수정할 내용을 입력해주세요."); return; }
     if (timeError) { setEditError(timeError); return; }
     if (editDate && !isPlanDate(editDate)) { setEditError("계획 날짜를 올바르게 선택해주세요."); return; }
-    if (editStart && duration === null) { setEditError("시작 시간을 설정하려면 작업 시간과 여유 시간을 먼저 입력해주세요."); return; }
-    if (editStart && !isClock(editStart)) { setEditError("시작 시간을 올바르게 입력해주세요."); return; }
     if (!editDone && plan.tasks.some((item) => item.id !== task.id && !item.done && item.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
       setEditError("같은 내용의 할 일이 이미 있어요."); return;
     }
@@ -400,7 +406,7 @@ function TodoWorkspace() {
     if (occupied) { setEditError("선택한 실행 칸에 다른 할 일이 있어요. 빈 칸을 선택해주세요."); return; }
     const nextMandala = linksChanged ? { ...mandala, areas: mandala.areas.map((area, a) => ({ ...area, taskIds: area.taskIds.map((id, c) => editLinks.includes(`${a}:${c}`) ? task.id : id === task.id ? "" : id) })) } : plan.mandala;
     const destination = submitDestination.current;
-    if (save({ ...plan, mandala: nextMandala, tasks: plan.tasks.map((item) => item.id === task.id ? { ...item, title, notes: editNotes ?? "", minutes: duration, bufferMinutes: buffer, startTime: editStart || null, plannedDate: editDate || null, priority: editPriority, done: editDone } : item) }, "내용을 수정했어요.")) {
+    if (save({ ...plan, mandala: nextMandala, tasks: plan.tasks.map((item) => item.id === task.id ? { ...item, title, notes: editNotes ?? "", minutes: duration, bufferMinutes: buffer, startTime: editTime.startTime, endTime: editTime.endTime, endDate: editTime.endDate, endDayOffset: editTime.endDayOffset, plannedDate: editDate || null, priority: editPriority, done: editDone } : item) }, "내용을 수정했어요.")) {
       if (linksChanged) setMandalaDraft(null);
       workspace.set(current => withoutEditor(current, task.id)); setSelectedIds(new Set());
       if (destination === "alpen") { setAlpenTaskId(task.id); if (editDate) setSelectedDate(editDate); changeView("alpen"); }
@@ -579,19 +585,13 @@ function TodoWorkspace() {
               </select><HiOutlineChevronDown aria-hidden="true" /></span>
             </label>
           </div>
-          <div className="oddk-editorDate"><label className="oddk-dialogField" htmlFor="edit-date">계획 날짜<input id="edit-date" type="date" min="0001-01-01" max="9999-12-31" value={editDate} onChange={(event) => { setEditDate(event.target.value); setEditError(""); }} aria-describedby="edit-date-guide" /></label><div><button type="button" disabled={!today} onClick={() => setEditDate(koreanToday())}>오늘로 지정</button><button type="button" disabled={!editDate} onClick={() => setEditDate("")}>날짜 해제</button></div><small id="edit-date-guide">{editDate ? "이 날짜의 시간표·계획·통계에 포함돼요." : "날짜를 정하기 전에는 목록에만 보관해요. 시간 설정은 유지돼요."}</small></div>
+          <div className="oddk-editorDate"><label className="oddk-dialogField" htmlFor="edit-date">계획 날짜<input id="edit-date" type="date" min="0001-01-01" max="9999-12-31" value={editDate} onChange={(event) => changeEditorDate(event.target.value)} aria-describedby="edit-date-guide" /></label><div><button type="button" disabled={!today} onClick={() => changeEditorDate(koreanToday())}>오늘로 지정</button><button type="button" disabled={!editDate} onClick={() => changeEditorDate("")}>날짜 해제</button></div><small id="edit-date-guide">{editDate ? "이 날짜의 시간표·계획·통계에 포함돼요." : "날짜를 정하기 전에는 목록에만 보관해요. 시간 설정은 유지돼요."}</small></div>
           <details open className="oddk-dialogTimes oddk-editorDisclosure">
             <summary><HiOutlineChevronDown aria-hidden="true" /><span>시간 설정</span><span className="oddk-editorOptional">선택</span>
-              {(editWork || editBuffer || editStart) && <button type="button" className="oddk-clearTime" aria-label="시간 설정 지우기" title="시간 설정 지우기"
-                onClick={(event) => { event.preventDefault(); setEditWork(""); setEditBuffer(""); setEditStart(""); setEditError(""); }}><HiOutlineArrowUturnLeft aria-hidden="true" /></button>}
+              {(editWork || editBuffer || editStart || editor?.end) && <button type="button" className="oddk-clearTime" aria-label="시간 설정 지우기" title="시간 설정 지우기"
+                onClick={(event) => { event.preventDefault(); patchEditor({ work: "", buffer: "", start: "", end: "", endDate: editDate, endDay: "0", timeMode: "clock" }); }}><HiOutlineArrowUturnLeft aria-hidden="true" /></button>}
             </summary>
-            <TaskTimeFields work={editWork} buffer={editBuffer}
-              onWorkChange={(value) => { setEditWork(value); if (!value.trim()) setEditStart(""); setEditError(""); }} onBufferChange={(value) => { setEditBuffer(value); setEditError(""); }} />
-            <label className="oddk-dialogField oddk-startField" htmlFor="edit-start">시작 시간
-              <input id="edit-start" type="time" step={60} lang="ko" value={editStart} disabled={editTime.minutes === null} aria-describedby="edit-start-guide"
-                onChange={(event) => { setEditStart(event.target.value); setEditError(""); }} />
-              <small id="edit-start-guide" className="oddk-srOnly">{editTime.minutes === null ? "작업·여유 시간을 먼저 입력해주세요." : editStart ? `종료 ${clockLabel(clockMinutes(editStart) + editTime.minutes)} · 여유 포함` : "설정하면 오늘의 리듬에 배치돼요."}</small>
-            </label>
+            {editor && <TaskScheduleFields draft={editor} onChange={patchEditor} />}
           </details>
           <details className="oddk-dialogLinks oddk-editorDisclosure" open={editLinks.length > 0}>
             <summary><HiOutlineChevronDown aria-hidden="true" /><span>만다라트 연결<small>필요할 때 목표와 연결하세요</small></span></summary>

@@ -16,7 +16,7 @@ Pages 정적 빌드: PowerShell에서 `$env:GITHUB_PAGES='true'` 설정 → `npm
 
 실제 사용자의 계정을 사용하지 않는다. 운영 데이터가 없는 일회용 테스트 계정 두 개를 별도로 만들고, 저장소 루트의 무시된 `.sync-auth-fixture.json`에 `[{"id":"test-user-id", "email":"test-only-address", "password":"test-only-password"}, ...]` 형식으로 저장한다. Fixture가 없거나 잘못됐으면 명령은 설명과 함께 실패한다. 건너뛴 시험을 성공으로 표시하지 않는다.
 
-현재 시험은 계정 계획을 쓰므로 반드시 전용 계정에서만 실행한다. 계정 시험은 빈 계정에서 시작하고 두 번째 계정의 격리를 확인한다. 완료 후 테스트 사용자의 세션을 종료하고 해당 테스트 계획과 테스트 계정을 정리한 뒤 fixture 및 `.sync-test-runtime/`을 제거한다. 테스트 계정의 ID와 비밀번호·토큰·실제 업무 내용은 커밋/로그/스크린샷에 넣지 않는다.
+현재 시험은 계정 계획을 쓰므로 반드시 전용 계정에서만 실행한다. 계정 시험은 빈 계정에서 시작하고 두 번째 계정의 격리를 확인한다. 완료 후 테스트 사용자의 세션을 종료하고 해당 테스트 계획과 테스트 계정을 정리한 뒤 fixture와 이번 시험이 생성한 seed/cleanup SQL·런타임 모듈만 제거한다. `.sync-test-runtime/` 안의 기존 증거와 사용자 백업은 보존한다. 테스트 계정의 ID와 비밀번호·토큰·실제 업무 내용은 커밋/로그/스크린샷에 넣지 않는다.
 
 `account-sync`는 직접 INSERT/UPDATE 차단, 소유자 SELECT, JSON/시간 오류 400, 용량 413, 동시 저장 409와 plan/version/updated_at 불변성을 검사한다. OAuth/두 프로필 전체 인수시험은 T09이며 `npm test` 결과로 대체하지 않는다.
 
@@ -25,3 +25,5 @@ Pages 정적 빌드: PowerShell에서 `$env:GITHUB_PAGES='true'` 설정 → `npm
 재현용 fixture 준비: `node tests/prepare-account-fixture.mjs`는 무작위 계정 정보와 `.sync-test-runtime/seed-accounts.sql`, `cleanup-accounts.sql`을 로컬에 생성한다. 비밀값을 출력하지 않으며 기존 fixture를 덮지 않는다. 신뢰한 DB 관리 연결로 seed SQL을 실행한 뒤 통합시험을 수행하고, cleanup SQL로 이번 marker에 해당하는 세션/사용자만 정리한다. 정리 후 남은 사용자 수0을 확인하고 생성 파일을 삭제한다. SQL은 현재 Auth 스키마를 먼저 확인한 격리 시험용이며 운영 사용자 등록 기능으로 사용하지 않는다.
 
 UX02 이후 통합시험은4개다. account-store의 이전 대상은V3이며 account-v3는 메모 왕복과V1/V2쓰기426·2001자400·CAS409의원본보존을확인한다. 일반 단위시험은 초안 격리·손상/실패 보존, 메모 이전, 변경 충돌을 보호하는 실행 취소도 포함한다.
+
+UX04 통합시험은5개다. account-store는 V1~V3를V4로 이전하며 account-v3는 기존 메모/undo 회귀를 V4에서 유지한다. account-v4는 명시적 종료·활동/고정휴식 왕복, 불일치400, V3쓰기426, 자정·CAS 보존을 검사한다. Node단위 외 Deno에서도 V4/시간계산/입력 파서를 실행한다. 실제 OAuth와 실제 단말 알림 권한은 별도 인수 항목이다.

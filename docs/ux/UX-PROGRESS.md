@@ -111,3 +111,12 @@ calendar.ts로기존날짜·시각검사를분리(동일검증의재사용), sch
 V4에endTime/endDate/endDayOffset와날짜별availabilityByDate선택설정을검증한다. V1~V3읽기와V3메모보존, V4필수끝정보일치·소요시간만/날짜없는시간보존, 백업.before-v4선행·구백업비덮기·연도상한원문보호를구현했다. V3 undo Task기준값도V4로변환해비교하고후속실제변경은차단한다. 공통66단위/lint/typecheck/Deno account check통과, Deno공통14개통과. 실제서버시험은아직미실행이다.
 
 서버배포전원격plan-sync version6/verify_jwt=false/번들86ed857...확인. 기존body의getUser검증/CORS/소유권/version조건을유지한다. DB제약은object·1MB와PK/FK뿐이어서DDL변경없음. Changelog.md를HTTP200으로확인했으며기존SDK2.118.0/Node24/TS5및기존.or JSONB조건확장을사용한다. SDK업그레이드·RLS/인증설정변경없다. 앞으로V4가저장된계정의V1~V3쓰기426을실제격리계정으로검증한다.
+
+### UX04 서버7 실제 통합 및 입력 UI 연결
+
+- b307d46의서버파일로plan-sync version7배포. bundle51d9075abac5b957b32023ba43c3cad266d82d198a80480dfe077a207383b81b, verify_jwt=false기존유지/body getUser검증유지. 프런트Pages는아직UX03이다.
+- 무작위전용시험계정2개로실제통합5개(account-sync/store/schema/v3/v4)통과. V4 endpoints·날짜별활동/고정휴식JSONB왕복과undo, 잘못된끝시각/날짜/여유/상한/활동구간400, V1/V2/V3 downgrade426, 명시적자정종료, stale CAS409에계획/version/updated_at보존을확인했다. 기존소유권/RLS/직접쓰기차단·실제401/outbox복구도통과. 세션/시험사용자정리후DB test_users_remaining=0, fixture·seed·cleanup·생성런타임파일제거. 다른사용자의계획조회없음.
+- 기본시작/종료입력, 종료날짜/날짜없으면명시적같은날·다음날, 유효한구간후여유활성화, 계산식출력연결. 소요시간만입력과이전부분초안입력도보존한다. 날짜이동시종료일수차유지, 기존초안base를V4로비교해변환만으로충돌안내하지않게했다. 새등록Task도V4끝정보null명시, 시간해제·다시계획은끝정보도같이해제한다.
+- Node71단위/lint/typecheck/정적빌드통과. 실제브라우저합성1건등록→09:00~10:00/여유10→수행60/작업50/여유10저장→새로고침목록·시간표60/50/10복원. 여유60저장차단/최대59안내→X닫기·새로고침·재개에도초안60유지/저장본10보호. 명시취소로부분초안폐기후10복귀확인. UX04-endpoints-preview.jpg.
+- 이어서시험할로컬합성업무1건(UX04 시작 종료 입력 검증, id63392599-a1cb-4b0d-9565-e3d452960ce5)이127.0.0.1:3200의익명저장소에있다. 운영에는시험업무를만들지않았다. 현재수정창은닫았고별도QA HTML은없다. UX04전체QA후이합성자료와undo/초안/backup을정리한다.
+- 남음:자정일정의날짜별구간/합계·이어서표시, 활동가능/고정휴식입력과점유·빈시간요약·충돌대상안내, 모바일/오류·구초안/undo브라우저회귀, CI→Pages배포/운영게이트. 이단계완료전에UX05로넘어가지않는다.

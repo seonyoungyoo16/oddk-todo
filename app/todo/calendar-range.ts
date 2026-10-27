@@ -1,11 +1,8 @@
-import { isPlanDate } from "../../supabase/functions/_shared/plan.ts";
+import { isPlanDate, addCalendarDays } from "../../supabase/functions/_shared/calendar.ts";
 import type { Task } from "../../supabase/functions/_shared/plan.ts";
 export type RangeScope = "day" | "week" | "all";
 export function shiftDate(date: string, days: number): string | null {
-  if (!isPlanDate(date) || !Number.isInteger(days)) return null;
-  const instant = new Date(`${date}T12:00:00Z`); instant.setUTCDate(instant.getUTCDate() + days);
-  const year = instant.getUTCFullYear(); if (year < 1 || year > 9999) return null;
-  return `${String(year).padStart(4, "0")}-${String(instant.getUTCMonth() + 1).padStart(2, "0")}-${String(instant.getUTCDate()).padStart(2, "0")}`;
+  return addCalendarDays(date, days);
 }
 export function weekDates(date: string): string[] {
   if (!isPlanDate(date)) return [];
