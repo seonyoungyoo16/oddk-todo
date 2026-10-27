@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { HiOutlineCloud, HiOutlineXMark, HiOutlineArrowPath, HiOutlineEnvelope, HiOutlineArrowRightOnRectangle } from "react-icons/hi2";
 import { SiGoogle, SiGithub } from "react-icons/si";
-import { loginSync, disconnectSync, resolveSyncConflict, exportPlanBackup, syncNow, startSync, getSyncSnapshot, getServerSyncSnapshot, subscribeSync, conflictPreview } from "./sync-store";
+import { loginSync, disconnectSync, resolveSyncConflict, exportPlanBackup, syncNow, startSync, getSyncSnapshot, getServerSyncSnapshot, subscribeSync, conflictPreview, OAUTH_READY } from "./sync-store";
 import type { SyncStatus } from "./sync-store";
 
 export function SyncPanel({ fallback }: { fallback: string }) {
@@ -25,7 +25,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
   const date = (value?: string) => value ? new Date(value).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "medium", timeStyle: "short" }) : "—";
   return <>
     <div className="oddk-accountFooter">
-      {state.connected ? <><button type="button" className="oddk-accountButton" aria-label="내 정보 보기" onClick={() => { setMessage(""); profileDialog.current?.showModal(); }}><ProviderIcon aria-hidden="true" /><span>{state.displayName || state.name}</span></button><button type="button" className="oddk-syncTrigger" onClick={() => { setMessage(""); dialog.current?.showModal(); }}><HiOutlineCloud aria-hidden="true" /><span>{state.phase === "synced" ? "동기화됨" : state.phase === "conflict" ? "충돌 확인" : state.phase === "waiting" ? "저장 대기" : state.phase === "error" ? "연결 확인" : "동기화 중"}</span></button></> : <><button type="button" className="oddk-accountLogin" disabled={busy} onClick={() => void perform(() => loginSync("google"))}><SiGoogle aria-hidden="true" /><span>Google 로그인</span></button><button type="button" className="oddk-accountLogin" disabled={busy} onClick={() => void perform(() => loginSync("github"))}><SiGithub aria-hidden="true" /><span>GitHub 로그인</span></button>{(message || state.phase === "error") && <small role="status">{message || state.message}</small>}</>}
+      {state.connected ? <><button type="button" className="oddk-accountButton" aria-label="내 정보 보기" onClick={() => { setMessage(""); profileDialog.current?.showModal(); }}><ProviderIcon aria-hidden="true" /><span>{state.displayName || state.name}</span></button><button type="button" className="oddk-syncTrigger" onClick={() => { setMessage(""); dialog.current?.showModal(); }}><HiOutlineCloud aria-hidden="true" /><span>{state.phase === "synced" ? "동기화됨" : state.phase === "conflict" ? "충돌 확인" : state.phase === "waiting" ? "저장 대기" : state.phase === "error" ? "연결 확인" : "동기화 중"}</span></button></> : <><button type="button" className="oddk-accountLogin" disabled={busy || !OAUTH_READY.google} onClick={() => void perform(() => loginSync("google"))}><SiGoogle aria-hidden="true" /><span>Google 로그인 · 준비 중</span></button><button type="button" className="oddk-accountLogin" disabled={busy || !OAUTH_READY.github} onClick={() => void perform(() => loginSync("github"))}><SiGithub aria-hidden="true" /><span>GitHub 로그인 · 준비 중</span></button><small>로그인 준비 중 · 할 일은 이 기기에 저장돼요.</small>{(message || state.phase === "error") && <small role="status">{message || state.message}</small>}</>}
     </div>
     <dialog ref={profileDialog} className="oddk-dialog oddk-profileDialog" aria-labelledby="profile-title" onClick={(event) => { if (event.target === event.currentTarget) profileDialog.current?.close(); }}>
       <div className="oddk-dialogForm">
@@ -42,8 +42,8 @@ export function SyncPanel({ fallback }: { fallback: string }) {
         {state.refreshRequired && <button type="button" className="oddk-syncLogin" onClick={() => window.location.reload()}>새로고침하고 다시 연결</button>}
         {!state.connected ? <>
           <p className="oddk-syncHelp">다른 기기에서도 같은 계정으로 로그인하면 할 일·만다라트·하루 점검을 함께 볼 수 있어요.</p>
-          <button className="oddk-syncLogin" type="button" disabled={busy} onClick={() => void perform(() => loginSync("google"))}><SiGoogle aria-hidden="true" />Google로 계속하기</button>
-          <button className="oddk-syncLogin" type="button" disabled={busy} onClick={() => void perform(() => loginSync("github"))}><SiGithub aria-hidden="true" />GitHub로 계속하기</button>
+          <button className="oddk-syncLogin" type="button" disabled={busy || !OAUTH_READY.google} onClick={() => void perform(() => loginSync("google"))}><SiGoogle aria-hidden="true" />Google 로그인 · 준비 중</button>
+          <button className="oddk-syncLogin" type="button" disabled={busy || !OAUTH_READY.github} onClick={() => void perform(() => loginSync("github"))}><SiGithub aria-hidden="true" />GitHub 로그인 · 준비 중</button>
           <p className="oddk-syncHelp">첫 로그인에는 이 기기의 저장된 내용을 동기화해요. 계정에 기존 데이터가 있으면 그 내용을 불러오고, 이 기기 내용은 백업해요.</p>
         </> : <>
           <p className="oddk-syncHelp">{state.name}<br />변경한 내용은 자동 저장하며, 다른 기기의 변경은 약 5초마다 확인해요.</p>
