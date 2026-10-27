@@ -49,6 +49,12 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
     async download() { exports.exportPlanBackup("null", true); return JSON.parse(await download.text()); }, cache() { return JSON.parse(values.get(key)); }, snapshot() { return JSON.parse(exports.getPlanSnapshot("null")); }, status() { return JSON.parse(exports.getSyncSnapshot()); } };
 }
 
+test("deferred OAuth never starts a provider login or changes cached data", async () => {
+  const h = harness(); const before = [...h.values.entries()];
+  for (const provider of ["google", "github"]) await assert.rejects(h.store.loginSync(provider), /준비/);
+  assert.deepEqual([...h.values.entries()], before); assert.equal(h.calls.length, 0);
+});
+
 test("V1 account migration uses the existing CAS version and preserves original before V2", async () => {
   const h = harness({ plan: legacy(), cached: legacy() });
   await h.store.syncNow();

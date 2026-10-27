@@ -14,7 +14,7 @@ for (const name of ["supabase-client", "sync-store"]) {
   const js = ts.transpileModule(configuredSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText.replace('"./supabase-client"', '"./supabase-client.mjs"').replace('"../../supabase/functions/_shared/plan"', '"../supabase/functions/_shared/plan.ts"').replace('"../../supabase/functions/_shared/plan-migration"', '"../supabase/functions/_shared/plan-migration.ts"');
   writeFileSync(new URL(`../.sync-test-runtime/${name}.mjs`, import.meta.url), js);
 }
-const store = await import("../.sync-test-runtime/sync-store.mjs");
+let store = await import("../.sync-test-runtime/sync-store.mjs");
 const { syncClient } = await import("../.sync-test-runtime/supabase-client.mjs");
 const users = JSON.parse(readFileSync(new URL("../.sync-auth-fixture.json", import.meta.url), "utf8"));
 const initial = { tasks: [], start: "09:00" };
@@ -31,7 +31,7 @@ const initialAuth = await syncClient().auth.signInWithPassword({ email: users[0]
 assert.equal(initialAuth.error, null);
 const legacyServer = await api("pull", {}, initialAuth.data.session.access_token);
 assert.equal(legacyServer.plan.schemaVersion, undefined);
-const stop = store.startSync(fallback);
+let stop = store.startSync(fallback);
 try {
   const auth = await syncClient().auth.signInWithPassword({ email: users[0].email, password: users[0].password }); assert.equal(auth.error, null);
   await until(() => JSON.parse(store.getSyncSnapshot()).phase === "synced");
@@ -54,9 +54,25 @@ try {
   assert.ok(store.conflictPreview().local.includes("오프라인 변경"));
   await store.resolveSyncConflict("cloud"); assert.equal(JSON.parse(store.getPlanSnapshot(fallback)).review, "다른 기기 변경");
   assert.equal(JSON.parse(values.get(`oddk.sync.plan.${users[0].id}.backup`)).review, "오프라인 변경");
+  globalThis.fetch = async (url, options) => { if (String(url).includes("/functions/")) throw new TypeError("offline"); return originalFetch(url, options); };
+  store.writePlan({ ...remote, review: "재시작 뒤 전송할 내용" }); await store.syncNow();
+  stop();
+  store = await import("../.sync-test-runtime/sync-store.mjs?restart");
+  stop = store.startSync(fallback);
+  await until(() => JSON.parse(store.getSyncSnapshot()).phase === "waiting");
+  assert.equal(JSON.parse(store.getPlanSnapshot(fallback)).review, "재시작 뒤 전송할 내용");
+  globalThis.fetch = originalFetch; await store.syncNow();
+  assert.equal((await api("pull", {}, auth.data.session.access_token)).plan.review, "재시작 뒤 전송할 내용");
+  globalThis.fetch = (url, options) => originalFetch(url, String(url).includes("/functions/") ? { ...options, headers: { ...options.headers, Authorization: "Bearer expired-synthetic-token" } } : options);
+  store.writePlan({ ...remote, review: "인증 실패 중 보관할 내용" }); await store.syncNow();
+  assert.equal(JSON.parse(store.getSyncSnapshot()).phase, "error");
+  assert.equal(JSON.parse(values.get(`oddk.sync.plan.${users[0].id}`)).dirty, true);
+  assert.equal(JSON.parse(store.getPlanSnapshot(fallback)).review, "인증 실패 중 보관할 내용");
+  globalThis.fetch = originalFetch; await store.syncNow();
   store.writePlan({ ...remote, review: "동기화할 최종 내용" }); await store.syncNow();
   assert.equal((await api("pull", {}, auth.data.session.access_token)).plan.review, "동기화할 최종 내용");
   await store.disconnectSync(); assert.equal(JSON.parse(store.getSyncSnapshot()).phase, "local");
   assert.equal(JSON.parse(store.getPlanSnapshot(fallback)).review, "로그인 전 목록");
   console.log("PASS: authenticated hydrate, pre-login backup, existing account load, offline queue, conflict preview/resolution+backup, upload, logout isolation");
+  console.log("PASS: offline outbox survives store-runtime restart; actual API 401 preserves dirty data and valid auth reconnects");
 } finally { globalThis.fetch = originalFetch; stop(); syncClient().auth.stopAutoRefresh(); }
