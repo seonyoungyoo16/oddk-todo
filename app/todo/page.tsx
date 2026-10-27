@@ -364,7 +364,10 @@ function TodoWorkspace() {
     return { base: task, baseMandala: safeMandala(plan.mandala), title: task.title, notes: task.notes ?? "", work: workFromStoredTime(task.minutes, task.bufferMinutes), buffer: task.bufferMinutes === null ? "" : String(task.bufferMinutes), start: task.startTime ?? "", date: task.plannedDate ?? "", priority: task.priority, done: task.done, links: mandala.areas.flatMap((area, a) => area.taskIds.flatMap((id, c) => id === task.id ? [a + ":" + c] : [])) };
   }
   function openEditor(task: Task) {
-    workspace.set(current => ({ ...current, editingId: task.id, editors: { ...current.editors, [task.id]: Object.hasOwn(current.editors, task.id) ? current.editors[task.id] : editorFrom(task) } }));
+    // Timeline entries also carry layout fields; compare drafts with the saved task only.
+    const savedTask = plan.tasks.find(item => item.id === task.id);
+    if (!savedTask) { setError("이 할 일은 다른 화면에서 삭제됐어요. 최신 목록을 확인해주세요."); return; }
+    workspace.set(current => ({ ...current, editingId: savedTask.id, editors: { ...current.editors, [savedTask.id]: Object.hasOwn(current.editors, savedTask.id) ? current.editors[savedTask.id] : editorFrom(savedTask) } }));
     setLinkArea(""); setLinkSlot(""); setEditError("");
   }
   function discardEditor() { if (editingId) workspace.set(current => withoutEditor(current, editingId)); setEditError(""); }

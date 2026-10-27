@@ -83,3 +83,17 @@ PR #19 병합ec04400f2db3961d8e6fd9dbe012a1eb1917b617. PR40598422363/master40598
 - Q29/Q30: 데스크톱 목록·시간표 동시 표시, 390px 실제앱iframe(스크롤바 제외375px)의 목록/시간표 전환·동일 날짜/업무 유지·라이트/다크 확인. scrollWidth=clientWidth=375. UX03-day-planning.jpg, UX03-mobile-timetable.jpg, UX03-mobile-dark.jpg. 실제 단말/브라우저200%확대는 이번 시험에 포함하지 않았으며 UX13 최종 확인 대상으로 남긴다.
 - 합성3건은 실제 일괄 삭제로 정리하고 목표 참조0 확인. 시험 undo·빈 workspace·합성 backup만 별도 QA UI로 정리했다. 원래 목표 문구는 보존했다. 임시 QA HTML 제거, 빈 오늘 목록0/콘솔warn·error0 확인.
 - 배포 게이트: 아직 미완료. PR CI→동일SHA Pages배포→운영 화면/초안복구·정리 후 다음 UX04에 착수한다.
+
+### UX03 배포 게이트 완료
+
+PR #20 병합0d40caaefbd4e4e31a9ea46b11a2b94f394ce862. PR40601208797 verify57개·Deno검사·빌드 success, master40601341070 success. deployment7372853813 동일SHA/success, deploy122530296095 Reported success 확인. 운영에서주간→29일선택→제목초안→새로고침뒤29일·초안유지, 문구제거→오늘·빈목록0·오류0·Google/GitHub활성확인. .sync-test-runtime/UX03-deployed.jpg. 원본checkout을같은SHA로ff하고사용자task-editor.css/로고/별도계획문서를보존했다. UX04에착수한다.
+
+## UX04 시작·종료와 시간 계획 — 진행
+
+선택한날짜의시작·종료/종료날짜와여유입력, 수행=끝-시작/작업=수행-여유, 활동가능구간·점유시간·겹침을구현한다. 기존시간/목표/날짜원문을보존하며서버검증을먼저지원한뒤프런트를배포한다. 아직완료/QA/배포되지않았다.
+
+### UX03 추가 회귀 — 시간표 직접 수정
+
+UX04 준비 중 시간표 계산 결과에붙은start/end/lane/columns/conflict가 editor.base에들어가저장Task와다르다고판정되는기존결함을발견했다. 실제시간표버튼→수정창에서동일제목인데충돌안내가뜨는것을재현했다. 목록경로만확인한기존UX03검증을보완한다. openEditor는입력객체의ID로원본plan.tasks를찾아초안을만들도록수정했다. 원본삭제시안내하고열지않는다.
+
+같은합성일정을시간표에서열어충돌안내없음→메모수정/저장→새로고침→시간표재개후메모14자유지확인. 실제저장키는id/title/notes/minutes/bufferMinutes/startTime/plannedDate/priority/done뿐이며표시전용정보가없다. 증거UX03-timetable-editor-fixed.jpg. 합성업무/undo/초안/backup정리, 임시QA HTML제거. 기존오염된초안은임의폐기하지않으며기존백업·저장본/초안선택으로복구한다. 이추가수정의배포검증까지완료한뒤UX04를계속한다.
