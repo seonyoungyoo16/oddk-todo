@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { isPlanDate } from "../../supabase/functions/_shared/plan";
 import { editReviewDraft, hasReviewConflict } from "./planning-actions";
+import { useLocalDraft, DraftFeedback } from "./use-local-draft";
 import type { ReviewDraft } from "./planning-actions";
 
 type Props = {
@@ -12,7 +13,8 @@ type Props = {
   onBackup: () => void;
 };
 export function DailyReview({ date, reviews, legacy, onSave, onMoveLegacy, onUseSaved, onBackup }: Props) {
-  const [drafts, setDrafts] = useState<Record<string, ReviewDraft>>({});
+  const local = useLocalDraft<Record<string, ReviewDraft>>("reviews", {}, validReviewDrafts);
+  const drafts = local.value, setDrafts = local.set;
   const [message, setMessage] = useState({ date: "", text: "" });
   const saved = reviews[date] ?? "";
   const draft = drafts[date];
@@ -26,7 +28,7 @@ export function DailyReview({ date, reviews, legacy, onSave, onMoveLegacy, onUse
     setDrafts((current) => { const next = { ...current }; delete next[date]; return next; });
     setMessage({ date, text: `${date} 점검을 저장했어요.` });
   }
-  return <section className="oddk-dailyReview" aria-label="날짜별 하루 점검">
+  return <section className="oddk-dailyReview" aria-label="날짜별 하루 점검"><DraftFeedback draft={local} />
     <form className="oddk-review" onSubmit={(event) => { event.preventDefault(); if (!conflict && validDate) commit(); }}>
       <label htmlFor="daily-review"><span className="oddk-step">N</span>{validDate ? `${date} 하루 점검` : "계획 날짜를 먼저 선택해주세요"}
         <textarea id="daily-review" value={note} disabled={!validDate} maxLength={2000} placeholder="끝낸 일, 막힌 이유, 다음에 이어 할 일을 적어보세요." onChange={(event) => { const text = event.target.value; setDrafts((current) => ({ ...current, [date]: editReviewDraft(current[date], saved, text) })); setMessage({ date, text: "" }); }} />
@@ -36,4 +38,8 @@ export function DailyReview({ date, reviews, legacy, onSave, onMoveLegacy, onUse
     </form>
     {legacy.trim() && <details className="oddk-legacyReview"><summary>이전 점검 · 날짜 미지정</summary><p>날짜를 지정해 옮기기 전까지 원문을 따로 보관해요.</p><blockquote>{legacy}</blockquote><button type="button" disabled={!validDate || Boolean(saved) || dirty} onClick={() => { setMessage({ date, text: onMoveLegacy(date, legacy) ? `${date}로 이전 점검을 옮겼어요.` : "옮기지 못했어요. 내용은 그대로 남아 있어요." }); }}>{validDate ? `${date}로 옮기기` : "날짜를 먼저 선택해주세요"}</button>{(saved || dirty) && <small>점검과 초안이 없는 날짜를 선택해주세요. 기존 내용은 덮어쓰지 않아요.</small>}</details>}
   </section>;
+}
+
+function validReviewDrafts(value: unknown): value is Record<string, ReviewDraft> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length <= 5000 && Object.entries(value).every(([date, d]) => isPlanDate(date) && d && typeof d.text === "string" && d.text.length <= 2000 && typeof d.base === "string" && d.base.length <= 2000));
 }

@@ -466,3 +466,9 @@
 .oddk-reviewConflict small, .oddk-legacyReview small { color: #76859a; }
 .oddk-legacyReview summary { cursor: pointer; font-weight: 600; }
 .oddk-dailyReview button:disabled { opacity: .5; cursor: not-allowed; }
+
+.oddk-draftFeedback,.oddk-draftHelp,.oddk-draftRecovery,.oddk-draftConflict { padding:10px 16px; margin:0; font-size:12px; overflow-wrap:anywhere; background:var(--oddk-soft); color:var(--oddk-heading); }
+.oddk-draftFeedback { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.oddk-draftFeedback button,.oddk-draftRecovery button,.oddk-draftConflict button { border:1px solid var(--oddk-border); border-radius:5px; padding:6px 10px; background:var(--oddk-surface); color:var(--oddk-heading); margin:3px; }
+.oddk-draftFeedback:has(button),.oddk-draftConflict { border:1px solid #ba8a39; }
+.oddk-taskEditor .oddk-draftConflict { max-height:170px; overflow:auto; flex-shrink:0; }
