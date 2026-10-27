@@ -1,49 +1,39 @@
 # oddk
 
-Next.js + React로 만든 할 일 및 하루 계획 앱입니다.
+Next.js + React로 만든 할 일·하루 계획 앱입니다. [배포 화면](https://seonyoungyoo16.github.io/oddk-todo/todo/)
 
-- 할 일 추가·수정·완료·일괄 처리
-- 작업 시간과 여유 시간을 분리한 일일 시간표
-- 81칸 만다라트 목표와 할 일 연결
-- ALPEN 계획과 하루 점검
-- 계획 시간 통계
+할 일 리스트, 오늘의 리듬, 만다라트, ALPEN, 일일 시간통계를 연결합니다. 시간통계는 **입력한 계획 시간**이며 실제 측정 시간이 아닙니다.
 
-## 실행
+## 실행과 검사
 
-```powershell
+검증 환경: Node24.22.0 / npm11.19.1. package-lock.json을 사용합니다.
+
+~~~powershell
 npm.cmd ci
 npm.cmd run dev
-```
+# http://localhost:3000/todo
+npm.cmd test
+npm.cmd run lint
+npm.cmd run typecheck
+~~~
 
-## GitHub Pages 배포
+## 데이터 규칙
 
-master에 push하면 GitHub Actions가 정적 빌드 후 배포합니다.
+- 제목만으로 추가하고 목록을 눌러 날짜·시간·우선순위·목표를 설정합니다.
+- 작업 + 여유 = 수행 시간. 시간 설정 시 작업·여유는 양의 정수이며 수행은 최대240분입니다.
+- 날짜는 선택 사항입니다. 날짜 없는 업무는 일별 집계에서 제외됩니다. 오늘은 Asia/Seoul 기준입니다.
+- 자정이 넘어도 시작 날짜에 한 번 집계합니다. 완료 업무는 통계에 남고 시간표에서 빠집니다.
+- 지난 미완료 업무는 사용자가 재계획할 때만 이동합니다. ID·시간·목표는 유지하고 시작 시간을 해제합니다.
+- ALPEN은 무엇을 얼마나 할지, 오늘의 리듬은 언제 할지 정합니다. 점검은 날짜별로 저장합니다.
 
-```powershell
-$env:GITHUB_PAGES='true'
-npm.cmd run build
-Remove-Item Env:GITHUB_PAGES
-```
+새 브라우저에는 app/todo/initial-plan.json의 초기 목표만 제공하며 시험 업무를 넣지 않습니다. 비로그인 데이터는 해당 브라우저 localStorage에 저장됩니다.
 
-빌드 결과는 out/에 생성됩니다. 저장소 경로는 next.config.ts의 /oddk-todo입니다.
+**Google·GitHub 신규 로그인은 실제 OAuth 검증 보류로 준비 중/비활성입니다.** 기존 로그인 세션의 동기화·로그아웃은 유지합니다. 기존 계정은 서버 계획을 불러오고 새 계정은 로컬 계획을 가져옵니다. 로그인 전 계획과 계정 캐시는 분리됩니다. 계정 변경 시 미저장 화면 초안은 초기화되며 저장된 계획·미전송 변경은 유지됩니다.
 
-## 데이터
+## 시험·배포·복구
 
-app/todo/initial-plan.json은 배포 초기 만다라트 데이터입니다. 새 브라우저의 첫 방문에 사용합니다.
-로그인 전 변경은 브라우저 localStorage에 저장합니다. 기기 동기화에서 소셜 로그인하면 Supabase의 계정별 저장소와 동기화합니다.
-첫 로그인에 현재 로컬 데이터를 가져오며, 기존 계정에는 서버 데이터를 불러옵니다. 로그인 전 목록은 별도로 보존합니다.
-자동 저장과 5초 주기 확인, 오프라인 전송 대기, 버전 충돌 비교·선택, JSON 백업을 지원합니다.
-시간통계는 실제 측정 시간이 아닌 입력한 계획 시간 기준입니다.
+- [작업 명세](docs/CODEX-TASKS.md), [진행 기록](docs/verification/PROGRESS.md)
+- [브라우저 시험](docs/verification/ACCEPTANCE.md), [동기화 시험과 미검증 범위](docs/verification/SYNC-ACCEPTANCE.md)
+- [배포·복구 절차](docs/RELEASE.md), [배포 인수 결과](docs/verification/RELEASE-ACCEPTANCE.md)
 
-## 동기화 백엔드
-
-- Supabase 프로젝트: oddk-todo-sync (서울 리전)
-- 테이블/RLS: supabase/account-schema.sql
-- Edge Function: supabase/functions/plan-sync/account.ts, validate.ts
-- 요청마다 Supabase Auth 사용자 검증 후 해당 user_id로만 조회·수정합니다.
-- push는 버전 조건이 일치할 때만 반영합니다. 동시 수정 시 409를 반환하여 기기에서 충돌 내용을 선택하게 합니다.
-- publishable key만 브라우저에 포함하며, 서비스 키와 OAuth 비밀키는 서버 설정에만 보관합니다.
-- OAuth 콜백: https://synxmskamifpovuziecx.supabase.co/auth/v1/callback
-
-tests/account-sync.test.mjs 및 account-store.test.mjs는 격리한 테스트 계정 2개를 담은 .sync-auth-fixture.json이 필요합니다.
-이 파일은 커밋하지 않으며 실제 사용자 계정으로 테스트하지 않습니다.
+master 반영 시 GitHub Actions가 lint·타입·단위시험·Deno 검증·정적 빌드 후 Pages에 배포합니다. 산출물은 out/, 경로는 /oddk-todo입니다. Supabase Edge/DB는 별도로 배포·확인합니다.
