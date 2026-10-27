@@ -126,6 +126,7 @@ export default function Todo() {
   const [linkArea, setLinkArea] = useState("");
   const [linkSlot, setLinkSlot] = useState("");
   const [alpenTaskId, setAlpenTaskId] = useState<string | null>(null);
+  const submitDestination = useRef<"alpen" | null>(null);
   const [deletedTasks, setDeletedTasks] = useState<Array<{ task: Task; index: number }>>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
@@ -362,7 +363,7 @@ export default function Todo() {
     });
     if (occupied) { setEditError("선택한 실행 칸에 다른 할 일이 있어요. 빈 칸을 선택해주세요."); return; }
     const nextMandala = linksChanged ? { ...mandala, areas: mandala.areas.map((area, a) => ({ ...area, taskIds: area.taskIds.map((id, c) => editLinks.includes(`${a}:${c}`) ? task.id : id === task.id ? "" : id) })) } : plan.mandala;
-    const destination = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("data-destination");
+    const destination = submitDestination.current;
     if (save({ ...plan, mandala: nextMandala, tasks: plan.tasks.map((item) => item.id === task.id ? { ...item, title, minutes: duration, bufferMinutes: buffer, startTime: editStart || null, plannedDate: editDate || null, priority: editPriority, done: editDone } : item) }, "내용을 수정했어요.")) {
       if (linksChanged) setMandalaDraft(null);
       setEditingId(null); setSelectedIds(new Set());
@@ -573,7 +574,7 @@ export default function Todo() {
             <p>연결·해제는 저장할 때 반영돼요.{mandalaDraft && " 목표 변경사항도 함께 저장돼요."}</p>
             </div>
           </details>
-          <button type="submit" className="oddk-openAlpen" data-destination="alpen" disabled={!editDate} aria-describedby={!editDate ? "edit-date-guide" : undefined}><HiOutlineArrowRight aria-hidden="true" />저장 후 ALPEN에서 계획</button>
+          <button type="button" className="oddk-openAlpen" disabled={!editDate} aria-describedby={!editDate ? "edit-date-guide" : undefined} onClick={(event) => { submitDestination.current = "alpen"; try { event.currentTarget.form?.requestSubmit(); } finally { submitDestination.current = null; } }}><HiOutlineArrowRight aria-hidden="true" />저장 후 ALPEN에서 계획</button>
           </div>
           {editError && <p role="alert" className="oddk-dialogError">{editError}</p>}
           <div className="oddk-dialogActions">
