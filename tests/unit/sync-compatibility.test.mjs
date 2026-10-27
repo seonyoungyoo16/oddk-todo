@@ -151,11 +151,14 @@ test("an old account response cannot replace a new account cache during account 
 
 test("logout restores anonymous plan; account switch never exports another account backup", async () => {
   const h = harness(); h.values.set(localKey, JSON.stringify({ ...modern(), review: "Anonymous original" }));
+  assert.equal(h.store.getPlanScope(), "account-a");
   h.values.set("oddk.sync.backup.v1", JSON.stringify({ ...modern(), review: "Old unscoped sensitive backup" }));
   h.store.backupReviewPlan({ ...modern(), review: "A only backup" });
   await h.store.disconnectSync(); assert.equal(h.snapshot().review, "Anonymous original");
+  assert.equal(h.store.getPlanScope(), "local");
   const stop = h.store.startSync(JSON.stringify(modern())); await h.login("account-b");
   assert.equal(h.status().connected, true);
+  assert.equal(h.store.getPlanScope(), "account-b");
   assert.equal((await h.download()).review, "Anonymous original");
   assert.equal(JSON.parse(h.values.get("oddk.sync.plan.account-b.backup")).review, "Anonymous original");
   assert.equal(JSON.parse(h.values.get(`${key}.backup`)).schemaVersion, 2); stop();

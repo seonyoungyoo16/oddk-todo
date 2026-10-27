@@ -74,6 +74,7 @@ async function api(action: string, values: object = {}, s?: Session): Promise<Cl
   return data;
 }
 export const getSyncSnapshot = () => state;
+export function getPlanScope() { try { return session()?.id ?? "local"; } catch { return "unreadable-session"; } }
 export const getServerSyncSnapshot = () => JSON.stringify(INITIAL);
 export function subscribeSync(notify: () => void) { listeners.add(notify); return () => { listeners.delete(notify); }; }
 export function getPlanSnapshot(fallback: string) {
