@@ -1,7 +1,7 @@
 import type { Mandala, Priority, Task } from "../../supabase/functions/_shared/plan.ts";
 import { validMandala, validPlan } from "../../supabase/functions/_shared/plan.ts";
 export type DraftView = "list" | "rhythm" | "mandala" | "alpen" | "stats";
-export type EditorDraft = { base: Task; baseMandala: Mandala; title: string; work: string; buffer: string; start: string; date: string; priority: Priority; done: boolean; links: string[] };
+export type EditorDraft = { base: Task; baseMandala: Mandala; title: string; notes?: string; work: string; buffer: string; start: string; date: string; priority: Priority; done: boolean; links: string[] };
 export type WorkspaceDraft = { input: string; view: DraftView; selectedDate: string | null; editingId: string | null; editors: Record<string, EditorDraft>; mandalaDraft: Mandala | null; mandalaBase: Mandala | null };
 export const emptyWorkspace: WorkspaceDraft = { input: "", view: "list", selectedDate: null, editingId: null, editors: {}, mandalaDraft: null, mandalaBase: null };
 const object = (v: unknown): v is Record<string, unknown> => Boolean(v && typeof v === "object" && !Array.isArray(v));
@@ -12,7 +12,7 @@ export function validWorkspace(v: unknown): v is WorkspaceDraft {
   return Object.entries(v.editors).every(([id, e]) => object(e) && object(e.base) && e.base.id === id &&
     validPlan({ schemaVersion: 2, start: "09:00", tasks: [e.base], reviewsByDate: {} }) && validMandala(e.baseMandala) &&
     ["title", "work", "buffer", "start", "date"].every(k => typeof e[k] === "string" && e[k].length <= 120) &&
-    ["high", "normal", "low"].includes(String(e.priority)) && typeof e.done === "boolean" && Array.isArray(e.links) && e.links.length <= 64 && e.links.every(l => typeof l === "string" && /^[0-7]:[0-7]$/.test(l)));
+    (e.notes === undefined || (typeof e.notes === "string" && e.notes.length <= 2000)) && ["high", "normal", "low"].includes(String(e.priority)) && typeof e.done === "boolean" && Array.isArray(e.links) && e.links.length <= 64 && e.links.every(l => typeof l === "string" && /^[0-7]:[0-7]$/.test(l)));
 }
 export function withoutEditor(workspace: WorkspaceDraft, id: string): WorkspaceDraft {
   const editors = { ...workspace.editors }; delete editors[id];

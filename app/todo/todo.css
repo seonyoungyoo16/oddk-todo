@@ -472,3 +472,11 @@
 .oddk-draftFeedback button,.oddk-draftRecovery button,.oddk-draftConflict button { border:1px solid var(--oddk-border); border-radius:5px; padding:6px 10px; background:var(--oddk-surface); color:var(--oddk-heading); margin:3px; }
 .oddk-draftFeedback:has(button),.oddk-draftConflict { border:1px solid #ba8a39; }
 .oddk-taskEditor .oddk-draftConflict { max-height:170px; overflow:auto; flex-shrink:0; }
+
+.oddk-page textarea,.oddk-dialog textarea { font-family:inherit; font-size:inherit; line-height:1.6; letter-spacing:inherit; }
+.oddk-addForm textarea { width:100%; min-width:0; min-height:24px; max-height:320px; padding:0; border:0; outline:none; background:transparent; color:var(--oddk-heading); resize:none; overflow-y:auto; }
+.oddk-taskTitle { white-space:pre-wrap; overflow-wrap:anywhere; }
+.oddk-undoBar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; margin-bottom:12px; color:#6b7b91; font-size:12px; }
+.oddk-undoBar button { display:inline-flex; align-items:center; gap:5px; padding:8px; border:1px solid var(--oddk-border); border-radius:6px; color:var(--oddk-heading); }
+
+.oddk-inputCount { display:block; text-align:right; color:#6f8098; font-size:11px; padding:3px 0; }

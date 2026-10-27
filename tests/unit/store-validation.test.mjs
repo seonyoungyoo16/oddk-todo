@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
-import { loadPlan, upgradeStoredPlan } from "../../supabase/functions/_shared/plan-migration.ts";
+import { loadPlan, upgradeStoredPlan, preserveMigrationBackup } from "../../supabase/functions/_shared/plan-migration.ts";
 
 test("invalid writes, local recovery and review backups preserve snapshots", () => {
   const values = new Map();
@@ -15,7 +15,7 @@ test("invalid writes, local recovery and review backups preserve snapshots", () 
   vm.runInNewContext(js, {
     exports,
     require: (name) => {
-      if (name.includes("_shared/plan-migration")) return { loadPlan, upgradeStoredPlan };
+      if (name.includes("_shared/plan-migration")) return { loadPlan, upgradeStoredPlan, preserveMigrationBackup };
       if (name.includes("_shared/plan")) return { validPlan };
       if (name === "./supabase-client") return { syncClient: () => { throw new Error("Offline test must not access auth/network"); } };
       throw new Error(`Unexpected dependency: ${name}`);
