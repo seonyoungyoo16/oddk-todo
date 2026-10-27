@@ -1,5 +1,6 @@
 import { isPlanDate, addCalendarDays } from "../../supabase/functions/_shared/calendar.ts";
 import type { Task } from "../../supabase/functions/_shared/plan.ts";
+import { taskTouchesDate } from "./task-period.ts";
 export type RangeScope = "day" | "week" | "all";
 export function shiftDate(date: string, days: number): string | null {
   return addCalendarDays(date, days);
@@ -12,7 +13,7 @@ export function weekDates(date: string): string[] {
 export function selectRangeTasks(tasks: Task[], date: string, scope: RangeScope): Task[] {
   if (scope === "all") return tasks;
   const dates = new Set(scope === "week" ? weekDates(date) : isPlanDate(date) ? [date] : []);
-  return tasks.filter(task => task.plannedDate !== null && dates.has(task.plannedDate));
+  return tasks.filter(task => [...dates].some(day => taskTouchesDate(task, day)));
 }
 export function dayLabel(date: string, weekday = true): string {
   if (!isPlanDate(date)) return "날짜를 선택해주세요";

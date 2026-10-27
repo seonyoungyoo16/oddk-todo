@@ -27,7 +27,7 @@ jobs:
         with:
           deno-version: '2.9.6'
       - run: deno check supabase/functions/plan-sync/account.ts
-      - run: deno test tests/unit/plan-validation.test.mjs tests/unit/plan-v4.test.mjs tests/unit/schedule.test.mjs tests/unit/editor-schedule.test.mjs
+      - run: deno test tests/unit/plan-validation.test.mjs tests/unit/plan-v4.test.mjs tests/unit/schedule.test.mjs tests/unit/editor-schedule.test.mjs tests/unit/availability.test.mjs tests/unit/availability-draft.test.mjs
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
