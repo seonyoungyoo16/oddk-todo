@@ -42,3 +42,17 @@ test("editor drafts retain every field and cancellation removes only its target"
   const after = withoutEditor(draft, "a"); assert.equal(after.editingId, null); assert.equal(after.editors.a, undefined); assert.deepEqual(after.editors.b, draft.editors.b); assert.equal(after.input, "Keep");
   assert.equal(validWorkspace({ ...draft, editors: { a: { ...editor, links: ["99:99"] } } }), false);
 });
+test("date-range preferences preserve legacy drafts and survive reload without changing editor content", () => {
+  const legacy = { ...emptyWorkspace, input: "Keep my draft", selectedDate: "2027-01-01" };
+  delete legacy.range;
+  assert.equal(validWorkspace(legacy), true);
+  const storage = memory();
+  for (const range of ["day", "week", "all"]) {
+    saveDraft(storage, "local", "workspace", { ...legacy, range }, validWorkspace);
+    const restored = decodeDraft(storage.getItem(draftKey("local", "workspace")), validWorkspace).data;
+    assert.equal(restored.range, range); assert.equal(restored.input, legacy.input); assert.equal(restored.selectedDate, legacy.selectedDate);
+  }
+  const before = storage.getItem(draftKey("local", "workspace"));
+  assert.throws(() => saveDraft(storage, "local", "workspace", { ...legacy, range: "unknown" }, validWorkspace));
+  assert.equal(storage.getItem(draftKey("local", "workspace")), before);
+});

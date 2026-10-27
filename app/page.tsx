@@ -165,6 +165,16 @@ export default function Home() {
               </li>
             ))}
           </ol>
+          <div className="planning-guide">
+            <h3>한 번 적은 할 일, 계획에서 실행까지 이어져요.</h3>
+            <ol>
+              <li><strong>전체 할 일에 모으기</strong><p>예: ‘책 한 장 읽기’를 먼저 적어요. 날짜나 시간은 나중에 정해도 돼요.</p></li>
+              <li><strong>오늘·이번 주에 배치하기</strong><p>날짜를 선택해 등록하거나, 모아 둔 할 일을 눌러 날짜를 정해요. 시작 시간과 작업·여유 시간을 입력하면 같은 할 일이 시간표에도 보여요.</p></li>
+              <li><strong>목표와 연결하기</strong><p>만다라트는 큰 목표를 작은 실행으로 나누는 방법이에요. ‘독서 습관’ 목표에 ‘책 한 장 읽기’를 연결하면 목록의 완료가 목표에도 반영돼요.</p></li>
+              <li><strong>하루 계획과 점검 펼치기</strong><p>ALPEN은 할 일 수집 → 시간 예상 → 여유 확보 → 우선순위 선택 → 점검의 흐름이에요. 오늘 화면에서 계획을 점검하고 시간 분석을 펼쳐 작업·여유 배분을 확인해요. 표시된 시간은 계획값이에요.</p></li>
+            </ol>
+            <ButtonLink href="/todo">첫 할 일 적어보기</ButtonLink>
+          </div>
         </section>
         <section className="closing-section" aria-labelledby="closing-title">
           <div className="container">
