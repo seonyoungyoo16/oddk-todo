@@ -36,7 +36,7 @@ export function TaskTimeFields({
               aria-label="작업 시간"
               aria-describedby="edit-time-total edit-time-issue"
               aria-invalid={Boolean(issue)}
-              onChange={(event) => onWorkChange(event.target.value)}
+              onChange={(event) => { onWorkChange(event.target.value); if (!event.target.value.trim()) onBufferChange(""); }}
             />
             <span className="oddk-editorUnit" aria-hidden="true">
               분
@@ -49,6 +49,7 @@ export function TaskTimeFields({
             <input
               id="edit-buffer"
               type="number"
+              disabled={!work.trim() || !Number.isInteger(Number(work)) || Number(work) < 1 || Number(work) > 239}
               min={1}
               max={239}
               step={1}

@@ -4,6 +4,7 @@ import { HiOutlineCloud, HiOutlineXMark, HiOutlineArrowPath, HiOutlineEnvelope, 
 import { SiGoogle, SiGithub } from "react-icons/si";
 import { loginSync, disconnectSync, resolveSyncConflict, exportPlanBackup, syncNow, startSync, getSyncSnapshot, getServerSyncSnapshot, subscribeSync, conflictPreview, OAUTH_READY } from "./sync-store";
 import type { SyncStatus } from "./sync-store";
+import { keepFocusInDialog } from "./dialog-focus";
 
 export function SyncPanel({ fallback }: { fallback: string }) {
   const raw = useSyncExternalStore(subscribeSync, getSyncSnapshot, getServerSyncSnapshot);
@@ -27,7 +28,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
     <div className="oddk-accountFooter">
       {state.connected ? <><button type="button" className="oddk-accountButton" aria-label="내 정보 보기" onClick={() => { setMessage(""); profileDialog.current?.showModal(); }}><ProviderIcon aria-hidden="true" /><span>{state.displayName || state.name}</span></button><button type="button" className="oddk-syncTrigger" onClick={() => { setMessage(""); dialog.current?.showModal(); }}><HiOutlineCloud aria-hidden="true" /><span>{state.phase === "synced" ? "동기화됨" : state.phase === "conflict" ? "충돌 확인" : state.phase === "waiting" ? "저장 대기" : state.phase === "error" ? "연결 확인" : "동기화 중"}</span></button></> : <><button type="button" className="oddk-accountLogin" disabled={busy || !OAUTH_READY.google} onClick={() => void perform(() => loginSync("google"))}><SiGoogle aria-hidden="true" /><span>Google 로그인 · 준비 중</span></button><button type="button" className="oddk-accountLogin" disabled={busy || !OAUTH_READY.github} onClick={() => void perform(() => loginSync("github"))}><SiGithub aria-hidden="true" /><span>GitHub 로그인 · 준비 중</span></button><small>로그인 준비 중 · 할 일은 이 기기에 저장돼요.</small>{(message || state.phase === "error") && <small role="status">{message || state.message}</small>}</>}
     </div>
-    <dialog ref={profileDialog} className="oddk-dialog oddk-profileDialog" aria-labelledby="profile-title" onClick={(event) => { if (event.target === event.currentTarget) profileDialog.current?.close(); }}>
+    <dialog ref={profileDialog} className="oddk-dialog oddk-profileDialog" aria-labelledby="profile-title" onKeyDown={keepFocusInDialog} onClick={(event) => { if (event.target === event.currentTarget) profileDialog.current?.close(); }}>
       <div className="oddk-dialogForm">
         <header className="oddk-dialogHeader"><h2 id="profile-title">내 정보</h2><button type="button" aria-label="내 정보 닫기" onClick={() => profileDialog.current?.close()}><HiOutlineXMark /></button></header>
         <div className="oddk-profileIdentity"><span className="oddk-providerMark"><ProviderIcon aria-hidden="true" /></span><strong>{state.displayName || state.name}</strong><span className="oddk-providerBadge">{providerName} 계정으로 로그인</span></div>
@@ -36,7 +37,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
         <div className="oddk-profileFooter"><button type="button" className="oddk-logoutButton" disabled={busy} onClick={() => void perform(async () => { await disconnectSync(); profileDialog.current?.close(); })}><HiOutlineArrowRightOnRectangle aria-hidden="true" />{busy ? "로그아웃 중…" : "로그아웃"}</button><small>이 기기에서만 로그아웃돼요.</small></div>
       </div>
     </dialog>
-    <dialog ref={dialog} className="oddk-dialog oddk-syncDialog" aria-labelledby="sync-title" onClick={(event) => { if (event.target === event.currentTarget && !busy) dialog.current?.close(); }}>
+    <dialog ref={dialog} className="oddk-dialog oddk-syncDialog" aria-labelledby="sync-title" onKeyDown={keepFocusInDialog} onClick={(event) => { if (event.target === event.currentTarget && !busy) dialog.current?.close(); }}>
       <div className="oddk-dialogForm"><header className="oddk-dialogHeader"><h2 id="sync-title">기기 동기화</h2><button type="button" aria-label="동기화 창 닫기" onClick={() => dialog.current?.close()}><HiOutlineXMark /></button></header>
         <p className="oddk-syncStatus" role="status">{state.message}</p>
         {state.refreshRequired && <button type="button" className="oddk-syncLogin" onClick={() => window.location.reload()}>새로고침하고 다시 연결</button>}

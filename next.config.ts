@@ -3,6 +3,7 @@ const pagesBuild = process.env.GITHUB_PAGES === "true";
 const basePath = pagesBuild ? "/oddk-todo" : "";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["127.0.0.1"],
   output: pagesBuild ? "export" : undefined,
   basePath,
   trailingSlash: pagesBuild,
