@@ -2,11 +2,11 @@ import type { Mandala, Priority, Task } from "../../supabase/functions/_shared/p
 import { validMandala, validPlan } from "../../supabase/functions/_shared/plan.ts";
 export type DraftView = "list" | "rhythm" | "mandala" | "alpen" | "stats";
 export type EditorDraft = { base: Task; baseMandala: Mandala; title: string; notes?: string; work: string; buffer: string; start: string; date: string; priority: Priority; done: boolean; links: string[] };
-export type WorkspaceDraft = { input: string; view: DraftView; selectedDate: string | null; editingId: string | null; editors: Record<string, EditorDraft>; mandalaDraft: Mandala | null; mandalaBase: Mandala | null };
-export const emptyWorkspace: WorkspaceDraft = { input: "", view: "list", selectedDate: null, editingId: null, editors: {}, mandalaDraft: null, mandalaBase: null };
+export type WorkspaceDraft = { range?: "day" | "week" | "all"; input: string; view: DraftView; selectedDate: string | null; editingId: string | null; editors: Record<string, EditorDraft>; mandalaDraft: Mandala | null; mandalaBase: Mandala | null };
+export const emptyWorkspace: WorkspaceDraft = { range: "day", input: "", view: "list", selectedDate: null, editingId: null, editors: {}, mandalaDraft: null, mandalaBase: null };
 const object = (v: unknown): v is Record<string, unknown> => Boolean(v && typeof v === "object" && !Array.isArray(v));
 export function validWorkspace(v: unknown): v is WorkspaceDraft {
-  if (!object(v) || typeof v.input !== "string" || v.input.length > 120 || !["list", "rhythm", "mandala", "alpen", "stats"].includes(String(v.view)) ||
+  if (!object(v) || (v.range !== undefined && !["day", "week", "all"].includes(String(v.range))) || typeof v.input !== "string" || v.input.length > 120 || !["list", "rhythm", "mandala", "alpen", "stats"].includes(String(v.view)) ||
     !(v.selectedDate === null || typeof v.selectedDate === "string") || !(v.editingId === null || typeof v.editingId === "string") || !object(v.editors) || Object.keys(v.editors).length > 5000 ||
     !(v.mandalaDraft === null || validMandala(v.mandalaDraft)) || !(v.mandalaBase === null || validMandala(v.mandalaBase))) return false;
   return Object.entries(v.editors).every(([id, e]) => object(e) && object(e.base) && e.base.id === id &&

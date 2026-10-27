@@ -480,3 +480,36 @@
 .oddk-undoBar button { display:inline-flex; align-items:center; gap:5px; padding:8px; border:1px solid var(--oddk-border); border-radius:6px; color:var(--oddk-heading); }
 
 .oddk-inputCount { display:block; text-align:right; color:#6f8098; font-size:11px; padding:3px 0; }
+.oddk-weekNav { display: flex; gap: 8px; align-items: stretch; margin-top: 20px; max-width: 700px; }
+.oddk-weekNav > button { flex: 0 0 30px; border: 1px solid var(--oddk-border); border-radius: 6px; }
+.oddk-weekNav button:disabled { opacity: .35; cursor: not-allowed; }
+.oddk-weekDays { display: grid; flex: 1; min-width: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.oddk-weekDays button { display: flex; min-height: 76px; flex-direction: column; align-items: center; justify-content: center; border: 1px solid var(--oddk-border); border-radius: 6px; font-size: 12px; }
+.oddk-weekDays strong { font-size: 17px; font-weight: 600; }
+.oddk-weekDays small { font-size: 10px; }
+.oddk-weekDays [aria-pressed="true"] { background: var(--oddk-highlight); border-color: #84a6e4; }
+.oddk-undatedLink { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 13px; text-decoration: underline; text-underline-offset: 4px; }
+.oddk-addTarget { margin: 20px 0 6px; font-size: 12px; color: #71809a; }
+.oddk-paneSwitch { display: none; }
+.oddk-dayDetails { display: grid; gap: 12px; margin-top: 32px; }
+.oddk-dayDetails > details { border: 1px solid var(--oddk-border); border-radius: 6px; padding: 16px; }
+.oddk-dayDetails summary { cursor: pointer; font-weight: 600; }
+.oddk-dayDetails summary svg { display: inline-block; vertical-align: middle; width: 18px; height: 18px; margin-right: 8px; }
+.oddk-dayDetails details[open] > summary { margin-bottom: 20px; }
+.oddk-rhythm h2 { font-size: 15px; font-weight: 600; }
+@media (min-width: 1100px) {
+  .oddk-contentGrid.oddk-dailyGrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .75fr); }
+  .oddk-dailyGrid > .oddk-rhythm { border-left: 1px solid var(--oddk-border); padding-left: 28px; }
+}
+@media (max-width: 1099px) {
+  .oddk-paneSwitch { display: flex; gap: 6px; margin-bottom: 20px; }
+  .oddk-paneSwitch button { display: flex; align-items: center; gap: 6px; border: 1px solid var(--oddk-border); border-radius: 6px; padding: 8px 14px; }
+  .oddk-paneSwitch [aria-pressed="true"] { background: var(--oddk-highlight); border-color: #84a6e4; }
+  .oddk-dailyGrid[data-pane="list"] > .oddk-rhythm, .oddk-dailyGrid[data-pane="rhythm"] > .oddk-taskArea { display: none; }
+}
+@media (max-width: 480px) {
+  .oddk-weekNav { gap: 4px; }
+  .oddk-weekNav > button { flex-basis: 22px; }
+  .oddk-weekDays { gap: 2px; }
+  .oddk-weekDays button { min-height: 68px; }
+}
