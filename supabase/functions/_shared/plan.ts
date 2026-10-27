@@ -1,4 +1,6 @@
 // Pure contract for Next.js, Node tests and Deno; no runtime-specific APIs.
+import { isClock, isPlanDate } from "./calendar.ts";
+export { isClock, isPlanDate } from "./calendar.ts";
 export type Priority = "high" | "normal" | "low";
 export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean; plannedDate: string | null; notes?: string };
 export type Mandala = { goal: string; areas: Array<{ title: string; taskIds: string[] }> };
@@ -10,9 +12,6 @@ export type PlanData = Plan | PlanV2 | LegacyPlan;
 const record = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-export function isClock(value: unknown): value is string {
-  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
-}
 
 export function hasTaskTime<T extends { minutes: unknown; bufferMinutes: unknown }>(value: T): value is T & { minutes: number; bufferMinutes: number } {
   const { minutes, bufferMinutes } = value;
@@ -33,13 +32,6 @@ export function validMandala(value: unknown): value is Mandala {
       Array.isArray(area.taskIds) && area.taskIds.length === 8 && area.taskIds.every((id: unknown) => typeof id === "string" && id.length <= 100));
 }
 
-export function isPlanDate(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  const [year, month, day] = value.split("-").map(Number);
-  if (year < 1 || month < 1 || month > 12 || day < 1) return false;
-  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
-  return day <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
-}
 
 export function validPlan(value: unknown): value is PlanData {
   if (!record(value) || !Array.isArray(value.tasks) || value.tasks.length > 5000 || !isClock(value.start)) return false;

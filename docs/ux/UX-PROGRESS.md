@@ -97,3 +97,11 @@ PR #20 병합0d40caaefbd4e4e31a9ea46b11a2b94f394ce862. PR40601208797 verify57개
 UX04 준비 중 시간표 계산 결과에붙은start/end/lane/columns/conflict가 editor.base에들어가저장Task와다르다고판정되는기존결함을발견했다. 실제시간표버튼→수정창에서동일제목인데충돌안내가뜨는것을재현했다. 목록경로만확인한기존UX03검증을보완한다. openEditor는입력객체의ID로원본plan.tasks를찾아초안을만들도록수정했다. 원본삭제시안내하고열지않는다.
 
 같은합성일정을시간표에서열어충돌안내없음→메모수정/저장→새로고침→시간표재개후메모14자유지확인. 실제저장키는id/title/notes/minutes/bufferMinutes/startTime/plannedDate/priority/done뿐이며표시전용정보가없다. 증거UX03-timetable-editor-fixed.jpg. 합성업무/undo/초안/backup정리, 임시QA HTML제거. 기존오염된초안은임의폐기하지않으며기존백업·저장본/초안선택으로복구한다. 이추가수정의배포검증까지완료한뒤UX04를계속한다.
+
+### UX03 시간표 수정 추가 배포 완료
+
+PR #21 병합e7791953011e44be5ded23ab84f0f0eb1329380a. PR40601979236 success, master40602155899 success(verify122532689623/deploy122532968612 Reported success), deployment7372960946 동일SHA. 운영이실제불러온2h4y1uoroc1-k.js에서원본Task ID조회·수정창가드포함확인(HTTP200), 운영날짜28일/빈목록0/활성로그인/오류0. 실제카드열기·저장·새로고침회귀는로컬합성일정으로검증했고운영에새시험업무를생성하지않았다. UX03-editor-fix-deployed.jpg. UX04설계는UX04-DESIGN.md에기록하고이제구현을진행한다.
+
+### UX04 공통 계산 준비
+
+calendar.ts로기존날짜·시각검사를분리(동일검증의재사용), schedule.ts에명시적시작/종료·날짜/일수차·여유의계산, 기존수행길이에서종료복원, 구간합집합·교집합·빈시간대계산을추가했다. Node61단위/lint/typecheck통과, Deno account/schedule check와공통9개통과. 09~10시/여유10=60/50/10, 2·240분경계, 잘못된시각·날짜·여유, 자정명시·윤일·연말·연도상한, 겹침합계120/점유90·고정휴식제외빈구간을검사했다. 아직Plan형식은V3이고신규계산을UI/서버검증에연결하지않았다. V4이전/캐시·초안·undo호환→실제서버시험→UI/일별자정분할→배포게이트가남아있다. 이번계산준비를UX04완료로처리하지않는다.
