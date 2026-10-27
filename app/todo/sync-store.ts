@@ -7,7 +7,7 @@ const LOCAL_KEY = "oddk.todo.v1";
 const SESSION_KEY = "oddk.sync.session.v1";
 const CHANGE_EVENT = "oddk-todo-change";
 // Enable each provider only after its actual OAuth acceptance journey passes.
-export const OAUTH_READY = { google: false, github: false } as const;
+
 type Session = { id: string; deviceId: string; name: string; displayName: string; provider: string; createdAt: string; lastSignInAt: string };
 type Cache = { plan: string; version: number; dirty: boolean };
 type Cloud = { plan: unknown; version: number; updated_at: string };
@@ -245,7 +245,6 @@ async function connectAccount(auth: AuthSession, fallback: string) {
   } finally { if (connecting === auth.user.id) connecting = null; }
 }
 export async function loginSync(provider: "google" | "github") {
-  if (!OAUTH_READY[provider]) throw new Error("로그인 기능을 준비하고 있어요. 현재 할 일은 이 기기에 저장돼요.");
   localStorage.setItem("oddk.sync.login-provider", provider);
   const { error } = await syncClient().auth.signInWithOAuth({ provider, options: { redirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/todo/` } });
   if (error) throw error;
