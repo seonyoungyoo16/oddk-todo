@@ -31,14 +31,17 @@ Deno.serve(async (req: Request) => {
     }
     if (body.action === "push") {
       let update = db.from("account_plans").update({ plan: body.plan, version: body.version + 1, updated_at: new Date().toISOString() }).eq("user_id", user.id).eq("version", body.version);
-      // Per-step releases must never let an older client erase V2 date fields.
-      if (!("schemaVersion" in body.plan)) update = update.is("plan->>schemaVersion", null);
+      // This predicate and the version predicate are evaluated in one UPDATE.
+      // Older clients must never remove fields added by a newer schema.
+      const incomingSchema = "schemaVersion" in body.plan ? body.plan.schemaVersion : 1;
+      const allowed = ["plan->>schemaVersion.is.null", ...[2, 3].filter(v => v <= incomingSchema).map(v => "plan->>schemaVersion.eq." + v)].join(",");
+      update = update.or(allowed);
       const { data, error } = await update.select("plan,version,updated_at").maybeSingle();
       if (error) throw error;
-      if (!data && !("schemaVersion" in body.plan)) {
+      if (!data) {
         const current = await db.from("account_plans").select("plan").eq("user_id", user.id).maybeSingle();
         if (current.error) throw current.error;
-        if (current.data?.plan?.schemaVersion === 2) return reply({ error: "새 데이터 형식을 사용하고 있어요. 새로고침 후 다시 시도해주세요." }, 426);
+        if ((current.data?.plan?.schemaVersion ?? 1) > incomingSchema) return reply({ error: "새 데이터 형식을 사용하고 있어요. 새로고침 후 다시 시도해주세요." }, 426);
       }
       return data ? reply(data) : reply({ error: "다른 기기에서 먼저 변경했어요." }, 409);
     }

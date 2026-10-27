@@ -17,7 +17,7 @@ async function api(body, expected = 200) {
 try {
   const before = await api({ action: "pull" });
   const loaded = loadPlan(JSON.stringify(before.plan)); assert.equal(loaded.ok, true);
-  const plan = { ...loaded.plan, tasks: [{ id: "synthetic-date", title: "Synthetic date", minutes: 30, bufferMinutes: 5, startTime: "09:00", plannedDate: "2026-10-27", priority: "normal", done: false }], reviewsByDate: { "2026-10-27": "Synthetic review" } };
+  const plan = { ...loaded.plan, tasks: [{ id: "synthetic-date", title: "Synthetic date", notes: "", minutes: 30, bufferMinutes: 5, startTime: "09:00", plannedDate: "2026-10-27", priority: "normal", done: false }], reviewsByDate: { "2026-10-27": "Synthetic review" } };
   const saved = await api({ action: "push", plan, version: before.version });
   const v1 = structuredClone(plan); delete v1.schemaVersion; delete v1.reviewsByDate;
   for (const task of v1.tasks) delete task.plannedDate;
@@ -40,6 +40,6 @@ try {
   assert.deepEqual(pulled.plan.tasks, [{ ...dated.tasks[0], plannedDate: "2026-10-28", startTime: null }]);
   assert.deepEqual(pulled.plan.mandala, dated.mandala);
   assert.deepEqual(pulled.plan.reviewsByDate, { "2026-10-26": "Yesterday review", "2026-10-27": "Today review" });
-  console.log("PASS: V2 dates/reviews retained, V1 downgrade=426 and invalid calendar=400 preserve plan/version/updated_at");
+  console.log("PASS: dated plan/reviews retained, V1 downgrade=426 and invalid calendar=400 preserve plan/version/updated_at");
   console.log("PASS: rescheduling preserves identity, time and goal links; dated reviews remain independent after server round trip");
 } finally { await client.auth.signOut(); }

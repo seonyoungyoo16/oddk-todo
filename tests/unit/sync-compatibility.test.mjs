@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
-import { loadPlan, upgradeStoredPlan } from "../../supabase/functions/_shared/plan-migration.ts";
+import { loadPlan, upgradeStoredPlan, preserveMigrationBackup } from "../../supabase/functions/_shared/plan-migration.ts";
 
 const legacy = () => ({ start: "09:00", tasks: [{ id: "synthetic", title: "Synthetic", minutes: 30, bufferMinutes: 5, startTime: "09:00", priority: "normal", done: false }], review: "Undated" });
 const modern = () => loadPlan(JSON.stringify(legacy())).plan;
@@ -33,7 +33,7 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
     signOut: async () => { login = null; listener?.("SIGNED_OUT", null); return {}; },
   } };
   const exports = {};
-  vm.runInNewContext(js, { exports, require: (name) => name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan } : name.includes("_shared/plan") ? { validPlan } : { syncClient: () => client },
+  vm.runInNewContext(js, { exports, require: (name) => name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan, preserveMigrationBackup } : name.includes("_shared/plan") ? { validPlan } : { syncClient: () => client },
     process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } }, localStorage: storage, window, document, Event, Error, TypeError, Set, crypto, AbortSignal, Blob, URL: { createObjectURL(blob) { download = blob; return "blob:synthetic"; }, revokeObjectURL() {} },
     setTimeout: (job) => { jobs.set(++nextJob, job); return nextJob; }, clearTimeout: (id) => jobs.delete(id), setInterval: () => 0, clearInterval() {},
     fetch: async (_url, options) => {
@@ -66,7 +66,7 @@ test("V1 account migration uses the existing CAS version and preserves original 
   const h = harness({ plan: legacy(), cached: legacy() });
   await h.store.syncNow();
   assert.equal(h.calls[0].version, 4); assert.equal(h.remote.version, 5);
-  assert.equal(h.remote.plan.schemaVersion, 2); assert.equal(h.remote.plan.tasks[0].plannedDate, null);
+  assert.equal(h.remote.plan.schemaVersion, 3); assert.equal(h.remote.plan.tasks[0].plannedDate, null);
   assert.equal(h.remote.plan.tasks[0].startTime, "09:00");
   assert.deepEqual(JSON.parse(h.values.get(`${key}.before-v2`)), legacy());
   await h.store.syncNow(); assert.equal(h.remote.version, 5);
@@ -76,7 +76,7 @@ test("V1 received on first login is migrated and conditionally saved", async () 
   const h = harness({ plan: legacy(), cached: null, connected: false });
   const stop = h.store.startSync(JSON.stringify(modern()));
   await new Promise(setImmediate); await h.jobs(); await h.store.syncNow();
-  assert.equal(h.remote.plan.schemaVersion, 2); assert.equal(h.remote.version, 5);
+  assert.equal(h.remote.plan.schemaVersion, 3); assert.equal(h.remote.version, 5);
   assert.deepEqual(JSON.parse(h.values.get(`${key}.before-v2`)), legacy()); stop();
 });
 
@@ -121,7 +121,7 @@ test("invalid/future remote preserves valid cache, dirty outbox and raw received
     const h = harness({ dirty }); const before = h.values.get(key);
     h.remote.plan = { ...modern(), schemaVersion: 99 }; h.remote.version++;
     await h.store.syncNow(); assert.equal(h.status().phase, "error");
-    assert.equal(h.values.get(key), before); assert.equal(h.snapshot().schemaVersion, 2);
+    assert.equal(h.values.get(key), before); assert.equal(h.snapshot().schemaVersion, 3);
     assert.ok([...h.values.keys()].some((k) => k.startsWith(`${key}.invalid-remote.`)));
   }
 });
@@ -168,5 +168,5 @@ test("logout restores anonymous plan; account switch never exports another accou
   assert.equal(h.store.getPlanScope(), "account-b");
   assert.equal((await h.download()).review, "Anonymous original");
   assert.equal(JSON.parse(h.values.get("oddk.sync.plan.account-b.backup")).review, "Anonymous original");
-  assert.equal(JSON.parse(h.values.get(`${key}.backup`)).schemaVersion, 2); stop();
+  assert.equal(JSON.parse(h.values.get(`${key}.backup`)).schemaVersion, 3); stop();
 });

@@ -1,6 +1,6 @@
 import { syncClient } from "./supabase-client";
 import { validPlan } from "../../supabase/functions/_shared/plan";
-import { loadPlan, upgradeStoredPlan } from "../../supabase/functions/_shared/plan-migration";
+import { loadPlan, upgradeStoredPlan, preserveMigrationBackup } from "../../supabase/functions/_shared/plan-migration";
 import type { Session as AuthSession } from "@supabase/supabase-js";
 const ENDPOINT = "https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync";
 const LOCAL_KEY = "oddk.todo.v1";
@@ -46,7 +46,7 @@ function prepareCache(s: Session): Cache {
   if (!loaded.ok) throw new Error(loaded.error);
   if (!loaded.migrated) return before;
   const key = cacheKey(s);
-  if (localStorage.getItem(`${key}.before-v2`) === null) localStorage.setItem(`${key}.before-v2`, before.plan);
+  preserveMigrationBackup(localStorage, key, before.plan);
   const next = { ...before, plan: JSON.stringify(loaded.plan), dirty: true };
   localStorage.setItem(`${key}.last-valid`, next.plan);
   localStorage.setItem(key, JSON.stringify(next)); changed(); return next;
@@ -57,7 +57,7 @@ function readCloud(remote: Cloud, s: Session): { remote: Cloud; migrated: boolea
     backup(cacheKey(s), JSON.stringify(remote), "invalid-remote");
     throw new SyncError("서버 데이터 형식을 확인해야 해요. 이 기기의 정상 저장본과 미전송 변경은 유지했어요. 새로고침 후 다시 확인해주세요.", 422);
   }
-  if (loaded.migrated && localStorage.getItem(`${cacheKey(s)}.before-v2`) === null) localStorage.setItem(`${cacheKey(s)}.before-v2`, raw);
+  if (loaded.migrated) preserveMigrationBackup(localStorage, cacheKey(s), raw);
   return { remote: { ...remote, plan: loaded.plan }, migrated: loaded.migrated };
 }
 function changed() { window.dispatchEvent(new Event(CHANGE_EVENT)); }
@@ -101,7 +101,7 @@ export function writePlan(plan: unknown) {
   if (oldRaw !== null) {
     const old = loadPlan(oldRaw);
     if (!old.ok) throw new Error(old.error);
-    if (old.migrated && localStorage.getItem(`${key}.before-v2`) === null) localStorage.setItem(`${key}.before-v2`, oldRaw);
+    if (old.migrated) preserveMigrationBackup(localStorage, key, oldRaw);
   }
   // Keep the validated candidate durable before replacing the visible snapshot.
   localStorage.setItem(`${key}.last-valid`, value);
@@ -113,7 +113,7 @@ export function writePlan(plan: unknown) {
 export function restoreLastValidPlan() {
   const s = session();
   const key = s ? cacheKey(s) : LOCAL_KEY;
-  const backup = localStorage.getItem(`${key}.last-valid`) ?? localStorage.getItem(`${key}.before-v2`);
+  const backup = localStorage.getItem(`${key}.last-valid`) ?? localStorage.getItem(`${key}.before-v3`) ?? localStorage.getItem(`${key}.before-v2`);
   const result = backup ? loadPlan(backup) : null;
   if (!result?.ok) throw new Error("이 기기에 정상 저장본이 없어요. 원본 백업 파일을 보관해주세요.");
   const raw = s ? cacheEnvelope(s).plan : localStorage.getItem(LOCAL_KEY);
