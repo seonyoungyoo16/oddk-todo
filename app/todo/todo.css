@@ -451,3 +451,16 @@
 .oddk-editorDate input { background: var(--edit-surface, #fff); color: var(--edit-heading, #243047); border-color: var(--edit-border, #dbe2ee); }
 .oddk-editorDate button { color: var(--edit-heading, #243047); border-color: var(--edit-border, #dbe2ee); }
 .oddk-taskDate { font-size: 11px; color: #76859a; }
+.oddk-replanButton { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; padding: 5px 8px; border: 1px solid var(--oddk-border); border-radius: 5px; color: var(--oddk-heading); font-size: 12px; }
+.oddk-replanDialog { color: var(--oddk-heading); }
+.oddk-replanDialog strong { display: block; margin-bottom: 8px; }
+.oddk-replanDialog p { margin: 10px 0 18px; font-size: 13px; line-height: 1.7; }
+.oddk-replanDialog .oddk-dialogHeader button { min-width: 36px; min-height: 36px; }
+.oddk-replanDialog .oddk-dialogHeader svg { width: 20px; height: 20px; }
+.oddk-reviewConflict, .oddk-legacyReview { margin: 16px 0; padding: 16px; border: 1px solid var(--oddk-border); border-radius: 6px; background: var(--oddk-soft); font-size: 13px; line-height: 1.7; }
+.oddk-reviewConflict strong, .oddk-reviewConflict small, .oddk-legacyReview small { display: block; }
+.oddk-reviewConflict blockquote, .oddk-legacyReview blockquote { padding: 10px; margin: 10px 0; background: var(--oddk-surface); white-space: pre-wrap; overflow-wrap: anywhere; }
+.oddk-reviewConflict button, .oddk-legacyReview button { padding: 8px 12px; margin: 4px 6px 6px 0; border: 1px solid var(--oddk-border); border-radius: 5px; }
+.oddk-reviewConflict small, .oddk-legacyReview small { color: #76859a; }
+.oddk-legacyReview summary { cursor: pointer; font-weight: 600; }
+.oddk-dailyReview button:disabled { opacity: .5; cursor: not-allowed; }

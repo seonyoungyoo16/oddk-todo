@@ -12,6 +12,8 @@ import { TaskTimeFields } from "./task-time-fields";
 import { parseTaskTimeDraft, workFromStoredTime } from "./task-time";
 import { layoutTimeline, clockMinutes, clockLabel } from "./timeline";
 import { selectDay } from "./day-selectors";
+import { DailyReview } from "./daily-review";
+import { rescheduleTask, saveDatedReview, moveLegacyReview } from "./planning-actions";
 import { MandalaView, AlpenView, TimeStatsView, safeMandala } from "./planning-views";
 import type { Mandala, Plan, Task, Priority } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, isClock, isPlanDate, validPlan } from "../../supabase/functions/_shared/plan";
@@ -19,7 +21,7 @@ import { koreanToday } from "./plan-date";
 import { loadPlan } from "../../supabase/functions/_shared/plan-migration";
 import initialPlan from "./initial-plan.json";
 import { SyncPanel } from "./sync-panel";
-import { getPlanSnapshot, subscribePlan, writePlan, exportPlanBackup, restoreLastValidPlan } from "./sync-store";
+import { getPlanSnapshot, subscribePlan, writePlan, exportPlanBackup, restoreLastValidPlan, backupReviewPlan } from "./sync-store";
 
 type View = "list" | "rhythm" | "mandala" | "alpen" | "stats";
 const views: Array<{ id: View; label: string }> = [
@@ -106,6 +108,9 @@ export default function Todo() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<{ message: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [replanId, setReplanId] = useState<string | null>(null);
+  const [replanDate, setReplanDate] = useState("");
+  const [replanError, setReplanError] = useState("");
   const [editTitle, setEditTitle] = useState("");
   const [editWork, setEditWork] = useState("");
   const [editBuffer, setEditBuffer] = useState("");
@@ -124,10 +129,20 @@ export default function Todo() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const replanDialogRef = useRef<HTMLDialogElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
   const editingTask = plan.tasks.find((task) => task.id === editingId);
+  const replanTask = plan.tasks.find((task) => task.id === replanId);
+  const replanTaskId = replanTask?.id;
   const editingTaskId = editingTask?.id;
   const editTime = parseTaskTimeDraft(editWork, editBuffer);
+
+  useEffect(() => {
+    const dialog = replanDialogRef.current;
+    if (!dialog) return;
+    if (replanTaskId && !dialog.open) dialog.showModal();
+    if (!replanTaskId && dialog.open) dialog.close();
+  }, [replanTaskId]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -206,6 +221,47 @@ export default function Todo() {
     if (save({ ...plan, tasks: [...plan.tasks, task] }, "할 일을 추가했어요.")) {
       setInput(""); setFilter("all"); setSelectedIds(new Set()); setSelectionMode(false); inputRef.current?.focus();
     }
+  }
+
+  function readLatestPlan() {
+    const loaded = loadPlan(getPlanSnapshot(EMPTY_SNAPSHOT));
+    if (!loaded.ok) throw new Error(loaded.error);
+    return loaded.plan;
+  }
+
+  function submitReplan(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      const next = rescheduleTask(readLatestPlan(), replanId ?? "", replanDate, koreanToday());
+      if (save(next, `${replanDate}로 다시 계획했어요. 시작 시간은 새로 정해주세요.`)) { setReplanId(null); setReplanError(""); }
+      else setReplanError("저장하지 못했어요. 선택한 날짜는 유지돼요. 다시 시도해주세요.");
+    } catch (error) { setReplanError((error as Error).message); }
+  }
+
+  function submitReview(date: string, text: string, expected: string, overwrite: boolean) {
+    try {
+      const current = readLatestPlan();
+      const next = saveDatedReview(current, date, text, expected);
+      if (overwrite) backupReviewPlan(current);
+      return save(next, `${date} 하루 점검을 저장했어요.`);
+    } catch (error) { setError((error as Error).message); return false; }
+  }
+
+  function transferLegacyReview(date: string, expected: string) {
+    try {
+      const current = readLatestPlan();
+      const next = moveLegacyReview(current, date, expected);
+      backupReviewPlan(current);
+      return save(next, `${date}로 이전 점검을 옮겼어요.`);
+    } catch (error) { setError((error as Error).message); return false; }
+  }
+
+  function keepReviewDraft(date: string, text: string) {
+    try {
+      const current = readLatestPlan();
+      backupReviewPlan(saveDatedReview(current, date, text, current.reviewsByDate[date] ?? ""));
+      return true;
+    } catch (error) { setError((error as Error).message); return false; }
   }
 
   function deleteTask(task: Task) {
@@ -337,7 +393,7 @@ export default function Todo() {
             <header className="oddk-intro">
               <h1>{headerTitle}</h1>
               <p>{viewHeaders[view].description}</p>
-              {datedView && <div className="oddk-dateToolbar"><label htmlFor="plan-date">계획 날짜<input id="plan-date" type="date" min="0001-01-01" max="9999-12-31" value={planDate} onChange={(event) => setSelectedDate(event.target.value)} /></label><button type="button" disabled={!today} onClick={() => setSelectedDate(today)}>오늘</button><span>한국 시간 기준</span></div>}
+              {datedView && <div className="oddk-dateToolbar"><label htmlFor="plan-date">계획 날짜<input id="plan-date" type="date" min="0001-01-01" max="9999-12-31" value={planDate} onChange={(event) => setSelectedDate(event.target.value)} /></label><button type="button" disabled={!today} onClick={() => setSelectedDate(koreanToday())}>오늘</button><span>한국 시간 기준</span></div>}
               {datedView && plan.tasks.some((task) => task.plannedDate === null) && <p className="oddk-dateGuide">날짜가 없는 할 일은 시간표·일별 집계에서 제외돼요. 목록을 눌러 계획 날짜를 정해주세요.</p>}
             </header>
 
@@ -389,6 +445,7 @@ export default function Todo() {
                         {task.plannedDate && <time dateTime={task.plannedDate} className="oddk-taskDate">{task.plannedDate}</time>}
                       </span>
                     </button>
+                    {!selectionMode && !task.done && today && task.plannedDate && task.plannedDate < today && <button type="button" className="oddk-replanButton" aria-label={task.title + " 다시 계획"} onClick={() => { setReplanDate(koreanToday()); setReplanError(""); setReplanId(task.id); }}><HiOutlineArrowUturnLeft aria-hidden="true" />다시 계획</button>}
                     {task.done && <span className="oddk-doneBadge">완료</span>}
                   </li>)}
                 </ul>}
@@ -446,7 +503,7 @@ export default function Todo() {
                 <p className="oddk-rhythmNote"><GoDotFill aria-hidden="true" />여유도 계획의 일부예요.</p>
               </aside>
               <div hidden={view !== "mandala"}><MandalaView tasks={plan.tasks} draft={mandala} dirty={mandalaDraft !== null} onChange={setMandalaDraft} onSave={(mandala) => { const saved = save({ ...plan, mandala }, "만다라트를 저장했어요."); if (saved) setMandalaDraft(null); return saved; }} onEdit={openEditor} onList={() => changeView("list")} /></div>
-              <div hidden={view !== "alpen"}><AlpenView key={JSON.stringify(plan.review) ?? "new-review"} day={day} review={typeof plan.review === "string" ? plan.review : ""} onReview={(review) => save({ ...plan, review }, "날짜 없는 점검을 저장했어요.")} onEdit={openEditor} onList={() => changeView("list")} onRhythm={() => changeView("rhythm")} selectedTaskId={view === "alpen" ? alpenTaskId : null} /></div>
+              <div hidden={view !== "alpen"}><AlpenView day={day} onEdit={openEditor} onList={() => changeView("list")} onRhythm={() => changeView("rhythm")} selectedTaskId={view === "alpen" ? alpenTaskId : null} /><DailyReview date={planDate} reviews={plan.reviewsByDate} legacy={typeof plan.review === "string" ? plan.review : ""} onSave={submitReview} onMoveLegacy={transferLegacyReview} onUseSaved={keepReviewDraft} onBackup={() => exportPlanBackup(EMPTY_SNAPSHOT, true)} /></div>
               <div hidden={view !== "stats"}><TimeStatsView day={day} /></div>
             </div>
           </main>
@@ -472,7 +529,7 @@ export default function Todo() {
               </select><HiOutlineChevronDown aria-hidden="true" /></span>
             </label>
           </div>
-          <div className="oddk-editorDate"><label className="oddk-dialogField" htmlFor="edit-date">계획 날짜<input id="edit-date" type="date" min="0001-01-01" max="9999-12-31" value={editDate} onChange={(event) => { setEditDate(event.target.value); setEditError(""); }} aria-describedby="edit-date-guide" /></label><div><button type="button" disabled={!today} onClick={() => setEditDate(today)}>오늘로 지정</button><button type="button" disabled={!editDate} onClick={() => setEditDate("")}>날짜 해제</button></div><small id="edit-date-guide">{editDate ? "이 날짜의 시간표·계획·통계에 포함돼요." : "날짜를 정하기 전에는 목록에만 보관해요. 시간 설정은 유지돼요."}</small></div>
+          <div className="oddk-editorDate"><label className="oddk-dialogField" htmlFor="edit-date">계획 날짜<input id="edit-date" type="date" min="0001-01-01" max="9999-12-31" value={editDate} onChange={(event) => { setEditDate(event.target.value); setEditError(""); }} aria-describedby="edit-date-guide" /></label><div><button type="button" disabled={!today} onClick={() => setEditDate(koreanToday())}>오늘로 지정</button><button type="button" disabled={!editDate} onClick={() => setEditDate("")}>날짜 해제</button></div><small id="edit-date-guide">{editDate ? "이 날짜의 시간표·계획·통계에 포함돼요." : "날짜를 정하기 전에는 목록에만 보관해요. 시간 설정은 유지돼요."}</small></div>
           <details open className="oddk-dialogTimes oddk-editorDisclosure">
             <summary><HiOutlineChevronDown aria-hidden="true" /><span>시간 설정</span><span className="oddk-editorOptional">선택</span>
               {(editWork || editBuffer || editStart) && <button type="button" className="oddk-clearTime" aria-label="시간 설정 지우기" title="시간 설정 지우기"
@@ -523,6 +580,9 @@ export default function Todo() {
             <button type="submit" className="oddk-primary">저장</button>
           </div>
         </form>}
+      </dialog>
+      <dialog ref={replanDialogRef} className="oddk-dialog oddk-replanDialog" aria-labelledby="replan-title" onClose={() => { setReplanId(null); setReplanError(""); }} onClick={(event) => { if (event.target === event.currentTarget) setReplanId(null); }}>
+        {replanTask && <form className="oddk-dialogForm" onSubmit={submitReplan}><header className="oddk-dialogHeader"><h2 id="replan-title">다시 계획하기</h2><button type="button" aria-label="다시 계획 창 닫기" onClick={() => setReplanId(null)}><HiOutlineXMark /></button></header><strong>{replanTask.title}</strong><p>기존 날짜 {replanTask.plannedDate}</p><label className="oddk-dialogField" htmlFor="replan-date">새 계획 날짜<input id="replan-date" type="date" min="0001-01-01" max="9999-12-31" required value={replanDate} onChange={(event) => { setReplanDate(event.target.value); setReplanError(""); }} /></label><p>시작 시간은 비우고, 할 일의 내용·시간·목표 연결은 그대로 유지해요.</p>{replanError && <p role="alert" className="oddk-dialogError">{replanError}</p>}<div className="oddk-dialogActions"><button type="button" onClick={() => setReplanId(null)}>취소</button><button type="submit" className="oddk-primary">날짜 옮기기</button></div></form>}
       </dialog>
       <div className={notice ? "oddk-toast" : "oddk-srOnly"} role="status" aria-live="polite" aria-atomic="true">
         {notice && <><span>{notice.message}</span><button type="button" aria-label="알림 닫기" onClick={() => setNotice(null)}><HiOutlineXMark aria-hidden="true" /></button></>}

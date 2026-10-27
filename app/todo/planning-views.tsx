@@ -47,9 +47,7 @@ export function MandalaView({ tasks, draft, dirty, onChange, onSave, onEdit, onL
   </section>;
 }
 
-export function AlpenView({ day, review, onReview, onEdit, onList, onRhythm, selectedTaskId }: { day: DayPlan; review: string; onReview: (text: string) => boolean; onEdit: (task: Task) => void; onList: () => void; onRhythm: () => void; selectedTaskId: string | null }) {
-  const [note, setNote] = useState(review);
-  const [message, setMessage] = useState("");
+export function AlpenView({ day, onEdit, onList, onRhythm, selectedTaskId }: { day: DayPlan; onEdit: (task: Task) => void; onList: () => void; onRhythm: () => void; selectedTaskId: string | null }) {
   const { tasks, active, activeTotal: total, activeBuffer: buffer } = day;
   const selectedTask = tasks.find((task) => task.id === selectedTaskId);
   const selectedButton = useRef<HTMLButtonElement>(null);
@@ -69,7 +67,7 @@ export function AlpenView({ day, review, onReview, onEdit, onList, onRhythm, sel
     </div>
     <h3 className="oddk-viewSubheading">실행할 일</h3>
     {active.length ? <ul className="oddk-planTaskList">{[...active].sort((a, b) => ["high", "normal", "low"].indexOf(a.priority) - ["high", "normal", "low"].indexOf(b.priority)).map((task) => <li key={task.id}><button type="button" onClick={() => onEdit(task)}><strong>{task.title}</strong><span>{labels[task.priority]} · {validTime(task) ? `작업 ${task.minutes! - task.bufferMinutes!} + 여유 ${task.bufferMinutes}분` : "시간 설정"} · {task.startTime || "시작 시간 설정"}</span></button></li>)}</ul> : <p className="oddk-viewEmpty">진행 중인 일이 없어요. 목록에서 할 일을 추가해주세요.</p>}
-    <form className="oddk-review" onSubmit={(event) => { event.preventDefault(); setMessage(onReview(note) ? "날짜 없는 점검을 저장했어요." : "저장하지 못했어요. 다시 시도해주세요."); }}><label htmlFor="alpen-review"><span className="oddk-step">N</span>날짜 없는 기존 점검<textarea id="alpen-review" maxLength={2000} value={note} onChange={(event) => { setNote(event.target.value); setMessage(""); }} placeholder="끝낸 일, 막힌 이유, 다음에 이어 할 일을 적어보세요." /></label><button className="oddk-primary" type="submit">점검 저장</button><span role="status">{message}</span></form>
+
   </section>;
 }
 

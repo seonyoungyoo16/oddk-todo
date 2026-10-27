@@ -77,6 +77,15 @@ export function restoreLastValidPlan() {
   else localStorage.setItem(key, JSON.stringify(result.plan));
   changed();
 }
+export function backupReviewPlan(plan: unknown) {
+  const result = loadPlan(JSON.stringify(plan));
+  if (!result.ok) throw new Error(result.error);
+  const s = session();
+  const key = s ? cacheKey(s) : LOCAL_KEY;
+  const raw = JSON.stringify(result.plan);
+  localStorage.setItem(`${key}.review-backup.${Date.now()}.${crypto.randomUUID()}`, raw);
+  localStorage.setItem(BACKUP_KEY, raw);
+}
 export async function syncNow() {
   if (busy || conflict) return;
   let s: Session | null = null;
