@@ -22,7 +22,7 @@ import { koreanToday } from "./plan-date";
 import { loadPlan } from "../../supabase/functions/_shared/plan-migration";
 import initialPlan from "./initial-plan.json";
 import { SyncPanel } from "./sync-panel";
-import { getPlanSnapshot, subscribePlan, writePlan, exportPlanBackup, restoreLastValidPlan, backupReviewPlan } from "./sync-store";
+import { getPlanSnapshot, getPlanScope, subscribePlan, writePlan, exportPlanBackup, restoreLastValidPlan, backupReviewPlan } from "./sync-store";
 
 type View = "list" | "rhythm" | "mandala" | "alpen" | "stats";
 const views: Array<{ id: View; label: string }> = [
@@ -91,6 +91,11 @@ function SelectionCheckbox({ label, checked, mixed = false, round = false, disab
 }
 
 export default function Todo() {
+  const scope = useSyncExternalStore(subscribePlan, getPlanScope, () => "local");
+  return <TodoWorkspace key={scope} />;
+}
+
+function TodoWorkspace() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_SNAPSHOT);
   const planLoad = useMemo(() => loadPlan(snapshot), [snapshot]);
   const plan = planLoad.ok ? planLoad.plan : EMPTY_PLAN;
