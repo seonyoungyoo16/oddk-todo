@@ -6,7 +6,7 @@ import ts from "typescript";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
 import { loadPlan, upgradeStoredPlan } from "../../supabase/functions/_shared/plan-migration.ts";
 
-test("invalid plans cannot mutate local storage or notify subscribers", () => {
+test("invalid writes, local recovery and review backups preserve snapshots", () => {
   const values = new Map();
   let notifications = 0;
   const source = readFileSync(new URL("../../app/todo/sync-store.ts", import.meta.url), "utf8");
@@ -21,7 +21,7 @@ test("invalid plans cannot mutate local storage or notify subscribers", () => {
       throw new Error(`Unexpected dependency: ${name}`);
     },
     localStorage: { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) },
-    window: { dispatchEvent: () => { notifications++; } }, Event, Error, Set,
+    window: { dispatchEvent: () => { notifications++; } }, Event, Error, Set, crypto,
   });
   const plan = { tasks: [], start: "09:00" };
   exports.writePlan(plan);
@@ -38,4 +38,8 @@ test("invalid plans cannot mutate local storage or notify subscribers", () => {
   exports.restoreLastValidPlan();
   assert.equal(values.get("oddk.todo.v1"), latest);
   assert.ok([...values.entries()].some(([key, raw]) => key.startsWith("oddk.todo.v1.recovery-original.") && raw === "{"));
+  exports.backupReviewPlan({ ...plan, review: "Unchosen draft" });
+  assert.equal(values.get("oddk.todo.v1"), latest);
+  assert.equal(JSON.parse(values.get("oddk.sync.backup.v1")).review, "Unchosen draft");
+  assert.ok([...values.keys()].some((key) => key.startsWith("oddk.todo.v1.review-backup.")));
 });
