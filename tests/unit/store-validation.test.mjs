@@ -40,6 +40,6 @@ test("invalid writes, local recovery and review backups preserve snapshots", () 
   assert.ok([...values.entries()].some(([key, raw]) => key.startsWith("oddk.todo.v1.recovery-original.") && raw === "{"));
   exports.backupReviewPlan({ ...plan, review: "Unchosen draft" });
   assert.equal(values.get("oddk.todo.v1"), latest);
-  assert.equal(JSON.parse(values.get("oddk.sync.backup.v1")).review, "Unchosen draft");
+  assert.equal(JSON.parse(values.get("oddk.todo.v1.backup")).review, "Unchosen draft");
   assert.ok([...values.keys()].some((key) => key.startsWith("oddk.todo.v1.review-backup.")));
 });
