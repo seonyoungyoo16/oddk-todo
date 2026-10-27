@@ -21,18 +21,20 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
   if (cached && !values.has(key)) values.set(key, JSON.stringify({ plan: JSON.stringify(cached), version: 4, dirty }));
   const jobs = new Map(); let nextJob = 0;
   const remote = { plan: copy(plan), version: 4, updated_at: "synthetic-time" };
-  const calls = []; let intercept;
+  const calls = [], oauthCalls = []; let intercept;
   let download;
   const window = new EventTarget(), document = Object.assign(new EventTarget(), { visibilityState: "visible", createElement: () => ({ click() {} }) });
+  window.location = { origin: "https://example.invalid" };
   const storage = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v), removeItem: (k) => values.delete(k) };
   const client = { auth: {
+    signInWithOAuth: async (options) => { oauthCalls.push(copy(options)); return { error: null }; },
     getSession: async () => ({ data: { session: login }, error: null }),
     onAuthStateChange: (callback) => { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; },
     signOut: async () => { login = null; listener?.("SIGNED_OUT", null); return {}; },
   } };
   const exports = {};
   vm.runInNewContext(js, { exports, require: (name) => name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan } : name.includes("_shared/plan") ? { validPlan } : { syncClient: () => client },
-    localStorage: storage, window, document, Event, Error, TypeError, Set, crypto, AbortSignal, Blob, URL: { createObjectURL(blob) { download = blob; return "blob:synthetic"; }, revokeObjectURL() {} },
+    process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } }, localStorage: storage, window, document, Event, Error, TypeError, Set, crypto, AbortSignal, Blob, URL: { createObjectURL(blob) { download = blob; return "blob:synthetic"; }, revokeObjectURL() {} },
     setTimeout: (job) => { jobs.set(++nextJob, job); return nextJob; }, clearTimeout: (id) => jobs.delete(id), setInterval: () => 0, clearInterval() {},
     fetch: async (_url, options) => {
       const body = JSON.parse(options.body); calls.push(copy(body));
@@ -44,15 +46,20 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
       return new Response(JSON.stringify(remote));
     },
   });
-  return { store: exports, values, remote, calls, set intercept(fn) { intercept = fn; }, async jobs() { const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
+  return { store: exports, values, remote, calls, oauthCalls, set intercept(fn) { intercept = fn; }, async jobs() { const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
     async login(id) { login = id ? auth(id) : null; listener?.(id ? "SIGNED_IN" : "SIGNED_OUT", login); await this.jobs(); await new Promise(setImmediate); },
     async download() { exports.exportPlanBackup("null", true); return JSON.parse(await download.text()); }, cache() { return JSON.parse(values.get(key)); }, snapshot() { return JSON.parse(exports.getPlanSnapshot("null")); }, status() { return JSON.parse(exports.getSyncSnapshot()); } };
 }
 
-test("deferred OAuth never starts a provider login or changes cached data", async () => {
+test("both OAuth providers start with the Pages callback without changing plan caches", async () => {
   const h = harness(); const before = [...h.values.entries()];
-  for (const provider of ["google", "github"]) await assert.rejects(h.store.loginSync(provider), /준비/);
-  assert.deepEqual([...h.values.entries()], before); assert.equal(h.calls.length, 0);
+  for (const provider of ["google", "github"]) {
+    await h.store.loginSync(provider);
+    assert.equal(h.values.get("oddk.sync.login-provider"), provider);
+  }
+  assert.deepEqual(h.oauthCalls, ["google", "github"].map(provider => ({provider, options: {redirectTo: "https://example.invalid/oddk-todo/todo/"}})));
+  for (const [key,value] of before) assert.equal(h.values.get(key), value);
+  assert.equal(h.calls.length, 0);
 });
 
 test("V1 account migration uses the existing CAS version and preserves original before V2", async () => {
