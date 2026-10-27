@@ -484,3 +484,10 @@
     padding: 0;
   }
 }
+
+.oddk-taskEditor .oddk-editorTitle textarea,.oddk-taskEditor .oddk-editorNotes textarea { width:100%; min-height:50px; max-height:320px; padding:12px 16px; border:1px solid var(--edit-border); border-radius:8px; background:var(--edit-field); color:var(--edit-heading); font-size:17px; line-height:26px; resize:none; overflow-y:auto; }
+.oddk-taskEditor .oddk-editorNotes { margin-top:18px; }
+.oddk-taskEditor .oddk-editorNotes textarea { min-height:100px; font-size:15px; }
+.oddk-taskEditor .oddk-editorNotes small { color:var(--edit-muted); font-size:12px; }
+
+.oddk-taskEditor textarea:focus-visible { outline:2px solid #6389e9; outline-offset:2px; border-color:#6389e9; }

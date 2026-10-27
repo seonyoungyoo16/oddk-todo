@@ -11,11 +11,15 @@ export function loadPlan(raw: string): PlanLoad {
   catch { return { ok: false, error: "저장된 JSON을 읽을 수 없어요. 원본을 백업한 뒤 복구해주세요.", raw }; }
   if (value && typeof value === "object" && "schemaVersion" in value && value.schemaVersion !== 2 && value.schemaVersion !== 3) return { ok: false, error: "이 앱에서 지원하지 않는 데이터 버전이에요. 원본은 그대로 보관돼 있어요.", raw };
   if (!validPlan(value)) return { ok: false, error: "저장된 내용의 형식을 확인해야 해요. 원본을 백업한 뒤 복구해주세요.", raw };
+  let v2: PlanV2;
   if (datedPlan(value)) {
     if (value.schemaVersion === 3) return { ok: true, plan: value, migrated: false };
-    return { ok: true, migrated: true, plan: { ...value, schemaVersion: 3, tasks: value.tasks.map(task => ({ ...task, notes: task.notes ?? "" })) } };
+    v2 = value;
+  } else {
+    v2 = { ...value, schemaVersion: 2, tasks: value.tasks.map(task => ({ ...task, startTime: task.startTime ?? null, plannedDate: null })), reviewsByDate: {} };
   }
-  return { ok: true, migrated: true, plan: { ...value, schemaVersion: 3, tasks: value.tasks.map(task => ({ ...task, startTime: task.startTime ?? null, plannedDate: null, notes: task.notes ?? "" })), reviewsByDate: {} } };
+  // Pure V1→V2→V3 normalization; durable replacement happens only after backup.
+  return { ok: true, migrated: true, plan: { ...v2, schemaVersion: 3, tasks: v2.tasks.map(task => ({ ...task, notes: task.notes ?? "" })) } };
 
 }
 
