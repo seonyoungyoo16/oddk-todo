@@ -307,6 +307,7 @@
 .oddk-dialogLinks p { margin-top: 10px; }
 .oddk-openAlpen { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 20px; padding: 12px; border: 1px solid var(--oddk-border); border-radius: 6px; background: var(--oddk-highlight); color: #5a80b8; font-size: 13px; }
 .oddk-openAlpen svg { width: 18px; height: 18px; }
+.oddk-openAlpen:disabled { opacity: .5; cursor: not-allowed; }
 .oddk-alpenSelected { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 16px; margin-bottom: 20px; border: 1px solid var(--oddk-border); border-radius: 7px; background: var(--oddk-highlight); }
 .oddk-alpenSelected strong, .oddk-alpenSelected small, .oddk-alpenSelected span { display: block; }
 .oddk-alpenSelected small { color: #8797af; font-size: 11px; }

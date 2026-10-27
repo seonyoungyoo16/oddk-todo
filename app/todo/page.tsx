@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent } from "react";
-import { HiOutlinePlus, HiOutlineXMark, HiOutlineCheck, HiOutlineMinus, HiOutlineTrash, HiOutlineArrowUturnLeft, HiOutlineClipboardDocumentCheck, HiOutlineSun, HiOutlineListBullet, HiOutlineSquares2X2, HiOutlineChartBar, HiOutlineClock, HiOutlineChevronDown } from "react-icons/hi2";
+import { HiOutlinePlus, HiOutlineXMark, HiOutlineCheck, HiOutlineMinus, HiOutlineTrash, HiOutlineArrowUturnLeft, HiOutlineClipboardDocumentCheck, HiOutlineSun, HiOutlineListBullet, HiOutlineSquares2X2, HiOutlineChartBar, HiOutlineClock, HiOutlineChevronDown, HiOutlineArrowRight } from "react-icons/hi2";
 import { GoDotFill } from "react-icons/go";
 import "./todo.css";
 import "./task-editor.css";
@@ -13,6 +13,7 @@ import { parseTaskTimeDraft, workFromStoredTime } from "./task-time";
 import { layoutTimeline, clockMinutes, clockLabel } from "./timeline";
 import { selectDay } from "./day-selectors";
 import { DailyReview } from "./daily-review";
+import { keepFocusInDialog } from "./dialog-focus";
 import { rescheduleTask, saveDatedReview, moveLegacyReview } from "./planning-actions";
 import { MandalaView, AlpenView, TimeStatsView, safeMandala } from "./planning-views";
 import type { Mandala, Plan, Task, Priority } from "../../supabase/functions/_shared/plan";
@@ -365,7 +366,7 @@ export default function Todo() {
     if (save({ ...plan, mandala: nextMandala, tasks: plan.tasks.map((item) => item.id === task.id ? { ...item, title, minutes: duration, bufferMinutes: buffer, startTime: editStart || null, plannedDate: editDate || null, priority: editPriority, done: editDone } : item) }, "내용을 수정했어요.")) {
       if (linksChanged) setMandalaDraft(null);
       setEditingId(null); setSelectedIds(new Set());
-      if (destination === "alpen") { setAlpenTaskId(task.id); changeView("alpen"); }
+      if (destination === "alpen") { setAlpenTaskId(task.id); if (editDate) setSelectedDate(editDate); changeView("alpen"); }
     }
     else setEditError("저장하지 못했어요. 브라우저의 저장 공간이나 사이트 저장 권한을 확인해주세요.");
   }
@@ -451,10 +452,10 @@ export default function Todo() {
                 </ul>}
 
                 <form onSubmit={addTask} className="oddk-addForm">
-                  <button type="submit" aria-label="할 일 추가"><HiOutlinePlus aria-hidden="true" /></button>
-                  <input ref={inputRef} id="todo-input" aria-label="할 일 입력" value={input} onChange={(event) => setInput(event.target.value)}
+                  <button type="submit" aria-label="할 일 추가" disabled={!today}><HiOutlinePlus aria-hidden="true" /></button>
+                  <input ref={inputRef} id="todo-input" aria-label="할 일 입력" disabled={!today} value={input} onChange={(event) => setInput(event.target.value)}
                     onKeyDown={(event) => { if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault(); }}
-                    maxLength={120} placeholder="떠오르는 할 일을 적어보세요" autoComplete="off" />
+                    maxLength={120} placeholder={today ? "떠오르는 할 일을 적어보세요" : "저장된 할 일을 불러오고 있어요"} autoComplete="off" />
                 </form>
 
                 <div className="oddk-dayProgress">
@@ -509,7 +510,7 @@ export default function Todo() {
           </main>
         </div>
       </div>
-      <dialog ref={dialogRef} className="oddk-dialog oddk-taskEditor" aria-labelledby="edit-dialog-title" onClose={() => { setEditingId(null); setEditError(""); }}
+      <dialog ref={dialogRef} className="oddk-dialog oddk-taskEditor" aria-labelledby="edit-dialog-title" onKeyDown={keepFocusInDialog} onClose={() => { setEditingId(null); setEditError(""); }}
         onClick={(event) => { if (event.target === event.currentTarget) setEditingId(null); }}>
         {editingTask && <form onSubmit={updateTask} className="oddk-dialogForm">
           <header className="oddk-dialogHeader"><h2 id="edit-dialog-title">할 일 수정</h2><button type="button" onClick={() => setEditingId(null)} aria-label="수정 창 닫기"><HiOutlineXMark aria-hidden="true" /></button></header>
@@ -536,7 +537,7 @@ export default function Todo() {
                 onClick={(event) => { event.preventDefault(); setEditWork(""); setEditBuffer(""); setEditStart(""); setEditError(""); }}><HiOutlineArrowUturnLeft aria-hidden="true" /></button>}
             </summary>
             <TaskTimeFields work={editWork} buffer={editBuffer}
-              onWorkChange={(value) => { setEditWork(value); setEditError(""); }} onBufferChange={(value) => { setEditBuffer(value); setEditError(""); }} />
+              onWorkChange={(value) => { setEditWork(value); if (!value.trim()) setEditStart(""); setEditError(""); }} onBufferChange={(value) => { setEditBuffer(value); setEditError(""); }} />
             <label className="oddk-dialogField oddk-startField" htmlFor="edit-start">시작 시간
               <input id="edit-start" type="time" step={60} lang="ko" value={editStart} disabled={editTime.minutes === null} aria-describedby="edit-start-guide"
                 onChange={(event) => { setEditStart(event.target.value); setEditError(""); }} />
@@ -572,6 +573,7 @@ export default function Todo() {
             <p>연결·해제는 저장할 때 반영돼요.{mandalaDraft && " 목표 변경사항도 함께 저장돼요."}</p>
             </div>
           </details>
+          <button type="submit" className="oddk-openAlpen" data-destination="alpen" disabled={!editDate} aria-describedby={!editDate ? "edit-date-guide" : undefined}><HiOutlineArrowRight aria-hidden="true" />저장 후 ALPEN에서 계획</button>
           </div>
           {editError && <p role="alert" className="oddk-dialogError">{editError}</p>}
           <div className="oddk-dialogActions">
@@ -581,7 +583,7 @@ export default function Todo() {
           </div>
         </form>}
       </dialog>
-      <dialog ref={replanDialogRef} className="oddk-dialog oddk-replanDialog" aria-labelledby="replan-title" onClose={() => { setReplanId(null); setReplanError(""); }} onClick={(event) => { if (event.target === event.currentTarget) setReplanId(null); }}>
+      <dialog ref={replanDialogRef} className="oddk-dialog oddk-replanDialog" aria-labelledby="replan-title" onKeyDown={keepFocusInDialog} onClose={() => { setReplanId(null); setReplanError(""); }} onClick={(event) => { if (event.target === event.currentTarget) setReplanId(null); }}>
         {replanTask && <form className="oddk-dialogForm" onSubmit={submitReplan}><header className="oddk-dialogHeader"><h2 id="replan-title">다시 계획하기</h2><button type="button" aria-label="다시 계획 창 닫기" onClick={() => setReplanId(null)}><HiOutlineXMark /></button></header><strong>{replanTask.title}</strong><p>기존 날짜 {replanTask.plannedDate}</p><label className="oddk-dialogField" htmlFor="replan-date">새 계획 날짜<input id="replan-date" type="date" min="0001-01-01" max="9999-12-31" required value={replanDate} onChange={(event) => { setReplanDate(event.target.value); setReplanError(""); }} /></label><p>시작 시간은 비우고, 할 일의 내용·시간·목표 연결은 그대로 유지해요.</p>{replanError && <p role="alert" className="oddk-dialogError">{replanError}</p>}<div className="oddk-dialogActions"><button type="button" onClick={() => setReplanId(null)}>취소</button><button type="submit" className="oddk-primary">날짜 옮기기</button></div></form>}
       </dialog>
       <div className={notice ? "oddk-toast" : "oddk-srOnly"} role="status" aria-live="polite" aria-atomic="true">
