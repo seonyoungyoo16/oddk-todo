@@ -1,0 +1,15 @@
+.oddk-replan { margin: 1rem 0; font-size: .875rem; line-height: 1.6; }
+.oddk-replan > div:first-child, .oddk-replanActions { display:flex; flex-wrap:wrap; gap:.6rem; }
+.oddk-replan button, .oddk-replanDialog button { border:1px solid var(--oddk-border, #d7dce8); border-radius:6px; padding:.5rem .75rem; }
+.oddk-replanDialog { margin:auto; width:min(640px, calc(100vw - 32px)); max-height:calc(100dvh - 32px); overflow:auto; padding:1.25rem; color:inherit; background:var(--oddk-surface, #fff); border:1px solid var(--oddk-border, #d7dce8); border-radius:10px; line-height:1.65; font-family:inherit; }
+.oddk-replanDialog::backdrop { background:#0008; }
+.oddk-replanDialog h2 { font-size:1.25rem; font-weight:650; }
+.oddk-replanDialog h3 { font-size:1rem; font-weight:600; margin-top:1rem; }
+.oddk-replanDialog p { margin:.65rem 0; overflow-wrap:anywhere; }
+.oddk-replanDialog fieldset { border:1px solid var(--oddk-border, #d7dce8); padding:.75rem; margin:1rem 0; }
+.oddk-replanDialog label { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; margin:.5rem 0; overflow-wrap:anywhere; }
+.oddk-replanDialog input[type=time] { border:1px solid var(--oddk-border,#d7dce8); border-radius:4px; padding:.4rem; color:inherit; background:transparent; }
+.oddk-replanResult li { padding:.5rem 0; border-bottom:1px solid var(--oddk-border,#d7dce8); display:flex; flex-direction:column; overflow-wrap:anywhere; }
+.oddk-replanActions { margin-top:1rem; justify-content:flex-end; }
+.oddk-replan button:disabled, .oddk-replanDialog button:disabled { opacity:.45; cursor:not-allowed; }
+.oddk-page[data-theme=dark] .oddk-replanDialog { background:#171d29; color:#e5e9f4; }

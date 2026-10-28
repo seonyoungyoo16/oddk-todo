@@ -32,6 +32,11 @@ export function localExecutionTransaction(change: (current: LocalExecutionData) 
     };
   });
 }
-export const readLocalExecutions = (plan: () => Plan) => localExecutionTransaction(current => current.records.some(r => r.endedAt === null) ? reconcileLocalExecution(current, plan(), new Date().toISOString()) : current);
-export const commandLocalExecutions = (plan: () => Plan, request: ExecutionCommandRequest) => localExecutionTransaction(current => applyLocalExecution(current, plan(), request, new Date().toISOString()));
-export const restoreLocalExecutions = (records: ExecutionRecord[]) => localExecutionTransaction(current => importLocalExecutions(current, records, new Date().toISOString()));
+export async function withLocalExecutionLock<T>(run: () => Promise<T>, required = false): Promise<T> {
+  if (typeof navigator !== "undefined" && navigator.locks) return await navigator.locks.request("oddk-actual-plan", async () => await run());
+  if (required) return Promise.reject(new Error("이 브라우저에서는 안전한 재조정을 지원하지 않아요. 최신 Chrome·Edge·Safari에서 다시 시도해주세요."));
+  return run();
+}
+export const readLocalExecutions = (plan: () => Plan) => withLocalExecutionLock(() => localExecutionTransaction(current => current.records.some(r => r.endedAt === null) ? reconcileLocalExecution(current, plan(), new Date().toISOString()) : current));
+export const commandLocalExecutions = (plan: () => Plan, request: ExecutionCommandRequest) => withLocalExecutionLock(() => localExecutionTransaction(current => applyLocalExecution(current, plan(), request, new Date().toISOString())));
+export const restoreLocalExecutions = (records: ExecutionRecord[]) => withLocalExecutionLock(() => localExecutionTransaction(current => importLocalExecutions(current, records, new Date().toISOString())));

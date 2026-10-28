@@ -3,6 +3,9 @@ import { alignPushBinding, clearPushBinding, stopPushForLogout } from "./push-cl
 import { validPlan } from "../../supabase/functions/_shared/plan";
 import { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } from "../../supabase/functions/_shared/plan-migration";
 import type { Session as AuthSession } from "@supabase/supabase-js";
+import { sameValue } from "../../supabase/functions/_shared/json-equality";
+import type { Plan } from "../../supabase/functions/_shared/plan";
+import type { ReplanOptions } from "../../supabase/functions/_shared/replan";
 const ENDPOINT = "https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync";
 const LOCAL_KEY = "oddk.todo.v1";
 const SESSION_KEY = "oddk.sync.session.v1";
@@ -75,6 +78,44 @@ async function api(action: string, values: object = {}, s?: Pick<Session, "id">)
   return data;
 }
 export const getSyncSnapshot = () => state;
+export async function commitAccountReplan(scope: string, expected: Plan, proposed: Plan, options: ReplanOptions, executionRevision: number) {
+  const s = session();
+  if (!s || s.id !== scope || busy || conflict || blockedDevice === s.deviceId) throw new Error("동기화를 마친 뒤 다시 미리보기를 만들어주세요.");
+  const before = cache(s);
+  if (before.dirty || !sameValue(JSON.parse(before.plan), expected)) throw new Error("기기 계획이 바뀌었거나 전송 대기 중이에요. 동기화 후 다시 확인해주세요.");
+  busy = true;
+  try {
+    const check = async () => {
+      const auth = await syncClient().auth.getSession();
+      if (auth.error || auth.data.session?.user.id !== scope || !current(s)) throw new Error("계정이 바뀌었어요. 원래 계정에서 저장 결과를 확인해주세요.");
+    };
+    await check();
+    let remote: Cloud;
+    try { remote = await api("replan", { plan: proposed, version: before.version, options, executionRevision }, s); }
+    catch (error) {
+      await check();
+      try { remote = await api("pull", {}, s); }
+      catch { throw new Error("저장 결과를 확인하지 못했어요. 연결 후 동기화하고 복구안을 확인해주세요."); }
+      if (remote.version !== before.version + 1 || !sameValue(remote.plan, proposed)) throw error;
+    }
+    await check();
+    remote = readCloud(remote, s).remote;
+    if (remote.version !== before.version + 1 || !sameValue(remote.plan, proposed)) throw new Error("승인한 변경의 저장 결과를 확인해야 해요. 동기화 후 확인해주세요.");
+    const latest = cache(s);
+    if (latest.dirty || latest.version !== before.version || !sameValue(JSON.parse(latest.plan), expected)) {
+      if (!latest.dirty && latest.version >= remote.version && sameValue(JSON.parse(latest.plan), proposed)) return true;
+      conflict = remote; status(s, "conflict", "재조정은 서버에 저장됐지만 이 기기의 새 변경도 있어요. 보관할 내용을 비교해주세요.");
+      return false;
+    }
+    try {
+      const raw = JSON.stringify(remote.plan);
+      localStorage.setItem(`${cacheKey(s)}.last-valid`, raw);
+      localStorage.setItem(cacheKey(s), JSON.stringify({ plan: raw, version: remote.version, dirty: false }));
+      changed(); status(s, "synced", "재조정한 계획을 모든 기기와 동기화했어요.", remote.updated_at);
+      return true;
+    } catch { throw new Error("서버에는 저장됐지만 기기 저장에 실패했어요. 저장 공간을 확보하고 동기화해주세요. 복구안은 보관돼 있어요."); }
+  } finally { busy = false; }
+}
 export function getPlanScope() { try { return session()?.id ?? "local"; } catch { return "unreadable-session"; } }
 export const getServerSyncSnapshot = () => JSON.stringify(INITIAL);
 export function subscribeSync(notify: () => void) { listeners.add(notify); return () => { listeners.delete(notify); }; }

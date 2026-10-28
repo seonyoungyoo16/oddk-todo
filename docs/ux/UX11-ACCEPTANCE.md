@@ -1,6 +1,6 @@
 # UX11 실제 시간 기록 인수
 
-상태: 소프트웨어 인수 통과, 최종 CI/Pages 동일 SHA 운영 검증 대기. UX12에 착수하지 않는다.
+상태: 소프트웨어 인수 및 CI/Pages 동일 SHA 운영 게이트 완료. 물리 단말/실제 OAuth 인수는 마지막 사용자 목록으로 분리한다.
 
 ## 제공 범위
 
@@ -38,8 +38,16 @@
 ## 남은 게이트와 사용자 인수
 
 - [x] 보정 revision 고정 최종 소스: 열린 입력창 뒤 다른 기록 버전 저장→이전 revision 저장 거부, 입력/새 실제 구간 보존, 원문 백업 후 최신 기록 재확인. 수동 입력 시각은 서버 시각+monotonic 경과로 갱신한다.
-- [ ] 최종 CI·정적 export QA 자료 미포함·동일 SHA Pages 운영 화면/서버·Cron 확인.
+- [x] 최종 CI·정적 export QA 자료 미포함·동일 SHA Pages 운영 화면/서버·Cron 확인.
 - [ ] 200% 확대/전체 공통 회귀를 UX13 체크리스트에 합쳐 확인.
 - 실제 OAuth·물리 두 기기·OS 백그라운드/시계·보조기술·독립 사용자 인수는 `FINAL-USER-CHECKS.md`에 모아 전체 작업 마지막에 요청한다. 실물 시험을 소프트웨어 모사로 통과 표시하지 않는다.
 
 ALPEN: 저장/소유권→실제 상태 전환→입력/실패 복구→배포 순으로 집중 블록을 나누고, 각 블록 후 여유 시간을 재검증에 사용한다. 일정 추정과 실제 기록은 혼동하지 않으며 외부 CI/네트워크 대기는 별도로 본다.
+
+## 운영 게이트 — 2026-10-29
+
+PR29 head8c32c5f, CI40725957848/verify122949154427 성공(Node240/Deno168/암호화2+guard1/type/lint/모든 Edge check/Pages build/export). 병합 e2da19e34ee61926bdf6a436b64e4aad1eb9671f, master40726332548 verify122950498724/deploy122951269684 success. deployment7391244498의 SHA 일치와 status success를 확인했다.
+
+운영 HTML200·JS9개 모두200/로컬 빌드9개 전부 바이트 일치, 실제 시간 보정/인증 execution 코드 포함. manifest200/standalone, SW/core/192·512아이콘4개 원문·바이트 일치. 실제 운영 새 패널/마지막 확인 정상, SSO 두 버튼 enabled 유지, console warn/error0(`UX11-deployed.png`). execution v2 ACTIVE/hash 일치·16파일 원문 동일, Cron2 enabled와 최근3분 HTTP6/6 정상200/timeout false/오류 없음.
+
+primary master도 같은 SHA로 fast-forward했다. 기존 사용자 CSS SHA25636ABC08A32269D3ED013C372DD10C07BB718C28489AABF0806C5FC2CC4FBAC83 및 미커밋 로고/별도 문서는 보존했다. 이 게이트 후 UX12에 착수한다.

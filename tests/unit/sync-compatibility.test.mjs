@@ -1,3 +1,4 @@
+import { sameValue } from "../../supabase/functions/_shared/json-equality.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -33,7 +34,7 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
     signOut: async () => { privacyCalls.push("signout"); login = null; listener?.("SIGNED_OUT", null); return {}; },
   } };
   const exports = {};
-  vm.runInNewContext(js, { exports, require: (name) => name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } : name.includes("_shared/plan") ? { validPlan } : name === "./push-client" ? { alignPushBinding: async () => {}, clearPushBinding: async () => {}, stopPushForLogout: async () => { privacyCalls.push("block"); await privacyIntercept?.(); } } : { syncClient: () => client },
+  vm.runInNewContext(js, { exports, require: (name) => name.includes("json-equality") ? { sameValue } : name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } : name.includes("_shared/plan") ? { validPlan } : name === "./push-client" ? { alignPushBinding: async () => {}, clearPushBinding: async () => {}, stopPushForLogout: async () => { privacyCalls.push("block"); await privacyIntercept?.(); } } : { syncClient: () => client },
     process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } }, localStorage: storage, window, document, Event, Error, TypeError, Set, crypto, AbortSignal, Blob, URL: { createObjectURL(blob) { download = blob; return "blob:synthetic"; }, revokeObjectURL() {} },
     setTimeout: (job) => { jobs.set(++nextJob, job); return nextJob; }, clearTimeout: (id) => jobs.delete(id), setInterval: () => 0, clearInterval() {},
     fetch: async (_url, options) => {
@@ -60,6 +61,40 @@ test("both OAuth providers start with the Pages callback without changing plan c
   assert.deepEqual(h.oauthCalls, ["google", "github"].map(provider => ({provider, options: {redirectTo: "https://example.invalid/oddk-todo/todo/"}})));
   for (const [key,value] of before) assert.equal(h.values.get(key), value);
   assert.equal(h.calls.length, 0);
+});
+
+test("approved account replan confirms exact target once and recovers lost response by pull", async () => {
+  for (const lost of [false, true]) {
+    const h = harness(), expected = h.snapshot(), proposed = { ...expected, review: "Approved proposal" };
+    h.intercept = body => { if (body.action !== "replan") return; h.remote.plan = copy(proposed); h.remote.version++; if (lost) throw new TypeError("response lost"); return new Response(JSON.stringify(h.remote)); };
+    assert.equal(await h.store.commitAccountReplan("account-a", expected, proposed, { date: "2026-10-29", baseMinute: 600, pinnedIds: [] }, 0), true);
+    assert.deepEqual(h.snapshot(), proposed); assert.equal(h.cache().dirty, false); assert.equal(h.remote.version, 5);
+    assert.equal(h.calls.filter(c => c.action === "replan").length, 1);
+  }
+});
+test("account replan refuses dirty/source changes, preserves concurrent local edits and reports comparison", async () => {
+  const h = harness(), expected = h.snapshot(), proposed = { ...expected, review: "Approved" };
+  h.intercept = body => { if (body.action !== "replan") return; h.store.writePlan({ ...expected, review: "Concurrent local" }); h.remote.plan = copy(proposed); h.remote.version++; return new Response(JSON.stringify(h.remote)); };
+  assert.equal(await h.store.commitAccountReplan("account-a", expected, proposed, { date: "2026-10-29", baseMinute: 600, pinnedIds: [] }, 0), false);
+  assert.equal(h.snapshot().review, "Concurrent local"); assert.equal(h.cache().dirty, true); assert.equal(h.status().phase, "conflict");
+  const dirty = harness({ dirty: true }); await assert.rejects(dirty.store.commitAccountReplan("account-a", expected, proposed, {}, 0), /대기/); assert.equal(dirty.calls.length, 0);
+  const stale = harness(); await assert.rejects(stale.store.commitAccountReplan("account-a", proposed, proposed, {}, 0), /바뀌/); assert.equal(stale.calls.length, 0);
+});
+test("account replan never publishes an old account response after same-document account swap", async () => {
+  const h = harness(), expected = h.snapshot(), proposed = { ...expected, review: "A only proposal" };
+  const stop = h.store.startSync(JSON.stringify(modern())); await h.jobs();
+  let release, entered; const waiting = new Promise(resolve => { entered = resolve; });
+  h.intercept = body => body.action === "replan" ? new Promise(resolve => { release = () => resolve(new Response(JSON.stringify({ plan: proposed, version: 5 }))); entered(); }) : undefined;
+  const pending = h.store.commitAccountReplan("account-a", expected, proposed, {}, 0); await waiting;
+  await h.login("account-b"); release(); await assert.rejects(pending, /계정/);
+  assert.equal(h.store.getPlanScope(), "account-b"); assert.notEqual(h.snapshot().review, "A only proposal"); stop();
+});
+test("unconfirmed/offline or rejected replan keeps the exact cache and candidate available to caller", async () => {
+  const h = harness(), expected = h.snapshot(), raw = h.cache().plan, proposed = { ...expected, review: "Proposal" };
+  h.intercept = () => { throw new TypeError("offline"); };
+  await assert.rejects(h.store.commitAccountReplan("account-a", expected, proposed, {}, 0), /결과/); assert.equal(h.cache().plan, raw);
+  h.intercept = body => body.action === "replan" ? new Response(JSON.stringify({ error: "stale execution" }), { status: 409 }) : undefined;
+  await assert.rejects(h.store.commitAccountReplan("account-a", expected, proposed, {}, 0), /stale execution/); assert.equal(h.cache().plan, raw);
 });
 
 test("V1 account migration uses the existing CAS version and preserves original before V2", async () => {

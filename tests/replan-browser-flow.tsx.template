@@ -1,0 +1,55 @@
+"use client";
+import { useRef, useState } from "react";
+import { localExecutionTransaction, commandLocalExecutions, withLocalExecutionLock } from "../todo/execution-idb";
+import type { LocalExecutionData } from "../todo/execution-local-model";
+import { loadPlan } from "../../supabase/functions/_shared/plan-migration";
+import { replanClock, previewReplan } from "../../supabase/functions/_shared/replan";
+import { sameValue } from "../../supabase/functions/_shared/json-equality";
+import { commitReplan } from "../todo/replan-client";
+import { syncClient } from "../todo/supabase-client";
+const sleep = (ms:number)=>new Promise(r=>setTimeout(r,ms));
+async function wait(test:()=>boolean|Promise<boolean>,message:string){const end=Date.now()+20000;while(Date.now()<end){if(await test())return;await sleep(100);}throw Error(message);}
+export default function ReplanQA(){
+ const frame=useRef<HTMLIFrameElement>(null),backup=useRef<{storage:[string,string][];data:LocalExecutionData}|null>(null);
+ const [events,setEvents]=useState<string[]>([]),[active,setActive]=useState(false),[running,setRunning]=useState(false);
+ const say=(s:string)=>setEvents(v=>[...v,s]);
+ const doc=()=>{const d=frame.current?.contentDocument;if(!d)throw Error('Frame not ready');return d;};
+ const read=()=>JSON.parse(localStorage.getItem('oddk.todo.v1')!);
+ const button=(name:string)=>[...doc().querySelectorAll<HTMLButtonElement>('button')].find(b=>(b.textContent?.trim()===name||b.getAttribute('aria-label')===name)&&b.getClientRects().length>0);
+ const click=async(name:string)=>{await wait(()=>Boolean(button(name)&&!button(name)!.disabled),'Missing enabled '+name);button(name)!.click();};
+ const input=(e:HTMLInputElement,value:string)=>{Object.getOwnPropertyDescriptor(Object.getPrototypeOf(e),'value')!.set!.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));};
+ async function openPreview(){await click('남은 시간 재조정');await wait(()=>Boolean(doc().querySelector('dialog[open] input[type=time]')),'Dialog');const t=doc().querySelector<HTMLInputElement>('dialog[open] input[type=time]')!;const m=replanClock(new Date().toISOString()).minute+3;input(t,`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);await click('변경안 미리보기');await wait(()=>Boolean(doc().querySelector('.oddk-replanResult')),'Preview');}
+ async function apply(){doc().querySelector<HTMLInputElement>('.oddk-replanResult input[type=checkbox]')!.click();await click('확인한 변경 적용');}
+ async function run(){setRunning(true);try{
+  if((await syncClient().auth.getSession()).data.session)throw Error('Existing login: stop');
+  const data=await localExecutionTransaction(v=>v);if(data.records.length||data.operations.length)throw Error('Existing actual records: stop');
+  backup.current={storage:Object.entries(localStorage),data};
+  const clock=replanClock(new Date().toISOString());if(clock.minute>1350)throw Error('Not enough time before midnight for this synthetic scenario');
+  const date=clock.date,pinMinute=clock.minute+60,pinTime=`${String(Math.floor(pinMinute/60)).padStart(2,'0')}:${String(pinMinute%60).padStart(2,'0')}`;
+  const tasks=[{id:'one',title:'QA scheduled',minutes:10,bufferMinutes:2,startTime:'00:00'}, {id:'pin',title:'QA protected',minutes:5,bufferMinutes:1,startTime:pinTime}, {id:'long',title:'QA cannot fit',minutes:240,bufferMinutes:10,startTime:'00:00'}, {id:'unset',title:'QA no estimate',minutes:null,bufferMinutes:null,startTime:null}].map(t=>({...t,done:false,priority:'normal',plannedDate:date}));
+  const loaded=loadPlan(JSON.stringify({schemaVersion:2,reviewsByDate:{},start:'09:00',tasks}));if(!loaded.ok)throw Error(loaded.error);
+  const endMinute=clock.minute+90,endTime=`${String(Math.floor(endMinute/60)).padStart(2,'0')}:${String(endMinute%60).padStart(2,'0')}`;
+  const plan={...loaded.plan,availabilityByDate:{[date]:{start:'00:00',end:endTime,fixed:[]}}};
+  localStorage.clear();localStorage.setItem('oddk.todo.v1',JSON.stringify(plan));setActive(true);await wait(()=>Boolean(frame.current),'Mount');frame.current!.src='/todo/?replan-qa=1';
+  await openPreview();if(!doc().querySelector('.oddk-replanResult')!.textContent!.includes('작업·여유 시간 미설정'))throw Error('Unset reason missing');if(!doc().querySelector('.oddk-replanResult')!.textContent!.includes('남은 활동 시간이 부족'))throw Error('Unplaced reason missing');
+  if(!button('확인한 변경 적용')!.disabled)throw Error('Confirmation not required');await click('취소');if(!sameValue(read(),plan))throw Error('Cancel mutated plan');say('PASS actual preview reasons, protected selection and explicit confirm/cancel preserves original');
+  await openPreview();await apply();await wait(()=>!doc().querySelector('dialog[open]'),'Apply close');const changed=read();if(changed.tasks[0].startTime==='00:00'||changed.tasks[1].startTime!==pinTime||changed.tasks[2].startTime!==null)throw Error('Applied proposal mismatch');say('PASS actual UI applies only approved schedule; protected unchanged, impossible task unplaced, durations retained');
+  frame.current!.src='/todo/?replan-qa=reload';await wait(()=>doc().URL.includes('replan-qa=reload')&&Boolean(button('최근 재조정 시각 복구')),'Recovery after reload');await click('최근 재조정 시각 복구');await wait(()=>sameValue(read(),plan),'Recovery did not restore exact plan');say('PASS durable compact recovery after reload restores exact original timing');
+  await openPreview();const external={...plan,review:'External tab edit'};localStorage.setItem('oddk.todo.v1',JSON.stringify(external));await apply();await wait(()=>doc().querySelector('dialog[open]')!.textContent!.includes('계획이 바뀌었어요'),'Stale guard');if(!sameValue(read(),external))throw Error('Stale overwrite');await click('취소');say('PASS changed source rejected without overwriting external plan');
+  localStorage.setItem('oddk.todo.v1',JSON.stringify(plan));frame.current!.src='/todo/?replan-qa=quota';await wait(()=>doc().URL.includes('replan-qa=quota')&&Boolean(button('남은 시간 재조정')),'Quota reload');await openPreview();
+  const win=doc().defaultView as Window&typeof globalThis,proto=win.Storage.prototype,set=proto.setItem;
+  try{proto.setItem=function(k:string,v:string){if(k.includes('replan-recovery'))throw new win.DOMException('QA quota','QuotaExceededError');return set.call(this,k,v);};await apply();await wait(()=>doc().querySelector('dialog[open]')!.textContent!.includes('복구안을 저장하지 못해'),'Recovery quota message');}finally{proto.setItem=set;}
+  if(!sameValue(read(),plan))throw Error('Quota failure changed plan');await click('확인한 변경 적용');await wait(()=>!doc().querySelector('dialog[open]'),'Retry apply');say('PASS recovery storage quota stops apply; retained confirmation/candidate retries without re-entry');
+  // Race actual native stores under the same Web Lock. One writer wins; a stale
+  // preview cannot be saved after an active timer or vice versa with old context.
+  localStorage.setItem('oddk.todo.v1',JSON.stringify(plan));const source=read(),revision=(await localExecutionTransaction(v=>v)).revision;
+  const preview=previewReplan(source,{date,baseMinute:clock.minute+4,pinnedIds:['pin']});
+  const results=await Promise.allSettled([commandLocalExecutions(()=>read(),{action:'command',operationId:crypto.randomUUID(),revision,command:{type:'start',taskId:'one'}}),commitReplan('local',preview,revision)]);
+  if(results[1].status==='fulfilled'&&results[0].status==='fulfilled')throw Error('Start-first ordering unexpectedly admitted stale replan');
+  if(!(await localExecutionTransaction(v=>v)).records.some(r=>r.endedAt===null))throw Error('Timer lost');say('PASS native timer/replan race serialized; stale replan refused, active record retained');
+  await withLocalExecutionLock(()=>localExecutionTransaction(()=>data));
+  frame.current!.src='/todo/?replan-qa=visual';await wait(()=>doc().URL.includes('replan-qa=visual')&&Boolean(button('남은 시간 재조정')),'Visual reload');await openPreview();say('PASS READY FOR VISUAL QA');
+ }catch(e){say('FAIL '+(e instanceof Error?e.message:String(e)));}finally{setRunning(false);}}
+ async function cleanup(){setActive(false);await sleep(250);const b=backup.current;if(!b)return;await localExecutionTransaction(()=>b.data);localStorage.clear();for(const[k,v]of b.storage)localStorage.setItem(k,v);backup.current=null;say('CLEANED original browser data restored');}
+ return <main style={{padding:20}}><h1>UX12 isolated native browser QA</h1><button disabled={running||!!backup.current} onClick={()=>void run()}>Run replan QA</button><button disabled={running} onClick={()=>void cleanup()}>Restore original browser data</button><ol>{events.map((e,i)=><li key={i}>{e}</li>)}</ol>{active&&<iframe ref={frame} title="Replan application" style={{width:'100%',height:850}}/>}</main>;
+}

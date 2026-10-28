@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 import { parsePlanRequest } from "./request.ts";
+import { ReplanRequestError, validateReplanRequest } from "./replan.ts";
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 const origins = new Set(["https://seonyoungyoo16.github.io", "http://localhost:3000", "http://127.0.0.1:3200"]);
 Deno.serve(async (req: Request) => {
@@ -18,6 +19,14 @@ Deno.serve(async (req: Request) => {
     const parsed = parsePlanRequest(text);
     if (!parsed.ok) return reply({ error: parsed.error }, parsed.status);
     const body = parsed.body;
+    if (body.action === "replan") {
+      const context = await db.rpc("execution_context", { p_user: user.id, p_target: null, p_operation: null });
+      if (context.error) throw context.error;
+      const change = validateReplanRequest(body, context.data);
+      const { data, error } = await db.rpc("replan_checked_commit", { p_user: user.id, p_plan_version: body.version, p_execution_version: body.executionRevision, p_date: body.options.date, p_first_start: change.firstStart, p_plan: change.plan });
+      if (error) throw error;
+      return reply(data);
+    }
     if (body.action === "ensure" || body.action === "pull") {
       let { data, error } = await db.from("account_plans").select("user_id,plan,version,updated_at").eq("user_id", user.id).maybeSingle();
       if (error) throw error;
@@ -47,6 +56,8 @@ Deno.serve(async (req: Request) => {
     }
     return reply({ error: "지원하지 않는 요청이에요." }, 400);
   } catch (error) {
+    if (error instanceof ReplanRequestError) return reply({ error: error.message }, error.status);
+    if (error && typeof error === "object" && "code" in error && ["PT409", "P0002"].includes(error.code as string)) return reply({ error: "계획·기록이 바뀌었거나 시작 시각이 지났어요. 최신 상태에서 다시 확인해주세요." }, 409);
     // JSONB formatting can exceed the DB byte limit even below the raw request limit.
     if (error && typeof error === "object" && "code" in error && error.code === "23514") return reply({ error: "동기화할 데이터가 너무 커요." }, 413);
     return reply({ error: "서버에 저장하지 못했어요. 내용은 기기에 남아 있어요." }, 500);
