@@ -1,6 +1,6 @@
 # UX13 출시 묶음 최종 인수
 
-2026-10-29 · 상태: 소프트웨어 인수 완료, 이 문서 묶음의 최종 CI/Pages 게이트 대기. 실제 OAuth·물리 기기·독립 사용성은 사용자 인수 대기다. 모든 환경의 출시 검증 완료로 해석하지 않는다.
+2026-10-29 · 소프트웨어 인수 결과. 이 문서 묶음의 불변 SHA·CI·Pages·운영 확인 결과는 [최종 릴리스 PR31](https://github.com/seonyoungyoo16/oddk-todo/pull/31)의 **최종 운영 게이트**에서 관리한다. 필수 검사 성공·병합 SHA 배포·운영 확인을 모두 확인한 뒤 소프트웨어 릴리스 완료로 판정한다. 실제 OAuth·물리 기기·독립 사용성은 사용자 인수 대기이며 모든 환경의 출시 검증 완료로 해석하지 않는다.
 
 ## 범위와 판단
 
@@ -50,7 +50,7 @@ UX00~UX12를 순서대로 각 단계의 구현·QA·같은 SHA 운영 배포 확
 ## 이번 최종 통합 검증
 
 - [브라우저 통합 흐름](evidence/UX13-combined-flow.png): 실제 native 저장소에 합성 V3 원문/8×8/오늘·내일·미배정3건을 넣고 앱으로 이전했다. before-v4/v5 원문 바이트 동일, V5/종료10:00·60/50/10/목표 연결 유지 → 오늘/주간/전체 동일 ID → 수정 메모 close/reload 복원 →09:30~10:30/여유10·한글 메모 저장 →완료/undo →목표의 같은 업무 →새 한글 업무/reload →손상 원문 `{broken` 유지/복구화면 →정상 원안 재로딩을 확인했다.
-- fixture 없는 최종 앱/브라우저 확인과 실제 저장소 복원 완료 후 QA route를 제거한다. 새 계정/실적/알림 자료를 만들지 않았고 이전14파일 통합 fixture도 이미 제거했다.
+- [원래 native/browser 저장소 복원](evidence/UX13-cleanup.png) 완료를 확인한 뒤 QA route를 제거했다. 새 계정/실적/알림 자료를 만들지 않았고 이전14파일 통합 fixture도 이미 제거했다.
 - Node260 / 공통 Deno187 / 푸시 실제 암호화2+위험 환경 guard1 / 전체 Edge check / type/lint / Pages build/export를 최종 CI로 확인한다. 14개 실제 통합은 UX12의 고정된 서버/클라이언트에서 새2계정 실행 exit0(session1631), UX13은 앱/서버 코드를 바꾸지 않는다.
 - plan-sync13 반환15파일 동일, execution2 유지, Cron2 활성/최근 HTTP200·timeout false/error null. testusers0·실적records/state0·기존계획3, 서버전용 RLS INFO11/기존password WARN1. 닫힌 과거 검증 Edge2개는 원격 원문410/데이터 접근 없음 재확인했다.
 - README의 V3/자정 시작일 합산/계정 전환 초안 초기화 등 오래된 설명과 RELEASE의 OAuth 비활성/OAUTH_READY 재활성화 지시를 현재 계약으로 교정했다. 과거 T00~11 인수 기록은 역사로 보존하며 최신 문서 링크를 앞에 둔다.
