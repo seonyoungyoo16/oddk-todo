@@ -1,6 +1,6 @@
 # UX10 서버 반복 준비 운영
 
-현재 배포된 기능은 반복 일정 발생 준비다. 푸시 예약/전달은 후속 작업이다.
+현재 반복 발생 준비·기기 구독·알림 예약 대기열까지 배포했다. 실제 푸시 발송·브라우저 수신 연결은 후속 작업이다.
 
 ## 설치와 활성화 순서
 
@@ -49,3 +49,12 @@ update public.task_maintenance_state set enabled=false where singleton;
 - settings/subscriptions와 push 관리 RPC는 service_role 전용이다. 클라이언트에는 서버 키를 배포하지 않는다. 비밀 검사는 Vault 행 개수/참조 유효성만 확인하고 decrypted_secret 값은 출력하지 않는다.
 - devices는 로그인 계정의 기기 요약만, revoke는 그 계정 소유 기기와 최신 revision만 처리한다. 분실 기기의 알림을 끌 때 이 경로를 사용한다. 다른 계정의 설치 UUID로 요청하면 거부된다.
 - 이번 배포는 구독·관리 API까지다. 실제 브라우저 구독/Service Worker/푸시 전달부를 연결하기 전에는 사용자에게 알림 활성화나 수신 성공을 안내하지 않는다. 합성 구독 경로를 테스트한 기록을 실제 전달 증거로 쓰지 않는다.
+
+## 예약 대기열 운영 경계
+
+예약/전달 테이블과 계획·기기 트리거는 배포되어 있으나 sender/수신 확인 HTTP/실제 알림 UI는 아직 없다. 기존 task-maintenance Cron은 반복 발생 준비만 하며 이 대기열을 발송하지 않는다.
+
+- pending/sending/sent와 displayed_at을 구분한다. sent는 공급자 수락이고 displayed_at은 브라우저 확인이다. 실제 전달 경로 연결 전의 DB 모사 ACK를 단말 수신으로 보고하지 않는다.
+- 정상 업무 수정은 트리거와 안정 키를 거쳐 예약을 갱신한다. 직접 대기열을 지우거나 상태/receipt_hash를 덮어써 알림을 재전송하지 않는다. 대기열 보존7일과 비활성 기기 이력30일은 사용자 계획 보존과 별개다.
+- claim/receipt/current는 서버 전용이다. 향후 HTTP 어댑터는 전체 plan·구독 주소/키를 응답하지 않고, 토큰/기기 증명/최신 계획을 확인한 최소 필드만 반환해야 한다.
+- 동시성 QA의 임시 Cron 이름은 oddk-qa-push-first/second다. 정상 운영 작업과 혼동하지 않는다. 두 테스트는 self-unschedule됐고 시험 fixture와 대기 항목은 모두 정리했다. sender를 켠 뒤에는 운영 대기열에서 해당 시험을 재실행하지 않는다.

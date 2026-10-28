@@ -68,3 +68,10 @@ UX10은 account-recurrence.test.mjs를11번째 격리계정 통합시험으로 �
 - 기기 이력 상한을 시험하므로 각 실행은 새 fixture 계정을 사용한다. 종료 시 합성 연결을 모두 끄고 signOut한다. 관리자 cleanup SQL로 해당 marker 사용자/세션을 제거한 뒤 구독0·시험 사용자0을 확인한다. 계정 생성/정리 절차는 기존 prepare-account-fixture를 따른다. 실제 OAuth 계정을 대신 쓰지 않는다.
 - `push-database.sql`은 공개 VAPID 초기화 뒤 관리자 연결에서 실행하는 별도 SQL 시험이다. 비로그인용 임시2사용자·비활성20기록을 트랜잭션 안에서 생성해30일 정리 범위, 원격 해제 소유권·키 삭제·stale 차단을 검증하고 전부 롤백한다. 외부 fixture UUID 입력이나 실제 사용자 자료가 필요 없다.
 - 동기화/CAS 반복 fixture는 명시적으로 생성한8일 범위에 종료일을 둬 실제 Cron이 시험 도중 범위를 연장하지 않게 한다. 무기한 반복의 앱 종료 중31일 준비·불변/no-op·경합은 별도 maintenance 시험으로 확인한다. Cron을 꺼서 경합을 숨기거나 시험의409 기대를 느슨하게 하지 않는다. 통합 전체 실행과 서버 주기 작업의 증거를 각각 기록한다.
+
+### UX10 예약 대기열
+
+- `push-reminder.test.mjs`는 Node/Deno 공통4개이며 CI에 포함한다. SQL/JS의 한국 시간·알림분·만료 계약과 최신 계획 검증을 확인한다.
+- `push-queue-database.sql`은 공개 VAPID 초기화 후 관리자 연결에서 실행한다. 비로그인용2계정·계획·기기를 트랜잭션 안에서 생성해 예약/취소/undo/수신 증명/lease/backoff/ACK/소유권/재시도4회/만료/cascade를 시험하고 전부 롤백한다. 네트워크와 단말 권한 요청은 없다.
+- 실제 동시 세션 시험은 `push-queue-race-seed.sql`→`push-queue-race-schedule.sql`→특정 Cron 작업 완료 확인→`push-queue-race-verify.sql` 순서다. sender 미활성·운영 대기 항목 없는 격리 조건이 필요하다. 같은 시각의 one-shot Cron2개가 각5개 claim을6초 유지하고, 둘 중 하나라도 다른 쪽의 잠금 해제를 기다려 claim했다면 실패한다. 일반 MCP 병렬 호출은 전송 계층에서 직렬화될 수 있어 그 결과만으로 동시성을 주장하지 않는다.
+- one-shot 작업은 자체 unschedule되며 실패 때는 두 QA job 이름만 관리자 연결로 해제한다. 검증 뒤 app_metadata.oddk_test_run이 push-queue-race인 비로그인 fixture만 삭제하고 예약/전달/구독/시험 사용자/QA Cron0을 확인한다. 실제 sender가 켜진 운영 데이터에 이 fixture를 추가하거나 정상 알림을 대신 claim하지 않는다.

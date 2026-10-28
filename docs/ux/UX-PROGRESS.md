@@ -383,3 +383,14 @@ push-subscriptions v2 ACTIVE/4c5e78d570487e1c2fe6659c687ac4dfb791d61ea83e9cce095
 그뒤새fixture에서통합runner12개전체실제API통과(exec49631 exit0). 기존CAS반복fixture는명시생성8일종료로제한해주기확장이동시시험을바꾸지않게함. 별도무기한서버준비/경합인수는유지하며Cron미중지. 독립SQL시험의첫변수명충돌실패수정후내부임시2계정/20기록생성·31일자기기록만정리/타계정·최근기록보존·원격해제소유권/키NULL/stale거부·전체rollback통과. 시험모든계정signOut·세션/사용자cleanup후사용자0/구독0/기존계획3/VAPID비밀1·Cron활성/오류0, 인증/seed/cleanup/생성store모듈정리. 사용자CSS해시동일. 새advisor는의도한RLSno-policy INFO2(합5), 기존passwordWARN1·신규WARN/ERROR없음. 실제스모크GET405/무인증401/운영originpreflight204.
 
 아직UX10미완료: 브라우저알림UI/ServiceWorker/계정전환수신차단, 서버알림예약·최신계획대조·전달·취소·만료/재시도·중복방지, 최종CI/Pages/동일SHA운영인수. 실제OAuth/실기기권한·전달은마지막사용자인수로남김. 다음은서버알림대기열/전달과클라이언트연결이며UX11미착수.
+
+
+### UX10 예약 대기열/취소/lease/수신 확인 기반 배포·DB 인수
+
+migration20261028052818/20261028053138/20261028053923 적용. push_reminders/deliveries·계획/기기트리거·내부RPC9개, 원격최신함수본문=로컬9개. 안정event해시(epoch시각), KST투영/전체시간내여유/시작+2·예약+5·종료중최소expiry, 완료/삭제/시간변경취소·undo동일event재활성화. 레코드에제목/메모없음. 기기소유/revision·35초lease·batch최대5/SKIPLOCKED·backoff5~60초/4회·구독gone정리·표시ACK/재연결중복방어·운영이력7일정리. 최신plan검증공통함수추가, 실제HTTP수신어댑터/전송은아직없음.
+
+Node신규4/전체183·공통Deno124/typecheck/lint/Pages정적빌드성공. DB임시2계정 전체rollback: 날짜/정수소수/시간대노중복·제목변경최신·lease/증명·완료삭제취소/undo이전토큰차단·retry대기/ACK·계정전환/예전gone이새소유자보호·재연결이미표시한예약제외·4회/expiry/cascade. 변수/컬럼명충돌SQL1건수정후통과. 실제API통합12개도새RPC/두테이블추가42501포함통과(exec89061 exit0), 인증/seed/cleanup/생성store모듈정리.
+
+MCP Promise병렬요청은실제DB시각상순차라동시성증거로기각. 보충INSERT충돌이이미대기된행을잠글수있음을검토해선행존재필터보완. 실제Cron2/3으로독립DB세션실측:05:40:00.028702/00.034813UTC시작→00.040761/00.047954각5개claim→06.044187/06.055065종료, 10ID고유/양쪽모두다른6초잠금해제전claim, verifySQLPASS. 테스트Cronself삭제0, metadata표시한합성사용자삭제후큐/전달/구독/사용자0·기존계획3. 보완후DB전체수명주기다시PASS. 실제외부전송/단말권한/푸시없음. 의도한no-policy INFO신규2(합7)/기존passwordWARN1·새WARN/ERROR없음.
+
+UX10계속진행: sender Edge/내부예약호출인증·Cron/암호화fetch/응답분류, 제한된receipt HTTP, SW/기기계정마커/로그아웃차단/알림UI, 최종CI/Pages동일SHA운영검증남음. 실제OAuth/실기기인수는마지막. UX11미착수.

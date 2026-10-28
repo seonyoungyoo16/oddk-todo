@@ -90,10 +90,15 @@ try {
     ["push_device_status", { p_user: users[0].id, p_installation: d.installationId, p_binding: "a".repeat(64) }],
     ["push_device_disable", { p_user: users[0].id, p_installation: d.installationId, p_binding: "a".repeat(64), p_revision: 5 }],
     ["push_device_register", { p_user: users[0].id, p_installation: d.installationId, p_binding: "a".repeat(64), p_revision: 5, p_label: "forged", p_endpoint: d.subscription.endpoint, p_endpoint_hash: "a".repeat(64), p_p256dh: d.subscription.keys.p256dh, p_auth: d.subscription.keys.auth }],
+    ["push_project_reminders", { p_plan: {} }], ["push_seed_deliveries", { p_user: users[0].id }],
+    ["push_sync_reminders", { p_user: users[0].id, p_plan: {} }], ["push_delivery_claim", { p_limit: 5 }],
+    ["push_delivery_current", { p_id: d.installationId, p_lease: d.installationId }],
+    ["push_delivery_finish", { p_id: d.installationId, p_lease: d.installationId, p_outcome: "sent", p_retry_seconds: 30 }],
+    ["push_delivery_receipt", { p_id: d.installationId, p_receipt_hash: "a".repeat(64), p_binding_hash: "a".repeat(64), p_action: "check" }],
   ];
   for (const client of clients) {
     for (const [name, args] of rpc) assert.equal((await client.rpc(name, args)).error?.code, "42501", name);
-    for (const table of ["push_settings", "push_subscriptions"]) assert.equal((await client.from(table).select("*")).error?.code, "42501", table);
+    for (const table of ["push_settings", "push_subscriptions", "push_reminders", "push_deliveries"]) assert.equal((await client.from(table).select("*")).error?.code, "42501", table);
   }
   assert.deepEqual(await Promise.all(clients.map(c => c.from("account_plans").select("plan,version,updated_at").maybeSingle())), beforePlans);
   console.log("PASS: VAPID public-only bootstrap stable across two accounts; device proof/owner transfer/CAS/no-op/disable-before-create; owner-only device lists/remote revoke/stale rejection; concurrent five-device cap/recent-history cap; invalid point/host/owner rejected; private tables/RPC denied; account plans unchanged; no push sent.");
