@@ -18,9 +18,13 @@ const command = (revision, command, operationId = randomUUID()) => ({ action: "c
 try {
   for (let i = 0; i < 2; i++) {
     const { data, error } = await clients[i].auth.signInWithPassword({ email: users[i].email, password: users[i].password }); assert.equal(error, null); sessions.push(data.session);
-    const plan = loadPlan(JSON.stringify({ start: "09:00", tasks: ["one", "two"].map(id => ({ id, title: `Synthetic ${id}`, done: false, priority: "normal", minutes: 30, bufferMinutes: 5, startTime: null })) })).plan;
+    const plan = { ...loadPlan(JSON.stringify({ start: "09:00", tasks: ["one", "two"].map(id => ({ id, title: `Synthetic ${id}`, done: false, priority: "normal", minutes: 30, bufferMinutes: 5, startTime: null })) })).plan, schemaVersion: 6, recurrences: [] };
     const response = await fetch(`${root}/functions/v1/plan-sync`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${data.session.access_token}` }, body: JSON.stringify({ action: "ensure", plan }) });
-    assert.equal(response.status, 200); await response.json();
+    assert.equal(response.status, 200); const initialized = await response.json();
+    if (JSON.stringify(initialized.plan) !== JSON.stringify(plan)) {
+      const pushed = await fetch(`${root}/functions/v1/plan-sync`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${data.session.access_token}` }, body: JSON.stringify({ action: "push", version: initialized.version, plan }) });
+      assert.equal(pushed.status, 200); await pushed.json();
+    }
   }
   const original = (await clients[0].from("account_plans").select("plan,version,updated_at").single()).data;
   const initial = await api({ action: "status" }); assert.equal(initial.revision, 0); assert.equal(initial.current, null); checks++;

@@ -1,0 +1,65 @@
+"use client";
+import {useRef,useState} from 'react';
+import {syncClient} from '../todo/supabase-client';
+import {getPlanScope} from '../todo/sync-store';
+import {executionApi} from '../todo/execution-client';
+import type {ExecutionState,ExecutionHistory} from '../todo/execution-client';
+import {loadPlan} from '../../supabase/functions/_shared/plan-migration';
+import {manualExecution,startExecution} from '../../supabase/functions/_shared/execution';
+import {localExecutionTransaction} from '../todo/execution-idb';
+import {sameValue} from '../todo/json-equality';
+const fixture: {id:string;email:string;password:string;marker:string}[] | null = null;
+const sleep=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
+async function wait(test:()=>boolean|Promise<boolean>,message:string){const end=Date.now()+25000;while(Date.now()<end){if(await test())return;await sleep(100);}throw Error(message);}
+export default function ExecutionAccountQA(){
+ const frame=useRef<HTMLIFrameElement>(null),backup=useRef<[string,string][]|null>(null),originalLocal=useRef('');
+ const [events,setEvents]=useState<string[]>([]),[running,setRunning]=useState(false),[active,setActive]=useState(false),[prepared,setPrepared]=useState(false);
+ const say=(text:string)=>setEvents(v=>[...v,text]);const doc=()=>frame.current!.contentDocument!;
+ const button=(text:string)=>[...doc().querySelectorAll<HTMLButtonElement>('button')].find(b=>(b.getAttribute('aria-label')===text||b.textContent?.trim()===text)&&b.getClientRects().length>0);
+ const click=async(text:string)=>{await wait(()=>Boolean(button(text)&&!button(text)!.disabled),'Button '+text);button(text)!.click();};
+ const status=async(i:number)=>await executionApi(fixture![i].id,{action:'status'}) as ExecutionState;
+ async function login(i:number){const {error}=await syncClient().auth.signInWithPassword({email:fixture![i].email,password:fixture![i].password});if(error)throw Error('Fixture sign-in failed');}
+ async function prepare(i:number){
+  const loaded=loadPlan(JSON.stringify({schemaVersion:2,reviewsByDate:{},start:'09:00',tasks:['one','two'].map(id=>({id,title:`QA ${i===0?'A':'B'} ${id}`,done:false,priority:'normal',minutes:30,bufferMinutes:5,startTime:null,plannedDate:new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())}))}));if(!loaded.ok)throw Error(loaded.error);
+  const plan={...loaded.plan,schemaVersion:6,recurrences:[]},session=(await syncClient().auth.getSession()).data.session!;
+  const call=async(body:unknown)=>{const response=await fetch('https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync',{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${session.access_token}`},body:JSON.stringify(body)});if(!response.ok)throw Error('Fixture plan preparation failed '+response.status);return response.json();};
+  const current=await call({action:'ensure',plan});await call({action:'push',plan,version:current.version});return plan;
+ }
+ async function mount(tag:string){setActive(true);await wait(()=>Boolean(frame.current),'Frame mount');frame.current!.src='/todo/?execution-account-qa='+tag;await wait(()=>doc()?.URL.includes('execution-account-qa='+tag)&&Boolean(button(`QA ${tag.startsWith('A')?'A':'B'} one 작업 시작`)),'Account frame '+tag);}
+ async function run(){setRunning(true);try{
+  if(!fixture||fixture.length!==2||fixture.some(u=>!u.marker.startsWith('oddk-verification-')||!u.email.endsWith('@example.invalid')))throw Error('Private disposable fixture missing');
+  if((await syncClient().auth.getSession()).data.session)throw Error('Existing login: stop without changes');
+  backup.current=Object.entries(localStorage);originalLocal.current=JSON.stringify(await localExecutionTransaction(v=>v));setPrepared(true);
+  await login(0);const plan=await prepare(0);await syncClient().auth.signOut({scope:'local'});await login(1);await prepare(1);await syncClient().auth.signOut({scope:'local'});await login(0);await mount('A');await wait(()=>getPlanScope()===fixture[0].id,'A scope');
+  await click('QA A one 작업 시작');await wait(async()=>Boolean((await status(0)).current),'A timer');const original=(await status(0)).current!;
+  frame.current!.src='/todo/?execution-account-qa=A-reload';await wait(()=>doc().URL.includes('A-reload')&&(doc().body?.textContent?.includes('작업 기록 중')??false),'A reload');if((await status(0)).current?.id!==original.id)throw Error('Reload changed active id');say('PASS real Auth/API/DB UI start and reload retain exact account timer');
+  const win=doc().defaultView as Window&typeof globalThis,oldFetch=win.fetch.bind(win);let release:(()=>void)|undefined,held=false;
+  win.fetch=async(input,options)=>{const response=await oldFetch(input,options);const body=typeof options?.body==='string'?JSON.parse(options.body):null;if(String(input).includes('/functions/v1/execution')&&body?.action==='command'&&body.command.type==='pause'){held=true;await new Promise<void>(resolve=>{release=resolve;});}return response;};
+  await click('일시정지');await wait(()=>held,'Pause response hold');
+  await syncClient().auth.signOut({scope:'local'});await login(1);await wait(()=>getPlanScope()===fixture[1].id&&Boolean(button('QA B one 작업 시작')&&!button('QA B one 작업 시작')!.disabled),'B same-document scope');release?.();win.fetch=oldFetch;
+  await wait(()=>Boolean(button('QA B one 작업 시작')&&!button('QA B one 작업 시작')!.disabled),'B state');if((await status(1)).current!==null||doc().body.textContent!.includes('QA A one'))throw Error('Old account response leaked');say('PASS held A response followed by logout/B login never rebinds A timer or UI');
+  await click('QA B one 작업 시작');await wait(async()=>Boolean((await status(1)).current),'B start');await click('기록 종료');await wait(async()=>(await status(1)).current===null,'B stop');
+  await syncClient().auth.signOut({scope:'local'});await login(0);await mount('A-return');await wait(()=>getPlanScope()===fixture[0].id,'A returned scope');
+  const returned=await status(0);if(returned.current?.id!==original.id||returned.current.segments.at(-1)?.end===null)throw Error('A paused record lost on account switch');await click('기록 종료');await wait(async()=>(await status(0)).current===null,'A stop');say('PASS A/B actual records remain separate; returning A retains paused history');
+  const offlineWindow=doc().defaultView as Window&typeof globalThis,workingFetch=offlineWindow.fetch.bind(offlineWindow);
+  offlineWindow.fetch=async(input,options)=>{const body=typeof options?.body==='string'?JSON.parse(options.body):null;if(String(input).includes('/functions/v1/execution')&&body?.action==='command')throw new TypeError('Synthetic offline');return workingFetch(input,options);};
+  await click('QA A one 작업 시작');await wait(()=>doc().body.textContent!.includes('서버 연결 또는 저장 결과를 확인하지 못했어요'),'Offline feedback');if((await status(0)).current!==null)throw Error('Offline start claimed success');offlineWindow.fetch=workingFetch;
+  await click('같은 요청으로 결과 확인');await wait(async()=>Boolean((await status(0)).current),'Explicit retry');await click('기록 종료');await wait(async()=>(await status(0)).current===null,'Retry stop');say('PASS offline command stays unconfirmed; same-operation retry saves once after reconnect');
+  // Synthetic local File input exercises preview and explicit task mapping, no source DB mutation.
+  const end=new Date(Date.now()-3*86400000).toISOString(),start=new Date(Date.parse(end)-600000).toISOString();
+  const source=manualExecution({...plan.tasks[0],title:'QA anonymous source'},crypto.randomUUID(),[{kind:'work',start,end}],new Date().toISOString());
+  const open=startExecution(plan.tasks[0],crypto.randomUUID(),new Date().toISOString());
+  doc().querySelector<HTMLElement>('.oddk-recordHistory summary')!.click();await wait(()=>Boolean(doc().querySelector('input[type="file"]')),'Import input');
+  const input=doc().querySelector<HTMLInputElement>('input[type="file"]')!,fileWindow=doc().defaultView as Window&typeof globalThis,transfer=new fileWindow.DataTransfer();
+  transfer.items.add(new fileWindow.File([JSON.stringify({type:'oddk-executions',schemaVersion:1,exportedAt:new Date().toISOString(),records:[source,open]})],'synthetic-executions.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));
+  await wait(()=>Boolean(doc().querySelector('dialog[open]')),'Import preview');if(!doc().querySelector('dialog[open]')!.textContent!.includes('진행 중 1개는 제외'))throw Error('Open record import warning');
+  doc().querySelector<HTMLInputElement>('dialog[open] input[type="checkbox"]')!.click();await click('이 기록 계정으로 가져오기');await wait(()=>Boolean(button('가져옴')),'Mapped import');
+  const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(start));
+  const imported=await executionApi(fixture[0].id,{action:'history',from:date,to:date,limit:100,cursor:null}) as ExecutionHistory;
+  const target=imported.records.find(r=>r.id===source.id);if(!target||target.title!=='QA A one'||!sameValue(target.segments,source.segments))throw Error('Import lost actual interval or mapping');say('PASS explicit closed-record import maps current task, preserves actual intervals, excludes open record');
+  if(JSON.stringify(await localExecutionTransaction(v=>v))!==originalLocal.current)throw Error('Account mode changed anonymous actual records');say('PASS anonymous actual store stays byte-identical throughout account work');
+  say('PASS account browser flow complete. READY FOR CLEANUP.');
+ }catch(e){say('FAIL '+(e instanceof Error?e.message:String(e)));}finally{setRunning(false);}}
+ async function cleanup(){setActive(false);await sleep(250);await syncClient().auth.signOut({scope:'local'});if(backup.current){localStorage.clear();for(const[k,v]of backup.current)localStorage.setItem(k,v);backup.current=null;setPrepared(false);say('CLEANED: fixture signed out, original localStorage bytes restored');}}
+ return <main style={{padding:20,fontFamily:'sans-serif'}}><h1>UX11 disposable account browser QA</h1><p>Private fixture only; actual OAuth and human devices are excluded.</p><button disabled={running||prepared} onClick={()=>void run()}>Run real account UI QA</button><button disabled={running} onClick={()=>void cleanup()}>Restore account browser data</button><ol>{events.map((e,i)=><li key={i}>{e}</li>)}</ol>{active&&<iframe ref={frame} title="Account actual-time QA app" style={{width:'100%',height:800}}/>}</main>;
+}

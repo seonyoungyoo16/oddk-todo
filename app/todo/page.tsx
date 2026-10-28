@@ -1,5 +1,8 @@
 "use client";
 import { taskTitleKey } from "./task-identity";
+import { ExecutionPanel } from "./execution-panel";
+import { useExecution } from "./use-execution";
+import { HiOutlinePlay } from "react-icons/hi2";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -146,6 +149,12 @@ function TodoWorkspace({ scope }: { scope: string }) {
   }
   const [selectedDate, setSelectedDate] = field("selectedDate");
   const planDate = selectedDate ?? today;
+  const execution = useExecution(scope, planDate, snapshot, workspace.hydrated && planLoad.ok);
+  const [switchExecution, setSwitchExecution] = useState<{ task: Task; from: string } | null>(null);
+  function startExecutionTask(task: Task) {
+    if (execution.state?.current) setSwitchExecution({ task, from: execution.state.current.id });
+    else void execution.command({ type: "start", taskId: task.id });
+  }
   const savedTheme = useSyncExternalStore(subscribeTheme, getThemeSnapshot, () => "light");
   const [themeOverride, setThemeOverride] = useState<"light" | "dark" | null>(null);
   const theme = themeOverride ?? savedTheme;
@@ -566,6 +575,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
               </>}
               {planningView && range !== "all" && plan.tasks.some(task => task.plannedDate === null && !task.done) && <button type="button" className="oddk-undatedLink" onClick={() => navigateRange("all")}>날짜 없는 할 일 {plan.tasks.filter(task => task.plannedDate === null && !task.done).length}개 보기<HiOutlineArrowRight aria-hidden="true" /></button>}
             </header>
+            <ExecutionPanel scope={scope} plan={plan} date={planDate} model={execution} switchTask={switchExecution} onCancelSwitch={() => setSwitchExecution(null)} />
             {planningView && range === "day" && isPlanDate(planDate) && <DayAvailability day={day} saved={plan.availabilityByDate?.[planDate]} onSave={value => save({ ...plan, availabilityByDate: { ...plan.availabilityByDate, [planDate]: value } }, "활동 시간과 고정·휴식을 저장했어요.")} onEdit={openEditor} />}
             {planningView && range === "day" && isPlanDate(planDate) && <TravelPlanner date={planDate} plan={plan} onApply={(preview, draft, expected) => { if (!sameValue(expected, plan)) { setError("미리보기 이후 계획이 바뀌었어요. 다시 확인해주세요."); return false; } try { return save(applyTravelPreview(plan, preview, draft), "여행 이동·방문 일정을 추가했어요."); } catch (error) { setError((error as Error).message); return false; } }} />}
             {planningView && <><ClassificationFilters plan={plan} value={classification} onChange={changeClassification} count={scopedTasks.length} total={rangeTasks.length} /><ClassificationManager plan={plan} onSave={save} /></>}
@@ -626,6 +636,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
                         {portion && portion.segmentMinutes !== task.minutes && <span>이 날짜 {portion.segmentMinutes}분 · {portion.continuesBefore ? "전날부터 이어짐" : "다음 날 계속"}</span>}
                       </span>
                     </button>
+                    {!selectionMode && !task.done && !task.summaryOnly && <button type="button" className="oddk-recordStart" disabled={!execution.state || execution.busy || Boolean(execution.pending) || execution.state.current?.taskId === task.id} aria-label={task.title + (execution.state?.current?.taskId === task.id ? " 현재 기록" : " 작업 시작")} onClick={() => startExecutionTask(task)}><HiOutlinePlay aria-hidden="true" />{execution.state?.current?.taskId === task.id ? "현재 기록" : "작업 시작"}</button>}
                     {sort === "manual" && <TaskMoveButtons title={task.title} first={index === 0} last={index === visibleTasks.length - 1} onMove={direction => moveTask(task, direction)} />}
                     {!selectionMode && !task.done && today && task.plannedDate && task.plannedDate < today && <button type="button" className="oddk-replanButton" aria-label={task.title + " 다시 계획"} onClick={() => { setReplanDate(koreanToday()); setReplanError(""); setReplanId(task.id); }}><HiOutlineArrowUturnLeft aria-hidden="true" />다시 계획</button>}
                     {task.done && <span className="oddk-doneBadge">완료</span>}

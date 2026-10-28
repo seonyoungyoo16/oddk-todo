@@ -442,3 +442,7 @@ UX11 core fc98953 PR29(draft/attached) CI40709934214 verify122892128779 success:
 2026-10-29 저장 계층: migration20261028151545 적용, 실행 테이블3개/검증 함수6개. 합성44개 Node/실제DB 차이0. rollback 시험에서 단일 열린 기록·소유자 복합키·지연 포인터·원자적 전환/이력·실패 불변·operation 중복 방지·계정 정리 통과. service 실제 data 수정 허용/ID 수정42501, authenticated 실제 조회/anon helper42501, 익명 REST도 거부. 시험 후 세 테이블0/기존 계획3. 함수6개 원격=로컬, invoker/search_path 고정. CI47d6f18 성공 Node226/Deno154. 상세는 UX11-DESIGN. API/UI/실제 동시 요청/UX11 배포는 미완료, UX12 미착수.
 
 2026-10-29 서버 API: migration152946/153728·execution2 ACTIVE/원격16파일일치. 실제 DB rollback·실제2계정 HTTP13그룹 PASS(동시에 in-flight 시작1성공1충돌·응답유실 재시도·기록/계획 불변·수동/보정/겹침·완료삭제/undo·owner/권한). PostgREST40001 반복 문제를 공식 안내대로 PT409로 수정 후 새 fixture 전부 재시험, active backend0. Node232/실행 Deno22/type/lint/check 성공. 시험자료0/기존계획3·새WARN없음. 상세 UX11-DESIGN. UI/익명저장/브라우저/Pages 인수 전이라 UX11 진행중이며 UX12 미착수.
+
+2026-10-29 클라이언트 인수: 목록 작업 시작/현재 work·pause·break·stop/확인 switch, 일별 계획·실제 비교/전체합계, 수동 구간 미리보기·확인/초안/정확한ms, separate 실적 백업·종료 기록 복구/계정 대상 연결을 구현했다. 실제 native IDB 동시1건/abort/할일완료undo/파일복구·ID충돌원복/put실패·명시재시도/보정중 revision변경의 양쪽보존, 새로고침/닫기재열기 모두 PASS. 보정창 revision 고정·편집중 polling 중지/늦은 조회 무효화·최신기록 재확인, 입력시각 monotonic 갱신. 실제 Auth/API/DB 계정UI는 지연A응답 중 같은 문서 logout/B login·A복귀 보존·offline미확정/재시도·File가져오기/열린기록제외·익명IDB원문불변 PASS. QA키순서/재로딩DOM대기 하네스도 보완했다.
+
+전체 Node240/Deno168/type/lint, 실제 API 통합13파일 exit0(85712) 통과. 390px다크팝업/키보드순환/초점/가로넘침없음. 실제200% 단축키는 도구에서 배율무변경이라 통과로 표시하지 않고 마지막 실기기 H07에 남겼다. 공개원래storage 원문복원·시험계정0/실적3표0/기존계획3. 상세와 증거 UX11-ACCEPTANCE. 최종 CI/Pages같은SHA 운영게이트 전이며 UX12 미착수.

@@ -39,3 +39,5 @@ npm.cmd run typecheck
 - [배포·복구 절차](docs/RELEASE.md), [배포 인수 결과](docs/verification/RELEASE-ACCEPTANCE.md)
 
 master 반영 시 GitHub Actions가 lint·타입·단위시험·Deno 검증·정적 빌드 후 Pages에 배포합니다. 산출물은 out/, 경로는 /oddk-todo입니다. Supabase Edge/DB는 별도로 배포·확인합니다.
+
+UX11 개발 내용: 목록에서 실제 작업을 시작하고 일시정지·휴식·종료하거나 종료 기록을 보정할 수 있습니다. 계획값과 실적은 별도로 보관하고, 비로그인은 IndexedDB·로그인은 계정 API를 사용합니다. 실적 백업/가져오기의 범위와 최신 배포 상태는 [UX11 인수 기록](docs/ux/UX11-ACCEPTANCE.md)을 확인하세요.
