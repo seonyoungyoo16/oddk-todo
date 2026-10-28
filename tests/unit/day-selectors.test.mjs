@@ -23,8 +23,8 @@ test("completion stays in plan statistics but leaves the active timeline", () =>
 test("only active, valid-time and started tasks are scheduled", () => {
   const tasks = [task("valid", "2026-10-27", 60, 10, { startTime: "23:30", priority: "high" }), task("unset", "2026-10-27", null, null, { startTime: null }), task("unstarted", "2026-10-27", 30, 5, { startTime: null })];
   const day = selectDay(tasks, "2026-10-27");
-  assert.deepEqual(day.scheduled.map((task) => [task.id, task.start, task.end]), [["valid", 1410, 1470]]);
+  assert.deepEqual(day.scheduled.map((task) => [task.id, task.start, task.end]), [["valid", 1410, 1440]]);
   assert.equal(day.untimedCount, 1); assert.equal(day.activeUntimedCount, 1);
-  assert.equal(day.byPriority.high, 60); assert.equal(day.highPriorityCount, 1);
-  assert.equal(selectDay(tasks, "2026-10-28").total, 0);
+  assert.equal(day.byPriority.high, 30); assert.equal(day.highPriorityCount, 1);
+  assert.equal(selectDay(tasks, "2026-10-28").total, 30);
 });

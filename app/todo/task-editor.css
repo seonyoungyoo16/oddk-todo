@@ -491,3 +491,10 @@
 .oddk-taskEditor .oddk-editorNotes small { color:var(--edit-muted); font-size:12px; }
 
 .oddk-taskEditor textarea:focus-visible { outline:2px solid #6389e9; outline-offset:2px; border-color:#6389e9; }
+.oddk-scheduleFields { display: grid; gap: 16px; }
+.oddk-timeMode { display: flex; gap: 6px; }
+.oddk-timeMode button { border: 1px solid var(--oddk-border); border-radius: 5px; padding: 8px 12px; font-size: 13px; }
+.oddk-timeMode [aria-pressed="true"] { background: var(--oddk-highlight); border-color: #84a6e4; }
+.oddk-scheduleFields .oddk-dialogField > input, .oddk-scheduleFields .oddk-dialogField > select { min-height: 42px; padding: 8px 10px; border: 1px solid var(--oddk-border); background: var(--oddk-surface); color: inherit; border-radius: 5px; width: 100%; }
+.oddk-scheduleFields .oddk-timeGuide { margin: 0; color: #71809a; font-size: 12px; }
+@media (max-width: 480px) { .oddk-scheduleFields .oddk-editorTimeGrid { grid-template-columns: minmax(0, 1fr); } }

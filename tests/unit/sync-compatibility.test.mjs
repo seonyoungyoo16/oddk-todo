@@ -66,7 +66,7 @@ test("V1 account migration uses the existing CAS version and preserves original 
   const h = harness({ plan: legacy(), cached: legacy() });
   await h.store.syncNow();
   assert.equal(h.calls[0].version, 4); assert.equal(h.remote.version, 5);
-  assert.equal(h.remote.plan.schemaVersion, 3); assert.equal(h.remote.plan.tasks[0].plannedDate, null);
+  assert.equal(h.remote.plan.schemaVersion, 4); assert.equal(h.remote.plan.tasks[0].plannedDate, null);
   assert.equal(h.remote.plan.tasks[0].startTime, "09:00");
   assert.deepEqual(JSON.parse(h.values.get(`${key}.before-v2`)), legacy());
   await h.store.syncNow(); assert.equal(h.remote.version, 5);
@@ -76,7 +76,7 @@ test("V1 received on first login is migrated and conditionally saved", async () 
   const h = harness({ plan: legacy(), cached: null, connected: false });
   const stop = h.store.startSync(JSON.stringify(modern()));
   await new Promise(setImmediate); await h.jobs(); await h.store.syncNow();
-  assert.equal(h.remote.plan.schemaVersion, 3); assert.equal(h.remote.version, 5);
+  assert.equal(h.remote.plan.schemaVersion, 4); assert.equal(h.remote.version, 5);
   assert.deepEqual(JSON.parse(h.values.get(`${key}.before-v2`)), legacy()); stop();
 });
 
@@ -121,7 +121,7 @@ test("invalid/future remote preserves valid cache, dirty outbox and raw received
     const h = harness({ dirty }); const before = h.values.get(key);
     h.remote.plan = { ...modern(), schemaVersion: 99 }; h.remote.version++;
     await h.store.syncNow(); assert.equal(h.status().phase, "error");
-    assert.equal(h.values.get(key), before); assert.equal(h.snapshot().schemaVersion, 3);
+    assert.equal(h.values.get(key), before); assert.equal(h.snapshot().schemaVersion, 4);
     assert.ok([...h.values.keys()].some((k) => k.startsWith(`${key}.invalid-remote.`)));
   }
 });
@@ -168,5 +168,5 @@ test("logout restores anonymous plan; account switch never exports another accou
   assert.equal(h.store.getPlanScope(), "account-b");
   assert.equal((await h.download()).review, "Anonymous original");
   assert.equal(JSON.parse(h.values.get("oddk.sync.plan.account-b.backup")).review, "Anonymous original");
-  assert.equal(JSON.parse(h.values.get(`${key}.backup`)).schemaVersion, 3); stop();
+  assert.equal(JSON.parse(h.values.get(`${key}.backup`)).schemaVersion, 4); stop();
 });

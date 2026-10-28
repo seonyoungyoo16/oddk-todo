@@ -37,7 +37,7 @@ try {
   await until(() => JSON.parse(store.getSyncSnapshot()).phase === "synced");
   assert.equal(JSON.parse(values.get(`oddk.sync.plan.${users[0].id}.backup`)).review, "로그인 전 목록");
   const before = await api("pull", {}, auth.data.session.access_token);
-  assert.equal(before.plan.schemaVersion, 3);
+  assert.equal(before.plan.schemaVersion, 4);
   assert.equal(before.version, legacyServer.version + 1);
   assert.deepEqual(before.plan, loadPlan(JSON.stringify(legacyServer.plan)).plan);
   assert.deepEqual(JSON.parse(values.get(`oddk.sync.plan.${users[0].id}.before-v2`)), legacyServer.plan);

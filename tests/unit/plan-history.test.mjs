@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { makeUndo, applyUndo, validUndo } from "../../app/todo/plan-history.ts";
-const task = id => ({ id, title: id, notes: "detail\nsecond line", minutes: 30, bufferMinutes: 5, startTime: "23:50", priority: "high", done: false, plannedDate: "2026-10-28" });
-const base = () => ({ schemaVersion: 3, start: "09:00", tasks: [task("a"), task("b")], reviewsByDate: {}, mandala: { goal: "Goal", areas: Array.from({ length: 8 }, (_, i) => ({ title: "Area", taskIds: [i === 0 ? "a" : "", ...Array(7).fill("")] })) } });
+const task = id => ({ id, title: id, notes: "detail\nsecond line", minutes: 30, bufferMinutes: 5, startTime: "23:50", priority: "high", done: false, plannedDate: "2026-10-28", endTime: "00:20", endDate: "2026-10-29", endDayOffset: 1 });
+const base = () => ({ schemaVersion: 4, start: "09:00", tasks: [task("a"), task("b")], reviewsByDate: {}, mandala: { goal: "Goal", areas: Array.from({ length: 8 }, (_, i) => ({ title: "Area", taskIds: [i === 0 ? "a" : "", ...Array(7).fill("")] })) } });
 test("delete undo restores fields, original order and goal links after serialization", () => {
   const before = base(), after = structuredClone(before); after.tasks.shift(); after.mandala.areas[0].taskIds[0] = "";
   const undo = JSON.parse(JSON.stringify(makeUndo(before, after, "Delete")));

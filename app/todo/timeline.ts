@@ -11,7 +11,7 @@ export function clockLabel(minutes: number) {
 }
 
 // 같은 날 시작하는 일정의 구간을 비교한다. 자정 이후 종료도 연속된 분으로 유지한다.
-export function layoutTimeline<T extends Interval>(intervals: T[]) {
+export function layoutTimeline<T extends Interval>(intervals: T[], bounds: { start?: number; end?: number; maxEnd?: number } = {}) {
   const sorted = [...intervals].sort((a, b) => a.start - b.start || a.end - b.end);
   const result: Array<T & { lane: number; columns: number; conflict: boolean }> = [];
   let group: typeof result = [];
@@ -32,7 +32,8 @@ export function layoutTimeline<T extends Interval>(intervals: T[]) {
     groupEnd = Math.max(groupEnd, interval.end);
   }
   flush();
-  const start = sorted.length ? Math.floor(sorted[0].start / 60) * 60 : 540;
-  const end = Math.max(start + 120, Math.ceil(Math.max(start, ...sorted.map((item) => item.end)) / 60) * 60);
+  const requestedStart = bounds.start ?? sorted[0]?.start ?? 540;
+  const start = Math.floor(Math.min(requestedStart, sorted[0]?.start ?? requestedStart) / 60) * 60;
+  const end = Math.min(bounds.maxEnd ?? Infinity, Math.max(start + 120, Math.ceil(Math.max(bounds.end ?? start, ...sorted.map((item) => item.end)) / 60) * 60));
   return { items: result, start, end, columns: Math.max(1, ...result.map((item) => item.columns)) };
 }

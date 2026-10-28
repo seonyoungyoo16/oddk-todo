@@ -6,7 +6,7 @@ const ENDPOINT = "https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-syn
 const LOCAL_KEY = "oddk.todo.v1";
 const SESSION_KEY = "oddk.sync.session.v1";
 const CHANGE_EVENT = "oddk-todo-change";
-// Enable each provider only after its actual OAuth acceptance journey passes.
+// Keep providers enabled; the user performs actual OAuth acceptance separately.
 
 type Session = { id: string; deviceId: string; name: string; displayName: string; provider: string; createdAt: string; lastSignInAt: string };
 type Cache = { plan: string; version: number; dirty: boolean };
@@ -113,7 +113,7 @@ export function writePlan(plan: unknown) {
 export function restoreLastValidPlan() {
   const s = session();
   const key = s ? cacheKey(s) : LOCAL_KEY;
-  const backup = localStorage.getItem(`${key}.last-valid`) ?? localStorage.getItem(`${key}.before-v3`) ?? localStorage.getItem(`${key}.before-v2`);
+  const backup = localStorage.getItem(`${key}.last-valid`) ?? localStorage.getItem(`${key}.before-v4`) ?? localStorage.getItem(`${key}.before-v3`) ?? localStorage.getItem(`${key}.before-v2`);
   const result = backup ? loadPlan(backup) : null;
   if (!result?.ok) throw new Error("이 기기에 정상 저장본이 없어요. 원본 백업 파일을 보관해주세요.");
   const raw = s ? cacheEnvelope(s).plan : localStorage.getItem(LOCAL_KEY);

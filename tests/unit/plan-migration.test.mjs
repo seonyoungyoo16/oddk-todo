@@ -9,11 +9,11 @@ const memory = (raw) => {
   return { entries, getItem: (key) => entries.get(key) ?? null, setItem: (key, value) => entries.set(key, value) };
 };
 
-test("V1 migration preserves all existing values and references; V3 is idempotent", () => {
+test("V1 migration preserves all existing values and references; V4 is idempotent", () => {
   const old = legacy(); const result = loadPlan(JSON.stringify(old));
   assert.equal(result.ok, true); assert.equal(result.migrated, true);
-  assert.equal(result.plan.schemaVersion, 3);
-  assert.deepEqual(result.plan.tasks, old.tasks.map((task) => ({ ...task, plannedDate: null, notes: "" })));
+  assert.equal(result.plan.schemaVersion, 4);
+  assert.deepEqual(result.plan.tasks, old.tasks.map((task) => ({ ...task, plannedDate: null, notes: "", endTime: "00:30", endDate: null, endDayOffset: 1 })));
   assert.deepEqual(result.plan.mandala, old.mandala);
   assert.equal(result.plan.review, old.review);
   assert.equal(result.plan.start, old.start);
@@ -49,7 +49,7 @@ test("backup precedes replacement and storage failures preserve the original", (
   assert.equal(loadPlan(storage.getItem("plan")).migrated, false);
   const saved = storage.getItem("plan"); upgradeStoredPlan(storage, "plan");
   assert.equal(storage.getItem("plan"), saved); assert.equal(storage.getItem("plan.before-v2"), raw);
-  for (const failAt of ["plan.before-v2", "plan.before-v3", "plan"]) {
+  for (const failAt of ["plan.before-v2", "plan.before-v3", "plan.before-v4", "plan"]) {
     const broken = memory(raw); const set = broken.setItem;
     broken.setItem = (key, value) => { if (key === failAt) throw new Error("quota"); set(key, value); };
     assert.throws(() => upgradeStoredPlan(broken, "plan"));
@@ -58,13 +58,14 @@ test("backup precedes replacement and storage failures preserve the original", (
   }
 });
 
-test("V2 to V3 adds only notes and preserves dated reviews, goal links and raw backup", () => {
+test("V2 to V4 adds notes and explicit ends while preserving dated reviews, goal links and raw backups", () => {
   const v2 = { ...legacy(), schemaVersion: 2, tasks: legacy().tasks.map(t => ({ ...t, plannedDate: "2026-10-28" })), reviewsByDate: { "2026-10-28": "Saved review" } };
   const raw = JSON.stringify(v2), storage = memory(raw);
   const loaded = upgradeStoredPlan(storage, "plan");
   assert.equal(loaded.ok, true); assert.equal(loaded.migrated, true);
-  assert.deepEqual(loaded.plan, { ...v2, schemaVersion: 3, tasks: v2.tasks.map(t => ({ ...t, notes: "" })) });
+  assert.deepEqual(loaded.plan, { ...v2, schemaVersion: 4, tasks: v2.tasks.map(t => ({ ...t, notes: "", endTime: "00:30", endDate: "2026-10-29", endDayOffset: 1 })) });
   assert.equal(storage.getItem("plan.before-v3"), raw);
+  assert.equal(storage.getItem("plan.before-v4"), raw);
   assert.equal(storage.getItem("plan.before-v2"), null);
   const again = upgradeStoredPlan(storage, "plan"); assert.equal(again.migrated, false);
   assert.equal(storage.getItem("plan.before-v3"), raw);
