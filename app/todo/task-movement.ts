@@ -32,7 +32,7 @@ export function previewTimeMove(plan: Plan, id: string, date: string, time: stri
   if (!isPlanDate(date) || !isClock(time)) throw new Error("옮길 날짜와 시작 시각을 확인해주세요.");
   const end = deriveScheduleEnd(date, time, task.minutes);
   if (!end) throw new Error("종료 날짜를 계산할 수 없어요. 옮길 시각을 확인해주세요.");
-  const after: Task = { ...task, plannedDate: date, startTime: time, ...end };
+  const after: Task = { ...task, plannedDate: date, startTime: time, ...end, ...(task.repeatSeriesId ? { repeatException: true } : {}) };
   if (sameValue(task, after)) throw new Error("현재 시각과 같아요. 다른 시각을 선택해주세요.");
   if (plan.tasks.some(other => other.id !== id && !other.done && !other.summaryOnly && taskTitleKey(other) === taskTitleKey(after))) throw new Error("같은 날짜와 시각에 같은 할 일이 있어요.");
   const others = { ...plan, tasks: plan.tasks.filter(item => item.id !== id) };

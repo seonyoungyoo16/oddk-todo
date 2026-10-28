@@ -331,3 +331,16 @@ UX09 checkpoint: Pages 정적빌드·최종typecheck/lint성공, 신규공통이
 PR27 head26b0e19, CI40626698118/122613213103 Node134·Deno76·Edge2/check/lint/type/Pagesbuild통과. 병합639fd6db359c2eb69b86ae173119b75c69c3ec75, master40626803500 verify122613576875/deploy122613857725 completed/success, deployment7376392960 SHA일치. 운영 새정렬안내/수동선택/업무0/SSO활성·초안입력reload복원후빈입력정리·consolewarn/error0. UX09-deployed.jpg. 실제소스ff/사용자CSS해시·미커밋로고/별도계획보존. UX09완료후codex/ux10-recurrence로전환.
 
 UX10-DESIGN.md에 반복원본/안정발생/이번·이후·전체/예외·완료보존/V6이전, ServiceWorker+서버예약/전달·취소, 사용자단말권한최종인수와ALPEN블록을작성했다. 공식MDN Push/subscribe·Supabase스케줄링문서확인. repeat-calendar.ts는 daily간격/월요일기준weekly요일/monthly없는날건너뛰기·한국달력/366일범위·안정원본+발생일ID계약을구현했다. 신규6개 Node/Deno각통과. V6연결·DB/Edge/푸시/반복UI/전체QA·배포는미완료이며UX11은미착수다.
+
+
+### UX10 V6 공통 규칙·기존 동작 연동, 서버 검증 진행
+
+V6는첫반복/알림설정시opt-in으로정했다. plan/recurrence/repeat-actions/calendar에템플릿·날짜별구간·안정발생키·개별예외·건너뛰기·생성/이번/이후/전체·완료보존·명시한도거부를구현했다. 원래업무ID/goalarchive/rootextension/시간·여유·상대마감/분류·목표연결보존. 기존삭제·일괄삭제/분류·목표삭제/업무분할·시간이동/재계획·undo와연동, 메모등개별수정은undo작성전에예외로표시하고완료체크만으로는예외를만들지않는다. before-v6원문은스냅샷보다먼저저장하며계정별quota실패원본보존시험추가. 읽기·일반저장V5는유지한다.
+
+공통반복신규12+달력6 Node/Deno각18통과, 기존회귀포함Node153/typecheck/lint통과. VM시험하네스에새실제backup export가없던4실패는실제helper를주입하여보완후전부통과. 실제프로덕션동작실패와구분한다. 최근Supabasechangelog200/TLS-CBC·PG공지와공식auth문서를확인했다. 신규스키마SQL/인증설정변경없음. 기존권한·CORS/getUser인증을유지하고plan-sync v11 ACTIVE, sha35a2a230e2c11b35d038c068b1dffe660e0fa7b4438b7ebaf6005cc21b5cb6bf, 파일11개로V1~6검증및6저장후구형쓰기원자거부를배포했다. 현재격리2계정통합runner11개가실행중이며결과확인전이다. Pages운영은UX09/639fd6d유지. 반복UI/정기발생/서버알림·권한인수/최종CI·배포는미완료,UX11미착수.
+
+
+UX10 서버11 실제계정runner11개 exec89515 exit0. 새recurrence시험에서 발생ID/자정/총·여유/목표/알림분 JSONB왕복, 저장6에V1~5쓰기426 각각/invalid400/stale409 전체plan/version불변, 날짜이동예외/건너뛰기/이후변경·완료보존/전체중단/종합undo(형식6유지·원래업무/목표복원)/다른계정격리통과. 실제계정2개 signOut후session/user정리, cleanup0, fixture/SQL/생성모듈제거. 원격getEdge v11/ACTIVE/11개소스입력일치/sha35a2..재확인, 무인증401/허용preflight204/다른Origin403/GET405실측. 인증·CORS동작유지. 반복UI·정기생성/푸시는아직구현전이므로UX10은진행중이다.
+
+
+UX10 공통계약 checkpoint: 전체Node153, CI와동일명시공통Deno94, plan-sync Deno check, 최종typecheck/lint/Pages정적빌드통과. 새V6데이터는전용시험계정에서만사용했고cleanup0을확인했다. 현재로컬UI에는아직반복필드가없으며서버예약/ServiceWorker/구독/전달도미구현이다. 다음은기존수정초안에반복·알림설정연결, 범위별적용미리보기/원격변경거부, 하루발생준비, 서버예약·푸시및Q24/Q25브라우저QA다. UX10완료·프런트배포나UX11착수로표시하지않는다.

@@ -10,14 +10,16 @@ import { validGoalTree } from "./goal-tree.ts";
 import type { GoalTree } from "./goal-tree.ts";
 import { validHierarchyShape, validTaskParents } from "./task-hierarchy.ts";
 import type { TaskHierarchy } from "./task-hierarchy.ts";
+import { validRepeatTaskShape, validRepeatPlan } from "./recurrence.ts";
+import type { RepeatTaskFields, RepeatSeries } from "./recurrence.ts";
 export type { Category, Tag } from "./taxonomy.ts";
 export { isClock, isPlanDate } from "./calendar.ts";
 export type Priority = "high" | "normal" | "low";
-export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean; plannedDate: string | null; notes?: string; endTime?: string | null; endDate?: string | null; endDayOffset?: 0 | 1 | null } & TaskClassification & TaskPlanning & TaskHierarchy;
+export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean; plannedDate: string | null; notes?: string; endTime?: string | null; endDate?: string | null; endDayOffset?: 0 | 1 | null } & TaskClassification & TaskPlanning & TaskHierarchy & RepeatTaskFields;
 export type Mandala = { goal: string; areas: Array<{ title: string; taskIds: string[] }> };
-export type Plan = { schemaVersion: 5; goalTree: GoalTree; tasks: Task[]; start: string; mandala?: Mandala; review?: string; reviewsByDate: Record<string, string>; availabilityByDate?: Record<string, Availability>; categories?: Category[]; tags?: Tag[] };
+export type Plan = { schemaVersion: 5 | 6; goalTree: GoalTree; tasks: Task[]; start: string; mandala?: Mandala; review?: string; reviewsByDate: Record<string, string>; availabilityByDate?: Record<string, Availability>; categories?: Category[]; tags?: Tag[]; recurrences?: RepeatSeries[] };
 export type LegacyPlan = { tasks: Array<Omit<Task, "plannedDate">>; start: string; mandala?: Mandala; review?: string };
-export type PlanV2 = Omit<Plan, "schemaVersion" | "goalTree"> & { schemaVersion: 2; goalTree?: GoalTree };
+export type PlanV2 = Omit<Plan, "schemaVersion" | "goalTree" | "recurrences"> & { schemaVersion: 2; goalTree?: GoalTree };
 export type PlanV3 = Omit<PlanV2, "schemaVersion"> & { schemaVersion: 3 };
 export type PlanV4 = Omit<PlanV2, "schemaVersion"> & { schemaVersion: 4 };
 export type PlanData = Plan | PlanV4 | PlanV3 | PlanV2 | LegacyPlan;
@@ -47,7 +49,7 @@ export function validMandala(value: unknown): value is Mandala {
 
 
 export function validTaskSnapshot(task: unknown, schemaVersion: number | undefined): task is Task {
-  if (schemaVersion !== undefined && ![2, 3, 4, 5].includes(schemaVersion)) return false;
+  if (schemaVersion !== undefined && ![2, 3, 4, 5, 6].includes(schemaVersion)) return false;
     if (!record(task) || typeof task.id !== "string" || !task.id ||
       typeof task.title !== "string" || !task.title.trim() || task.title.length > 120 ||
       typeof task.done !== "boolean" || typeof task.priority !== "string" || !["high", "normal", "low"].includes(task.priority) ||
@@ -55,8 +57,8 @@ export function validTaskSnapshot(task: unknown, schemaVersion: number | undefin
       (schemaVersion !== undefined && task.startTime === undefined) ||
       (schemaVersion !== undefined && task.plannedDate !== null && !isPlanDate(task.plannedDate)) ||
       (task.notes !== undefined && (typeof task.notes !== "string" || task.notes.length > 2000)) ||
-      ((schemaVersion !== undefined && schemaVersion >= 3) && typeof task.notes !== "string") || !validTaskClassification(task) || !validTaskPlanning(task) || !validHierarchyShape(task, schemaVersion)) return false;
-    const explicitEnd = schemaVersion === 4 || schemaVersion === 5 || ["endTime", "endDate", "endDayOffset"].some(key => Object.hasOwn(task, key));
+      ((schemaVersion !== undefined && schemaVersion >= 3) && typeof task.notes !== "string") || !validTaskClassification(task) || !validTaskPlanning(task) || !validHierarchyShape(task, schemaVersion) || !validRepeatTaskShape(task, schemaVersion)) return false;
+    const explicitEnd = schemaVersion !== undefined && schemaVersion >= 4 || ["endTime", "endDate", "endDayOffset"].some(key => Object.hasOwn(task, key));
     if (explicitEnd) {
       if (task.startTime === null) {
         if (task.endTime !== null || task.endDate !== null || task.endDayOffset !== null) return false;
@@ -71,7 +73,7 @@ export function validTaskSnapshot(task: unknown, schemaVersion: number | undefin
 
 export function validPlan(value: unknown): value is PlanData {
   if (!record(value) || !Array.isArray(value.tasks) || value.tasks.length > 5000 || !isClock(value.start)) return false;
-  if (value.schemaVersion !== undefined && (typeof value.schemaVersion !== "number" || ![2, 3, 4, 5].includes(value.schemaVersion))) return false;
+  if (value.schemaVersion !== undefined && (typeof value.schemaVersion !== "number" || ![2, 3, 4, 5, 6].includes(value.schemaVersion))) return false;
   const ids = new Set<string>();
   for (const task of value.tasks) {
     if (!validTaskSnapshot(task, value.schemaVersion as number | undefined) || ids.has(task.id)) return false;
@@ -84,7 +86,7 @@ export function validPlan(value: unknown): value is PlanData {
   if (value.categories !== undefined && !validCategories(value.categories)) return false;
   if (value.tags !== undefined && !validTags(value.tags)) return false;
   if (!validTaxonomyReferences(value.tasks, value.categories as Category[] | undefined, value.tags as Tag[] | undefined)) return false;
-  if (value.schemaVersion === 5 && (!validGoalTree(value.goalTree, value.tasks, value.mandala as Mandala | undefined) || !validTaskParents(value.tasks))) return false;
-  if (value.schemaVersion !== 5 && value.goalTree !== undefined && !validGoalTree(value.goalTree, value.tasks, value.mandala as Mandala | undefined)) return false;
-  return true;
+  if ((value.schemaVersion === 5 || value.schemaVersion === 6) && (!validGoalTree(value.goalTree, value.tasks, value.mandala as Mandala | undefined) || !validTaskParents(value.tasks))) return false;
+  if (value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.goalTree !== undefined && !validGoalTree(value.goalTree, value.tasks, value.mandala as Mandala | undefined)) return false;
+  return validRepeatPlan(value as Plan);
 }

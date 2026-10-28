@@ -1,6 +1,6 @@
 import { syncClient } from "./supabase-client";
 import { validPlan } from "../../supabase/functions/_shared/plan";
-import { loadPlan, upgradeStoredPlan, preserveMigrationBackup } from "../../supabase/functions/_shared/plan-migration";
+import { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } from "../../supabase/functions/_shared/plan-migration";
 import type { Session as AuthSession } from "@supabase/supabase-js";
 const ENDPOINT = "https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync";
 const LOCAL_KEY = "oddk.todo.v1";
@@ -102,6 +102,7 @@ export function writePlan(plan: unknown) {
     const old = loadPlan(oldRaw);
     if (!old.ok) throw new Error(old.error);
     if (old.migrated) preserveMigrationBackup(localStorage, key, oldRaw);
+    preserveV6Backup(localStorage, key, oldRaw, loaded.plan);
   }
   // Keep the validated candidate durable before replacing the visible snapshot.
   localStorage.setItem(`${key}.last-valid`, value);
@@ -113,7 +114,7 @@ export function writePlan(plan: unknown) {
 export function restoreLastValidPlan() {
   const s = session();
   const key = s ? cacheKey(s) : LOCAL_KEY;
-  const backup = localStorage.getItem(`${key}.last-valid`) ?? localStorage.getItem(`${key}.before-v5`) ?? localStorage.getItem(`${key}.before-v4`) ?? localStorage.getItem(`${key}.before-v3`) ?? localStorage.getItem(`${key}.before-v2`);
+  const backup = localStorage.getItem(`${key}.last-valid`) ?? localStorage.getItem(`${key}.before-v6`) ?? localStorage.getItem(`${key}.before-v5`) ?? localStorage.getItem(`${key}.before-v4`) ?? localStorage.getItem(`${key}.before-v3`) ?? localStorage.getItem(`${key}.before-v2`);
   const result = backup ? loadPlan(backup) : null;
   if (!result?.ok) throw new Error("이 기기에 정상 저장본이 없어요. 원본 백업 파일을 보관해주세요.");
   const raw = s ? cacheEnvelope(s).plan : localStorage.getItem(LOCAL_KEY);

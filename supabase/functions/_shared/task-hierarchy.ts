@@ -1,6 +1,6 @@
 export type TaskHierarchy = { parentTaskId?: string | null; summaryOnly?: boolean };
 export function validHierarchyShape(value: Record<string, unknown>, schema: number | undefined): boolean {
-  if (schema !== 5 && (value.parentTaskId !== undefined || value.summaryOnly !== undefined)) return false;
+  if (schema !== 5 && schema !== 6 && (value.parentTaskId !== undefined || value.summaryOnly !== undefined)) return false;
   return (value.parentTaskId === undefined || value.parentTaskId === null || typeof value.parentTaskId === "string" && value.parentTaskId.length > 0) && (value.summaryOnly === undefined || typeof value.summaryOnly === "boolean");
 }
 export function validTaskParents(tasks: Array<TaskHierarchy & { id: string }>): boolean {

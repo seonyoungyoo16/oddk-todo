@@ -27,7 +27,7 @@ jobs:
         with:
           deno-version: '2.9.6'
       - run: deno check supabase/functions/plan-sync/account.ts supabase/functions/travel-lookup/index.ts
-      - run: deno test tests/unit/plan-validation.test.mjs tests/unit/plan-v4.test.mjs tests/unit/plan-v5.test.mjs tests/unit/schedule.test.mjs tests/unit/editor-schedule.test.mjs tests/unit/availability.test.mjs tests/unit/availability-draft.test.mjs tests/unit/classification.test.mjs tests/unit/task-order.test.mjs tests/unit/bulk-actions.test.mjs tests/unit/goal-tree.test.mjs tests/unit/travel.test.mjs tests/unit/travel-handler.test.mjs tests/unit/task-movement.test.mjs
+      - run: deno test tests/unit/plan-validation.test.mjs tests/unit/plan-v4.test.mjs tests/unit/plan-v5.test.mjs tests/unit/schedule.test.mjs tests/unit/editor-schedule.test.mjs tests/unit/availability.test.mjs tests/unit/availability-draft.test.mjs tests/unit/classification.test.mjs tests/unit/task-order.test.mjs tests/unit/bulk-actions.test.mjs tests/unit/goal-tree.test.mjs tests/unit/travel.test.mjs tests/unit/travel-handler.test.mjs tests/unit/task-movement.test.mjs tests/unit/repeat-calendar.test.mjs tests/unit/recurrence.test.mjs
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'

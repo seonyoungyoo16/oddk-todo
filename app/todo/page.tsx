@@ -52,6 +52,7 @@ import { filterClassifiedTasks } from "./classification-actions";
 import type { ClassificationFilter } from "./classification-actions";
 import { validTaxonomyReferences } from "../../supabase/functions/_shared/taxonomy";
 import { sameValue } from "./json-equality";
+import { preserveManualRepeatEdits } from "../../supabase/functions/_shared/repeat-actions";
 import { makeUndo, applyUndo, validUndo } from "./plan-history";
 import type { PlanUndo } from "./plan-history";
 import { useLocalDraft, DraftFeedback } from "./use-local-draft";
@@ -272,6 +273,7 @@ function TodoWorkspace() {
   }
 
   function save(next: Plan, message: string, recordHistory = true) {
+    next = preserveManualRepeatEdits(plan, next);
     if (!planLoad.ok) { setError(planLoad.error); return false; }
     if (!validPlan(next)) { setError("할 일과 시간 설정을 확인해주세요."); return false; }
     try {

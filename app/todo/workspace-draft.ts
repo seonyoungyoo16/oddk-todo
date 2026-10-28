@@ -18,7 +18,7 @@ export function validWorkspace(v: unknown): v is WorkspaceDraft {
     !(v.selectedDate === null || typeof v.selectedDate === "string") || !(v.editingId === null || typeof v.editingId === "string") || !object(v.editors) || Object.keys(v.editors).length > 5000 ||
     !(v.mandalaDraft === null || validMandala(v.mandalaDraft)) || !(v.mandalaBase === null || validMandala(v.mandalaBase))) return false;
   return Object.entries(v.editors).every(([id, e]) => object(e) && object(e.base) && e.base.id === id &&
-    validTaskSnapshot(e.base, e.base.summaryOnly !== undefined || e.base.parentTaskId !== undefined ? 5 : 2) && validMandala(e.baseMandala) && validTaskClassification(e) &&
+    validTaskSnapshot(e.base, e.base.repeatSeriesId !== undefined || e.base.reminderMinutes !== undefined ? 6 : e.base.summaryOnly !== undefined || e.base.parentTaskId !== undefined ? 5 : 2) && validMandala(e.baseMandala) && validTaskClassification(e) &&
     (e.splitTitles === undefined || Array.isArray(e.splitTitles) && e.splitTitles.length >= 2 && e.splitTitles.length <= 32 && e.splitTitles.every(title => typeof title === "string" && title.length <= 120)) &&
     (e.goalExpanded === undefined || typeof e.goalExpanded === "boolean") &&
     (e.splitSummary === undefined || typeof e.splitSummary === "boolean") &&

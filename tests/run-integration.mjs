@@ -14,7 +14,7 @@ try {
   console.error("Integration fixture is invalid. Expected two isolated { id, email, password } accounts. No tests ran.");
   process.exit(1);
 }
-for (const file of ["account-sync.test.mjs", "account-store.test.mjs", "account-schema.test.mjs", "account-v3.test.mjs", "account-v4.test.mjs", "account-classification.test.mjs", "account-planning.test.mjs", "account-goals.test.mjs", "account-travel.test.mjs", "account-movement.test.mjs"]) {
+for (const file of ["account-sync.test.mjs", "account-store.test.mjs", "account-schema.test.mjs", "account-v3.test.mjs", "account-v4.test.mjs", "account-classification.test.mjs", "account-planning.test.mjs", "account-goals.test.mjs", "account-travel.test.mjs", "account-movement.test.mjs", "account-recurrence.test.mjs"]) {
   const result = spawnSync(process.execPath, [fileURLToPath(new URL(file, import.meta.url))], { stdio: "inherit" });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }

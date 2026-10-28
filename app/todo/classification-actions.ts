@@ -17,9 +17,9 @@ export function saveTag(plan: Plan, tag: Tag): Plan {
 }
 export function removeCategory(plan: Plan, id: string): Plan {
   if (!plan.categories?.some(value => value.id === id)) throw new Error("삭제할 카테고리가 없어요. 최신 목록을 확인해주세요.");
-  return checked({ ...plan, categories: plan.categories.filter(category => category.id !== id), tasks: plan.tasks.map(task => task.categoryId === id ? { ...task, categoryId: null } : task) }, "카테고리 연결을 해제하지 못했어요. 기존 계획은 유지했어요.");
+  return checked({ ...plan, categories: plan.categories.filter(category => category.id !== id), tasks: plan.tasks.map(task => task.categoryId === id ? { ...task, categoryId: null } : task), ...(plan.recurrences ? { recurrences: plan.recurrences.map(series => ({ ...series, segments: series.segments.map(segment => segment.template.categoryId === id ? { ...segment, template: { ...segment.template, categoryId: null } } : segment) })) } : {}) }, "카테고리 연결을 해제하지 못했어요. 기존 계획은 유지했어요.");
 }
 export function removeTag(plan: Plan, id: string): Plan {
   if (!plan.tags?.some(value => value.id === id)) throw new Error("삭제할 태그가 없어요. 최신 목록을 확인해주세요.");
-  return checked({ ...plan, tags: plan.tags.filter(tag => tag.id !== id), tasks: plan.tasks.map(task => task.tagIds?.includes(id) ? { ...task, tagIds: task.tagIds.filter(tag => tag !== id) } : task) }, "태그 연결을 해제하지 못했어요. 기존 계획은 유지했어요.");
+  return checked({ ...plan, tags: plan.tags.filter(tag => tag.id !== id), tasks: plan.tasks.map(task => task.tagIds?.includes(id) ? { ...task, tagIds: task.tagIds.filter(tag => tag !== id) } : task), ...(plan.recurrences ? { recurrences: plan.recurrences.map(series => ({ ...series, segments: series.segments.map(segment => ({ ...segment, template: { ...segment.template, tagIds: (segment.template.tagIds ?? []).filter(tag => tag !== id) } })) })) } : {}) }, "태그 연결을 해제하지 못했어요. 기존 계획은 유지했어요.");
 }
