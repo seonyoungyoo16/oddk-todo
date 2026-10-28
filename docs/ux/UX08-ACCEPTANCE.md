@@ -1,6 +1,13 @@
 # UX08 인수 및 시제품 평가
 
-상태: 자체 QA 완료 / PR26 최종 CI·Pages 배포 확인 대기
+상태: 자체 QA·최종 CI·Pages 배포·운영 확인 완료. 독립 사용자 사용성·실제 OAuth·실물 단말 검증은 UX13에 유지한다.
+
+## 출시 확인
+
+- PR26 최종 head `adff87464e1942a1d56a953a3fafa69108d976b2`, CI `40623911894` 성공: Node129·Deno71, 두 Edge 진입점 check, lint/typecheck/정적 빌드.
+- 병합 `8c8ce7f0bea8e6d7220a04eb008185311bf55848`, master run `40624115038` 성공, verify `122604846895`·deploy `122605123859`, deployment `7375981209`.
+- 운영 Origin에서 공개 관광지 검색 결과5개를 실제 조회했다. 새로고침 후 검색어 초안 복원, 백업 후 취소 안내와 새 작성 버튼을 확인했다. 확정 업무0 유지, Google·GitHub 버튼 활성, console warn/error0. 증거: [운영 화면](evidence/UX08-deployed.jpg).
+- 기존 사용자 목표는 편집하지 않았다. 운영 시험은 초안만 사용했고 합성 여행 업무를 확정하지 않았다.
 
 ## 확인한 범위
 

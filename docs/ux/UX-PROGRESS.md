@@ -301,3 +301,26 @@ account-travel을 통합 runner의9번째 시험으로 추가했다. 임시계�
 실제HTTP live시험을 자전거까지확장해 도보237.7/1424.8·자동차253.1/283.3·자전거141.9/766.1초와캐시/시각유지 재확인했다. 모든외부호출은공개관광지예제이며 사용자의개인여행지/주소를전송하지않았다.
 
 QA종료가드: tasks0/travelDraft=null/editors0/selected0, 원래계획과 업무외모든필드 정렬비교동일(목표·원본·활동설정포함). 시험 고정시간 복원, 라이트·선택해제, QA탭47/49/48닫기, public/ux08-qa.html·ux08-comparison.html 및QA표시제거. 미검증은 실제휴대폰/실제200%/독립사용자/OAuth로UX13에유지한다. 이제 최종Node/Deno/CI→PRready/병합→Pages동일SHA/운영확인을완료해야하며 UX09는미착수다.
+
+
+### UX08 운영 게이트 완료 및 UX09 착수
+
+UX08 PR26 최종adff874, CI40623911894 성공(Node129/Deno71/Edge2/check/lint/type/build). 병합8c8ce7f와 master40624115038 completed/success를 현재 다시 확인했다. deploy122605123859/deployment7375981209. 운영 실제검색 후보5개→reload검색어초안복원→백업취소→새작성버튼 확인, 확정업무0·SSO활성·console warn/error0. UX08-deployed.jpg. 기존 사용자 목표를 편집하지 않았다. 독립사용자/OAuth/실제단말 검증은UX13에유지한다. UX09를시작하며 UX10은미착수다.
+
+UX09-DESIGN.md에 범위/시간계약/ALPEN/인수를 기록했다. task-movement.ts는 필터슬롯순서/날짜이동/불변미리보기/전체충돌/오래된계획·변조·중복거부를 구현했다. 단위5개와 전체Node134, typecheck/lint통과. pointer손잡이와 시간이동확인팝업, 기존버튼대안 연결을 진행했다. 실제브라우저/실패주입/계정왕복/접근성/CI/배포는미완료이므로 UX09완료나 UX10착수로표시하지않는다.
+
+
+UX09 첫 브라우저 실측: 로컬3200 초기업무0에서 합성A/B등록, A09~10시/여유10 설정. 포인터 목록A→B로 B/A 순서, 버튼 A위로로 A/B복원. 시간표 손잡이45px(3px/분)→09:15~10:15 변경안, 버튼 기본15분제안과 일치. 승인후목록/시간표09:15·작업50/총60/여유10, undo09:00복원. 직접23:30+하루뒤→10/29 23:30~10/30 00:30 및양일활동밖경고, 취소로원본유지. 스크린샷UX09-time-preview/UX09-midnight-preview.jpg. StrictMode effect cleanup의close이벤트로팝업즉시닫힘을재현, 자체onClose핸들러제거/기존cancel패턴적용후버튼·포인터모두팝업유지재확인. 앱자체이벤트처리결함이며 Next피드백사안아님. A/B두개만일괄삭제로업무0복원·선택모드off, console warn/error0. 삭제undo기록에합성항목이남아있는점은후속QA종료정리대상. 기존사용자목표편집없음. 아직필터드래그/포인터취소/실패·경합·계정왕복/모바일·접근성/배포게이트미완료. UX09진행중.
+
+
+UX09 실제계정 통합시험을10번째runner로추가하고전체10개를실제API에실행했다(exec14262 exit0). 새시험은필터수동순서·숨긴슬롯/자정10/29 23:30→10/30 00:30 JSON왕복, 총60/여유10·목표보존, stale409/invalid400 전체plan/version불변, 다른계정격리, 시간/순서/전체fixture undo복원을확인했다. 전용임시계정2개만사용후 signOut·session삭제·user삭제, cleanupSQL test_users_remaining0, 인증fixture/SQL/생성모듈제거확인. 신규schema/Auth/DB변경없음. skill에따른changelog200/relevantPG공지·공식passwordsignIn문서200 확인. 실제OAuth는사용자확인대기로유지.
+
+
+UX09 checkpoint: Pages 정적빌드·최종typecheck/lint성공, 신규공통이동Deno5/5성공(기존71과합친전체Deno는CI에서재확인). Node전체134성공. UI잔여QA와배포미완료, UX10미착수. codex/ux09-drag에중간저장.
+
+
+### UX09 잔여 브라우저 QA 완료 / CI·배포 게이트 대기
+
+임시 로컬 QA프레임에서 원본업무0·목표/초안/테마스냅샷을보존하고 A/숨긴다음날/B/10분항목4개로시험. 계획quota실패원본09:00·4개/목표불변·팝업09:15유지→해제재시도09:15저장. 다른기기메모변경StorageEvent모사→오래된승인거부/원격메모유지. 즉시stale잠금과입력유지최신재검토를보완,09:30입력유지/확인활성재시험. 겹침10~11안/B10:30~11:30이름경고. 마지막버튼Tab→닫기/ESC후호출버튼복귀(초기문서포커스문제수정).390px다크10분일정대체버튼→11:50~12시/작업8+여유2=10. 물리터치/실제200%는UX13로명시.
+
+실제목록영역밖드롭무변경, A→B로B/숨긴날짜/A/짧은항목보존, 중요도정렬손잡이0/수동복귀유지. 종료guard원본계획전체JSON일치/tasks0/goalsSame/fixtureUndoRemoved=true, 초안·테마복원/QA탭닫음/public임시HTML삭제/콘솔warn-error0. UX09-ACCEPTANCE.md와스크린샷3개추가. 최종Node134/린트/typecheck/Pagesbuild성공. CI·운영배포는아직미완료, UX10미착수.

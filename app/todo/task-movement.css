@@ -1,0 +1,15 @@
+.oddk-dragHandle { flex: 0 0 30px; width: 30px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--oddk-line, #dce2ee); border-radius: 6px; background: transparent; color: inherit; cursor: grab; touch-action: none; }
+.oddk-dragHandle[data-dragging=true] { cursor: grabbing; outline: 2px solid #577ef5; }
+.oddk-dragHandle:focus-visible { outline: 2px solid #577ef5; outline-offset: 2px; }
+.oddk-timeSlotGroup { position: absolute; }
+.oddk-timeSlotGrip { position: absolute; right: 3px; top: 3px; z-index: 2; }
+.oddk-timeSlotGrip .oddk-dragHandle { background: var(--oddk-surface, #fff); color: #233a67; }
+.oddk-timeMoveControls { display: grid; gap: 8px; margin-top: 12px; }
+.oddk-timeMoveControls > div { display: flex; align-items: center; gap: 8px; padding: 6px; border: 1px solid #dce2ee; border-radius: 6px; }
+.oddk-timeMoveControls span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.oddk-timeMoveControls button:not(.oddk-dragHandle) { padding: 6px 8px; border: 1px solid #dce2ee; border-radius: 6px; font: inherit; }
+.oddk-timeMoveFields { display: grid; gap: 12px; }
+.oddk-timeMoveFields label { display: grid; gap: 6px; }
+.oddk-timeMoveFields input { padding: 10px; border: 1px solid #dce2ee; border-radius: 6px; font: inherit; color: inherit; background: transparent; }
+.oddk-timeMoveFields nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.oddk-timeMoveFields nav button { padding: 8px; border: 1px solid #dce2ee; border-radius: 6px; }
