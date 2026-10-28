@@ -1,0 +1,35 @@
+.oddk-execution { margin: 20px 0; padding: 18px; border: 1px solid var(--oddk-border); border-radius: 6px; background: var(--oddk-surface); }
+.oddk-recordCurrent { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.oddk-recordCurrent strong { display:flex; align-items:center; gap:7px; }
+.oddk-recordCurrent p { margin:6px 0; overflow-wrap:anywhere; white-space:pre-wrap; }
+.oddk-recordCurrent > div { min-width:0; }
+.oddk-recordActions { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:10px 0; }
+.oddk-execution button, .oddk-recordDialog button, .oddk-recordFile { border:1px solid var(--oddk-border); border-radius:5px; padding:8px 11px; min-height:40px; display:inline-flex; align-items:center; justify-content:center; gap:6px; white-space:normal; }
+.oddk-execution button:hover, .oddk-recordDialog button:hover { background:var(--oddk-soft); }
+.oddk-execution button:disabled, .oddk-recordDialog button:disabled { opacity:.5; cursor:not-allowed; }
+.oddk-recordStart { flex-shrink:0; padding:7px; border-radius:5px; display:inline-flex; align-items:center; gap:4px; font-size:12px; min-height:36px; }
+.oddk-recordStart:focus-visible, .oddk-execution :focus-visible, .oddk-recordDialog :focus-visible { outline:2px solid #3974df; outline-offset:3px; }
+.oddk-recordStart:disabled { opacity:.6; cursor:not-allowed; }
+.oddk-recordMeta { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:10px; }
+.oddk-recordHistory { margin-top:15px; border-top:1px solid var(--oddk-border); padding-top:15px; }
+.oddk-recordHistory summary { cursor:pointer; padding:6px 0; font-weight:600; }
+.oddk-recordHistory p, .oddk-recordDialog p { margin:12px 0; }
+.oddk-recordComparison { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:16px 0; }
+.oddk-recordComparison > div { display:flex; flex-direction:column; gap:6px; border:1px solid var(--oddk-border); padding:12px; border-radius:5px; }
+.oddk-recordHistory ul, .oddk-recordImportList { list-style:none; padding:0; margin:12px 0; }
+.oddk-recordHistory li { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 0; border-top:1px solid var(--oddk-border); }
+.oddk-recordHistory li > div { display:flex; flex-direction:column; min-width:0; gap:4px; overflow-wrap:anywhere; }
+.oddk-recordHistory li strong, .oddk-recordImportList strong { white-space:pre-wrap; overflow-wrap:anywhere; }
+.oddk-recordFile { cursor:pointer; position:relative; }
+.oddk-recordFile input { width:1px; height:1px; position:absolute; opacity:0; }
+.oddk-recordFile:focus-within { outline:2px solid #3974df; outline-offset:3px; }
+.oddk-recordDialog { width:min(720px,calc(100vw - 24px)); max-height:calc(100dvh - 30px); overflow:auto; }
+.oddk-recordRow { border:1px solid var(--oddk-border); border-radius:5px; padding:12px; display:grid; grid-template-columns:100px minmax(0,1fr); gap:12px; margin:15px 0; }
+.oddk-recordRow label { display:flex; flex-direction:column; min-width:0; gap:4px; }
+.oddk-recordRow input, .oddk-recordRow select, .oddk-recordImportList select { width:100%; min-width:0; padding:8px; min-height:42px; border:1px solid var(--oddk-border); border-radius:4px; background:var(--oddk-surface); color:var(--oddk-heading); }
+.oddk-recordRow label:nth-of-type(3) { grid-column:2; }
+.oddk-recordPreview { display:block; padding:12px; background:var(--oddk-soft); border-radius:4px; margin:14px 0; }
+.oddk-recordConfirm { display:flex; align-items:flex-start; gap:8px; margin:18px 0; }
+.oddk-recordConfirm input { margin-top:5px; flex-shrink:0; }
+.oddk-recordImportList li { display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--oddk-border); padding:14px 0; }
+@media(max-width:650px) { .oddk-execution { padding:12px; } .oddk-recordComparison { grid-template-columns:1fr; } .oddk-recordHistory li { align-items:flex-start; flex-direction:column; } .oddk-recordRow { grid-template-columns:minmax(0,1fr); } .oddk-recordRow label:nth-of-type(3) { grid-column:auto; } .oddk-recordStart { font-size:11px; padding:5px; } }

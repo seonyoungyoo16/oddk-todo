@@ -422,3 +422,27 @@ tests/push-browser-flow.html 기반 실제2계정/Auth/API/SW/IndexedDB+iframe�
 SW/DB/iframe·privateHTML정리/원래스토리지전체원문복원. 새fixture통합12개최신store+plan-sync12 exit0(49760),시험사용자/구독/예약/전달0·기존계획3·Cron2활성,fixture/seed/cleanup/생성3모듈정리. 전체Node210/type/lint/Pagesbuild성공. 정적standalone manifest·192/512기존아이콘·Apple metadata/ko언어와export검증추가: local/Pages경로·PNG·HTML·SW원문·시험자료미포함PASS. 새WARN/ERROR없음.
 
 아직UX10완료아님: 최신CI·동일SHA Pages배포/운영자산·예약스모크확인후UX11. 물리권한·실물수신·OAuth/실기기인수는사용자요청대로전체작업마지막에모은다.
+
+### UX10 운영 게이트 완료 / UX11 착수
+
+PR28 head1e13b91 CI40705972616 verify122878063576 Node210/Deno138/edge암호화2+guard1/check/type/lint/Pagesbuild/export검증성공. 병합c361c3d6d53e1a6bce72b0cb9cfa491c2bc316df, master40706275653 verify122879150828/deploy122879810333 completed/success. deployment7388172986 SHA일치success. 실제운영todo·manifest·SW/core·PNG192/512 200,JS전체소스·PNG바이트일치/standalone범위·metadata·ko확인. 운영브라우저양쪽SSOenabled·렌더정상·console0, UX10-deployed.jpg. Cron2 enabled/최신HTTP200·timeoutfalse/오류null·처리0/실패0. 시험자료0/기존계획3·실제primaryff·사용자CSS해시/미커밋로고/별도계획보존.
+
+UX10소프트웨어QA·배포게이트완료후c361기반codex/ux11-actual-time시작. 실제OAuth·권한/실물수신·실기기/독립사용성은FINAL-USER-CHECKS에모아마지막에요청한다. 전체목표는아직진행중이며UX11~13을계속한다.
+
+### UX11 공통 실제 기록 모델·전환 규칙
+
+UX11-DESIGN에계획JSON과분리한실적/현재상태·소유권·단일active/계획→실행잠금순서·operation/revision/CAS·작업완료삭제종료·익명IDB/계정scope·수동보정/백업/가져오기/기간집계·시간계약·ALPEN/인수를정리했다. DB/API/UI는아직미구현이며소프트웨어기록설계부터진행한다.
+
+execution.ts는계획제목/날짜/작업·전체snapshot불변,최대64개의정수ms UTC work/break 구간, pause미합산·명시휴식·재개·종료/중복no-op·역행거부,24시간cap/확인필요·미래/중첩/손상거부·종료후수동보정·한국자정집계를구현했다. 신규9개Node/Deno각PASS,전체Node219/type/lint성공. 계정단일active/다른record겹침/실제persist·서버/브라우저/배포는아직아니며UX12에착수하지않는다. 다음블록은실적저장/API·원자적전환과실제2계정/두기기경합증거다.
+
+UX11 core fc98953 PR29(draft/attached) CI40709934214 verify122892128779 success: Node219/Deno147/Edgecheck·암호화2+guard1/type/lint/Pagesbuild/export검증통과,PR배포는정상skipped. UX11서비스완료가아니며운영은UX10/c361그대로다.
+
+2026-10-29 명령계약: execution-command.ts의strict status/history(366일·100행·cursor)/operation·revision/8종명령·정규fingerprint·기대active/전환2record delta·계획/context불변·다른active보호·기존ID재사용방어를구현했다. 신규7개Node/Deno각통과,전체Node226/type/lint성공. Node strip-only에서지원하지않는parameter property는일반명시필드constructor로수정한자체런타임호환문제이며Next오류아님. 다음은실제DB/API의owner·복합키/단일active·원자적commit·idempotency·전역겹침·계획완료삭제종료와실제fixture검증이다. 공개신규API나스키마/운영변경은아직없다.
+
+2026-10-29 저장 계층: migration20261028151545 적용, 실행 테이블3개/검증 함수6개. 합성44개 Node/실제DB 차이0. rollback 시험에서 단일 열린 기록·소유자 복합키·지연 포인터·원자적 전환/이력·실패 불변·operation 중복 방지·계정 정리 통과. service 실제 data 수정 허용/ID 수정42501, authenticated 실제 조회/anon helper42501, 익명 REST도 거부. 시험 후 세 테이블0/기존 계획3. 함수6개 원격=로컬, invoker/search_path 고정. CI47d6f18 성공 Node226/Deno154. 상세는 UX11-DESIGN. API/UI/실제 동시 요청/UX11 배포는 미완료, UX12 미착수.
+
+2026-10-29 서버 API: migration152946/153728·execution2 ACTIVE/원격16파일일치. 실제 DB rollback·실제2계정 HTTP13그룹 PASS(동시에 in-flight 시작1성공1충돌·응답유실 재시도·기록/계획 불변·수동/보정/겹침·완료삭제/undo·owner/권한). PostgREST40001 반복 문제를 공식 안내대로 PT409로 수정 후 새 fixture 전부 재시험, active backend0. Node232/실행 Deno22/type/lint/check 성공. 시험자료0/기존계획3·새WARN없음. 상세 UX11-DESIGN. UI/익명저장/브라우저/Pages 인수 전이라 UX11 진행중이며 UX12 미착수.
+
+2026-10-29 클라이언트 인수: 목록 작업 시작/현재 work·pause·break·stop/확인 switch, 일별 계획·실제 비교/전체합계, 수동 구간 미리보기·확인/초안/정확한ms, separate 실적 백업·종료 기록 복구/계정 대상 연결을 구현했다. 실제 native IDB 동시1건/abort/할일완료undo/파일복구·ID충돌원복/put실패·명시재시도/보정중 revision변경의 양쪽보존, 새로고침/닫기재열기 모두 PASS. 보정창 revision 고정·편집중 polling 중지/늦은 조회 무효화·최신기록 재확인, 입력시각 monotonic 갱신. 실제 Auth/API/DB 계정UI는 지연A응답 중 같은 문서 logout/B login·A복귀 보존·offline미확정/재시도·File가져오기/열린기록제외·익명IDB원문불변 PASS. QA키순서/재로딩DOM대기 하네스도 보완했다.
+
+전체 Node240/Deno168/type/lint, 실제 API 통합13파일 exit0(85712) 통과. 390px다크팝업/키보드순환/초점/가로넘침없음. 실제200% 단축키는 도구에서 배율무변경이라 통과로 표시하지 않고 마지막 실기기 H07에 남겼다. 공개원래storage 원문복원·시험계정0/실적3표0/기존계획3. 상세와 증거 UX11-ACCEPTANCE. 최종 CI/Pages같은SHA 운영게이트 전이며 UX12 미착수.

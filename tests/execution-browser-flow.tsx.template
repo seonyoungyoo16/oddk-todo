@@ -1,0 +1,90 @@
+"use client";
+import { useRef, useState } from "react";
+import { localExecutionTransaction, commandLocalExecutions } from "../todo/execution-idb";
+import { emptyExecutionData } from "../todo/execution-local-model";
+import type { LocalExecutionData } from "../todo/execution-local-model";
+import { loadPlan } from "../../supabase/functions/_shared/plan-migration";
+import { syncClient } from "../todo/supabase-client";
+import { koreanExecutionInput } from "../todo/execution-editor-model";
+import { correctExecution, manualExecution } from "../../supabase/functions/_shared/execution";
+const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12,"0")}`;
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve,ms));
+async function wait(test:()=>boolean|Promise<boolean>,message:string) { const end=Date.now()+20000; while(Date.now()<end) { if(await test())return; await sleep(100); }throw Error(message); }
+export default function ExecutionBrowserQA() {
+  const frame=useRef<HTMLIFrameElement>(null), backup=useRef<{storage:[string,string][]; data:LocalExecutionData}|null>(null);
+  const [events,setEvents]=useState<string[]>([]),[active,setActive]=useState(false),[running,setRunning]=useState(false),[prepared,setPrepared]=useState(false);
+  const say=(text:string)=>setEvents(v=>[...v,text]);
+  const doc=()=>{ const d=frame.current?.contentDocument;if(!d)throw Error('Frame not ready');return d; };
+  const button=(name:string)=>[...doc().querySelectorAll<HTMLButtonElement>('button')].find(b=>(b.getAttribute('aria-label')===name||b.textContent?.trim()===name)&&b.getClientRects().length>0);
+  const click=async(name:string)=>{await wait(()=>Boolean(button(name)&&!button(name)!.disabled),`Missing enabled button: ${name}`);button(name)!.click();};
+  const input=(element:HTMLInputElement|HTMLSelectElement,value:string)=>{Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element),'value')!.set!.call(element,value);element.dispatchEvent(new Event(element.tagName==='SELECT'?'change':'input',{bubbles:true}));};
+  const read=()=>localExecutionTransaction(v=>v);
+  async function run(){setRunning(true);try{
+    if((await syncClient().auth.getSession()).data.session)throw Error('Existing login: stop without changes');
+    const original=await read();if(original.records.length||original.operations.length)throw Error('Existing actual records: stop without changes');
+    backup.current={storage:Object.entries(localStorage),data:original};setPrepared(true);
+    const now=new Date().toISOString(),today=koreanExecutionInput(now).slice(0,10);
+    const loaded=loadPlan(JSON.stringify({schemaVersion:2,reviewsByDate:{},start:'09:00',tasks:['one','two'].map(id=>({id,title:`QA ${id}`,done:false,priority:'normal',minutes:30,bufferMinutes:5,startTime:null,plannedDate:today}))}));if(!loaded.ok)throw Error(loaded.error);const plan=loaded.plan;
+    localStorage.clear();localStorage.setItem('oddk.todo.v1',JSON.stringify(plan));
+    const requests=[1,2].map(n=>({action:'command' as const,operationId:id(n),revision:0,command:{type:'start' as const,taskId:n===1?'one':'two'}}));
+    const race=await Promise.allSettled(requests.map(r=>commandLocalExecutions(()=>plan,r)));
+    if(race.filter(r=>r.status==='fulfilled').length!==1||(await read()).records.filter(r=>r.endedAt===null).length!==1)throw Error('Native IndexedDB concurrent starts');say('PASS native IndexedDB concurrent starts: exactly one commit');
+    const before=JSON.stringify(await read());try{await localExecutionTransaction(()=>{throw Error('injected abort');});}catch{}
+    if(JSON.stringify(await read())!==before)throw Error('Abort changed committed record');say('PASS native transaction abort preserves previous bytes');
+    await localExecutionTransaction(()=>emptyExecutionData());setActive(true);
+    await wait(()=>Boolean(frame.current),'Frame mounted');frame.current!.src='/todo/?execution-qa=1';
+    await click('QA one 작업 시작');await wait(async()=>Boolean((await read()).records.find(r=>r.taskId==='one'&&r.endedAt===null)),'Start did not commit');
+    await click('일시정지');await wait(async()=>(await read()).records[0]?.segments.at(-1)?.end!==null,'Pause');
+    await click('휴식 시작');await wait(async()=>(await read()).records[0]?.segments.at(-1)?.kind==='break','Break');
+    await click('작업으로');await wait(async()=>(await read()).records[0]?.segments.at(-1)?.kind==='work','Resume');say('PASS real UI start/pause/explicit break/resume');
+    const first=(await read()).records[0].id;frame.current!.src='/todo/?execution-qa=reload';
+    await wait(()=>doc().URL.includes('execution-qa=reload')&&(doc().body?.textContent?.includes('작업 기록 중')??false),'Reload lost timer');if((await read()).records[0].id!==first)throw Error('Reload duplicated record');say('PASS iframe reload retains exact active record');
+    await click('QA two 작업 시작');await wait(()=>Boolean(doc().querySelector('dialog[open]')),'Switch dialog');
+    if((await read()).records.length!==1)throw Error('Switch committed before confirmation');await click('취소');await wait(()=>!doc().querySelector('dialog[open]'),'Cancel dialog did not close');
+    await click('QA two 작업 시작');await click('종료하고 작업 전환');await wait(async()=>Boolean((await read()).records.find(r=>r.taskId==='two'&&r.endedAt===null)),'Switch commit');await wait(()=>!doc().querySelector('dialog[open]'),'Switch dialog did not close');say('PASS confirmed switch preserves old history, cancel does not mutate');
+    await click('기록 종료');await wait(async()=>(await read()).records.every(r=>r.endedAt!==null),'Stop');
+    const summary=doc().querySelector<HTMLElement>('.oddk-recordHistory summary');summary!.click();await click('실제 시간 직접 입력');
+    await wait(()=>Boolean(doc().querySelector('dialog[open] select')),'Manual form');
+    input(doc().querySelector<HTMLSelectElement>('dialog[open] select')!,'one');
+    const start=koreanExecutionInput(new Date(Date.now()-600000).toISOString()),end=koreanExecutionInput(new Date(Date.now()-300000).toISOString());
+    const times=[...doc().querySelectorAll<HTMLInputElement>('dialog[open] input[type="datetime-local"]')];input(times[0],start);input(times[1],end);
+    await click('입력 보관하고 닫기');await wait(()=>!doc().querySelector('dialog[open]'),'Draft dialog did not close');await click('실제 시간 직접 입력');
+    if(doc().querySelector<HTMLInputElement>('dialog[open] input[type="datetime-local"]')!.value!==start)throw Error('Draft did not persist');say('PASS manual editor draft retained after close/reopen');
+    await wait(()=>Boolean(button('실제 기록 저장')),'Save control');if(!button('실제 기록 저장')!.disabled)throw Error('Preview confirmation not required');
+    doc().querySelector<HTMLInputElement>('dialog[open] input[type="checkbox"]')!.click();await click('실제 기록 저장');
+    await wait(async()=>(await read()).records.some(r=>r.finishReason==='manual'),'Manual did not persist');say('PASS manual preview/confirmation commits closed actual interval');
+    await wait(()=>!doc().querySelector('dialog[open]'),'Manual dialog close');
+    const manual=(await read()).records.find(r=>r.finishReason==='manual')!;
+    [...doc().querySelectorAll<HTMLButtonElement>('.oddk-recordHistory li button')].at(-1)!.click();await wait(()=>Boolean(doc().querySelector('dialog[open] input[type="datetime-local"]')),'Correction form');
+    const correction=[...doc().querySelectorAll<HTMLInputElement>('dialog[open] input[type="datetime-local"]')];
+    input(correction[1],koreanExecutionInput(new Date(Date.now()+3600000).toISOString()));await wait(()=>Boolean(button('실제 기록 저장')?.disabled),'Future interval admitted');
+    input(correction[1],koreanExecutionInput(new Date(Date.parse(manual.endedAt!)+60000).toISOString()));
+    await wait(()=>!doc().querySelector<HTMLInputElement>('dialog[open] input[type="checkbox"]')!.disabled,'Valid correction preview');
+    doc().querySelector<HTMLInputElement>('dialog[open] input[type="checkbox"]')!.click();await click('실제 기록 저장');
+    await wait(async()=>(await read()).records.find(r=>r.id===manual.id)?.endedAt!==manual.endedAt,'Correction did not commit');await wait(()=>!doc().querySelector('dialog[open]'),'Correction close');
+    [...doc().querySelectorAll<HTMLButtonElement>('.oddk-recordHistory li button')].at(-1)!.click();await wait(()=>Boolean(doc().querySelector('dialog[open]')),'Reopen correction');
+    if(doc().querySelector('dialog[open]')!.textContent!.includes('다른 창에서'))throw Error('Successful correction left stale draft');say('PASS future correction rejected, valid correction saved, reopening keeps current draft snapshot');
+    const preservedInput=doc().querySelectorAll<HTMLInputElement>('dialog[open] input[type="datetime-local"]')[1].value;
+    await localExecutionTransaction(value=>({...value,revision:value.revision+1,records:value.records.map(r=>r.id===manual.id?correctExecution(r,r.segments.map((s,i)=>i===r.segments.length-1?{...s,end:new Date(Date.parse(s.end!)-1000).toISOString()}:s),new Date().toISOString()):r)}));
+    const remote=JSON.stringify((await read()).records.find(r=>r.id===manual.id));
+    doc().querySelector<HTMLInputElement>('dialog[open] input[type="checkbox"]')!.click();await click('실제 기록 저장');await wait(()=>doc().querySelector('dialog[open]')!.textContent!.includes('다른 창에서 시간 기록 상태'),'Remote revision not rejected');
+    if(JSON.stringify((await read()).records.find(r=>r.id===manual.id))!==remote||doc().querySelectorAll<HTMLInputElement>('dialog[open] input[type="datetime-local"]')[1].value!==preservedInput)throw Error('Conflict overwrote draft or remote record');
+    await click('현재 상태 기준으로 새로 조작');await click('이전 입력 백업하고 최신 기록으로 시작');await click('입력 보관하고 닫기');await wait(()=>!doc().querySelector('dialog[open]'),'Reopened correction close');say('PASS changed record revision rejects stale correction, preserving both draft and remote interval');
+    // Completion/undo uses the real plan UI and IndexedDB reconciliation.
+    await click('QA one 작업 시작');await wait(async()=>(await read()).records.some(r=>r.taskId==='one'&&r.endedAt===null),'Restart');
+    const checkbox=doc().querySelector<HTMLInputElement>('input[aria-label="QA one 완료"]');checkbox!.click();
+    await wait(async()=>(await read()).records.some(r=>r.taskId==='one'&&r.finishReason==='completed'),'Completion did not close');
+    await click('최근 변경 되돌리기');await wait(()=>Boolean(button('QA one 작업 시작')),'Undo task');if((await read()).records.some(r=>r.endedAt===null))throw Error('Undo restarted timer');say('PASS completion closes current record; undo never restarts it');
+    const beforeFailure=JSON.stringify(await read()),win=doc().defaultView as Window & typeof globalThis,prototype=win.IDBObjectStore.prototype,put=prototype.put;
+    try{prototype.put=function(){throw new win.DOMException('QA 저장 실패','QuotaExceededError');};await click('QA one 작업 시작');await wait(()=>doc().body.textContent!.includes('브라우저 저장 공간을 확인해주세요'),'Store failure not shown');if(JSON.stringify(await read())!==beforeFailure)throw Error('Failed UI save changed data');}finally{prototype.put=put;}
+    await click('같은 요청으로 결과 확인');await wait(async()=>(await read()).records.some(r=>r.endedAt===null),'Retry failed');await click('기록 종료');await wait(async()=>(await read()).records.every(r=>r.endedAt!==null),'Retry stop');say('PASS native write failure preserves history; explicit same-request retry commits once');
+    const pastEnd=new Date(Date.now()-3*86400000).toISOString(),pastStart=new Date(Date.parse(pastEnd)-600000).toISOString(),imported=manualExecution(plan.tasks[0],crypto.randomUUID(),[{kind:'work',start:pastStart,end:pastEnd}],new Date().toISOString());
+    const chooseFile=(record:typeof imported)=>{const fileWindow=doc().defaultView as Window&typeof globalThis,transfer=new fileWindow.DataTransfer();transfer.items.add(new fileWindow.File([JSON.stringify({type:'oddk-executions',schemaVersion:1,exportedAt:new Date().toISOString(),records:[record]})],'synthetic-local-actuals.json',{type:'application/json'}));const input=doc().querySelector<HTMLInputElement>('input[type="file"]')!;input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));};
+    chooseFile(imported);await wait(()=>Boolean(doc().querySelector('dialog[open] input[type="checkbox"]')),'Local import preview');doc().querySelector<HTMLInputElement>('dialog[open] input[type="checkbox"]')!.click();await click('기존 실적 백업 후 가져오기');await wait(async()=>(await read()).records.some(r=>r.id===imported.id),'Local restore did not commit');await wait(()=>!doc().querySelector('dialog[open]'),'Local restore close');
+    const beforeConflict=JSON.stringify(await read());chooseFile({...imported,title:'Conflicting snapshot'});await wait(()=>Boolean(doc().querySelector('dialog[open] input[type="checkbox"]')),'Conflicting import preview');doc().querySelector<HTMLInputElement>('dialog[open] input[type="checkbox"]')!.click();await click('기존 실적 백업 후 가져오기');await wait(()=>doc().querySelector('dialog[open]')!.textContent!.includes('같은 ID'),'Conflicting restore not rejected');if(JSON.stringify(await read())!==beforeConflict)throw Error('Conflicting restore changed original');await click('실적 가져오기 닫기');await wait(()=>!doc().querySelector('dialog[open]'),'Import conflict close');say('PASS real file preview and native restore preserve existing records; conflicting snapshot rolls back');
+    const final=await read();if(JSON.stringify(JSON.parse(localStorage.getItem('oddk.todo.v1')!).tasks.map((t:{minutes:number;bufferMinutes:number})=>[t.minutes,t.bufferMinutes]))!==JSON.stringify([[30,5],[30,5]]))throw Error('Actual recording changed planned values');
+    say(`PASS final records ${final.records.length}; planned work/total unchanged. READY FOR VISUAL QA.`);
+  }catch(e){say('FAIL '+(e instanceof Error?e.message:String(e)));}finally{setRunning(false);}}
+  async function cleanup(){setActive(false);await sleep(250);if(!backup.current){say('No backup to restore');return;}const before=backup.current;await localExecutionTransaction(()=>before.data);localStorage.clear();for(const [k,v]of before.storage)localStorage.setItem(k,v);backup.current=null;setPrepared(false);say('CLEANED: original IndexedDB object and every localStorage byte restored');}
+  return <main style={{padding:20,fontFamily:'sans-serif'}}><h1>UX11 isolated localhost QA</h1><p>Synthetic local data only. Stop if existing login or actual records. Always use cleanup.</p><button disabled={running||prepared} onClick={()=>void run()}>Run native store and UI QA</button><button disabled={running} onClick={()=>void cleanup()}>Restore original browser data</button><ol>{events.map((e,i)=><li key={i}>{e}</li>)}</ol>{active&&<iframe ref={frame} title="Actual-time QA application" style={{width:'100%',height:800,border:'1px solid #ddd'}}/>}</main>;
+}

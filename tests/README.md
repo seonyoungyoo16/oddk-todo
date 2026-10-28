@@ -93,3 +93,7 @@ UX10은 account-recurrence.test.mjs를11번째 격리계정 통합시험으로 �
 
 - `push-browser-flow.html`은 fixture 주입 전 템플릿이며 직접 열면 시험을 거부한다. 신뢰한 로컬 준비 과정에서 `/*FIXTURE*/null`만 무시된 전용 계정2개 배열로 바꿔 임시 public 페이지를 만들고 실제 앱 iframe에서 실행한다. 기존 로그인/Worker가 있으면 중단하고 원래 oddk 저장소를 보존한다. Notification/PushManager만 iframe에서 모사하며 실제 API·Worker·DB·로그아웃/계정 전환·지연 응답·날짜 이동/초안 보존을 시험한다. 갱신 피드백과 활성·표시 상태를 기다린다. 종료 후 원문 복원·Worker/DB 제거를 확인하고 임시 public 파일/계정·세션을 정리한다. fixture를 주입한 임시 페이지를 남긴 채 빌드하거나 커밋하지 않는다. 원본 템플릿은 비밀값 없이 저장한다.
 - Pages build 후 `node tests/verify-push-export.mjs`는 standalone manifest의 local/Pages 상대경로·PNG 크기·HTML manifest/Apple 링크/언어·정적 SW 원문 일치와 QA/fixture 계정의 export 미포함을 검사한다. CI의 artifact 업로드 전 게이트이며 실제 기기 설치·푸시 전달 인수를 대체하지 않는다.
+
+### UX11 공통 실제 기록
+
+`execution.test.mjs`9개는 Node/Deno 양쪽에서 같은 단일 record 전환·유효성·계획 snapshot 불변·work/rest/pause 구분·한국 자정/밀리초·역행·24시간 한계·수동 보정·64구간에서 종료 가능을 확인한다. 현재 DB/API/계정 단일 active·다른 기록과의 겹침·IndexedDB/UI 인수를 대신하지 않는다. 후속 인수는 UX11-DESIGN에 따라 별도 기록한다.

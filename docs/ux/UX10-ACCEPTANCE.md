@@ -1,6 +1,6 @@
 # UX10 인수 진행 기록
 
-상태: 반복/V6·서버 준비·기기 API·예약 큐·암호화 sender/receipt를 배포·검증했다. SW/클라이언트·알림 설정 UI도 연결하고 수신 정책·실제 저장·프로필을 시험했다. 최종 클라이언트 인수·CI/Pages 운영 배포는 미완료이며 UX11은 시작하지 않는다. 과거 체크포인트의 미완료 표기는 아래 최신 절로 갱신한다.
+상태: UX10 소프트웨어 QA·CI/Pages 운영 배포 검증 완료(PR28/c361c3d). 실제 OAuth·물리 권한/수신·실기기 인수는 전체 작업 마지막 목록에 유지하며 UX11로 진행한다. 아래 과거 체크포인트의 미완료 표기는 작성 당시 상태이며 마지막 운영 게이트 절이 최신 결과다.
 
 ## 공통 계약과 실제 서버
 
@@ -119,3 +119,11 @@
 - 최신 Node210·typecheck/lint/Pages build 성공. 서버 advisor는 의도적 서버 전용 no-policy INFO8/기존 password WARN1, 신규 WARN/ERROR 없음.
 
 남은 개발 게이트는 최신 커밋 CI·Pages 배포와 같은 SHA의 운영 화면/정적 자산/서버 예약 확인이다. 이를 확인한 뒤 UX11로 진행한다. 실제 OAuth·물리 권한/수신·실기기 사용성은 전체 작업 마지막 사용자 인수로 유지한다.
+
+## UX10 운영 배포 게이트 완료 — 2026-10-28
+
+- PR28 최종 head `1e13b91f7d932db9c7cf723de3e25e0636d32557`, CI40705972616/verify122878063576 성공. Node210/Deno138/실제 암호화2+위험 환경 guard1·Edge 진입점check/type/lint/Pages build/export 검증 로그를 확인했다.
+- 병합 SHA `c361c3d6d53e1a6bce72b0cb9cfa491c2bc316df`. master run40706275653의 verify122879150828·deploy122879810333 모두 success. deployment7388172986도 같은 SHA의 success이며 환경 URL은 운영 `/oddk-todo/`다.
+- 실제 운영 todo/manifest/SW/core/192·512 PNG 모두200. JS는 로컬 소스(LF 정규화)와 전체 일치, PNG는 원본 바이트 일치. manifest MIME application/manifest+json·standalone scope/start URL·HTML manifest/Apple 아이콘·ko 언어·양쪽 SSO를 확인했다. 실제 브라우저 Google/GitHub 버튼 enabled=true·기본 화면 렌더·warn/error0. [운영 화면](evidence/UX10-deployed.jpg). 사용자 데이터/권한/OAuth를 조작하지 않았다.
+- 운영 task-maintenance·push-worker Cron2 활성, worker/maintenance 최신 HTTP200·timeout=false/error=null, worker 처리0·실패0. 시험 자료0·기존 계획3, primary 소스도 같은 병합 상태로 fast-forward했고 사용자 CSS SHA256 `36ABC08A32269D3ED013C372DD10C07BB718C28489AABF0806C5FC2CC4FBAC83` 및 미커밋 로고/별도 계획을 보존했다.
+- 이로써 UX10의 소프트웨어 완료 조건·QA·단계별 배포 게이트를 완료했다. 실제 OAuth/물리 권한·전달/실기기·독립 사용성은 사용자 요청대로 [최종 사용자 목록](FINAL-USER-CHECKS.md)에 남기며 이번 단계의 모사 결과로 통과 처리하지 않는다. 다음은 UX11 실제 시간 기록이다.
