@@ -29,3 +29,12 @@
 - [ ] CI/Pages 같은 SHA와 서버 버전/운영 확인 후 UX13으로 넘어간다.
 
 ALPEN: A 배치 규칙→저장/경합→미리보기 UI→실제 실패/복구→운영 배포. L 집중50분+P 재검증 여유15분 단위로 나누고, E 고정/완료/실적 보호부터 확인한다. N 블록마다 증거와 미검증 범위를 갱신한다. 실제 OAuth·물리 환경은 마지막 사용자 목록을 유지한다.
+
+## 공통 모델과 서버 체크포인트 — 2026-10-29
+
+- 공통9개 Node/Deno는 마감/고정·보호/연속 구간/총량·미설정/시각·날짜 경계·반복 이번만 예외·알림/목표·undo를 확인했다. 요청 검증3개는 최신 서버 재계산/두 버전/활성 기록 차단/승인한 원안과의 구조 비교/기간 만료·주입 거부를 확인했다. 전체Node252/type/lint/Edge check 성공.
+- migration20261028165034 `replan_checked_commit` 적용. 계획→실적 state 잠금 뒤 plan/actual CAS, active 없음, 당일·첫 배치 현재 이후를 검사하고 plan/version/updated_at을 원자적으로 바꾼다. no-op은 버전/시각을 유지한다. invoker/search_path 고정·service만 실행 가능하다.
+- 실제 DB 전체 rollback: stale plan/state·시각 만료/다른 날짜 실패 시 plan/state 원문 불변, 정상 쓰기/no-op시각 유지, 다른 소유자 불변, 열린 실적 보존/거부, 실제 authenticated RPC42501·cascade PASS. 첫 시험의 변수/컬럼 동명 충돌은 합성 시험 변수명 변경 후 재실행했다.
+- plan-sync v13 ACTIVE/hashd39127e075b98cb52784733f8cd2e4b0a10b9cace00ae9ebe7f97d64ab946dc7. 배포 입력16개 중 원격 반환15개 원문 일치(type-only 파일은 반환하지 않음). 기존 pull/ensure/push와 CORS/로그인 설정을 유지하고 별도 replan 명령을 추가했다.
+- 새 두 계정 실제 HTTP12그룹 PASS: auth/origin/owner 주입, 승인안 변경·stale actual 거부, 정상 한 번 저장/계획 유지, 중복 옛 버전 재시도 거부/버전 불변, 타계정 불변, 활성/일시정지 기록 보호, 시작·종료 뒤 old revision 거부, 다른 기기 계획 변경 보호, 실제 in-flight replan/start409/200의 직렬화, 날짜/보호 ID 거부, 직접 RPC42501. 두 성공도 허용되는 순서(replan 뒤 최신 context로 start)는 시험에서 저장 시각으로 대조한다.
+- 시험 사용자/세션 제거 후 기존 계획3/실적 record0/state0/시험사용자0. Advisor는 기존 INFO11/WARN1, 새 WARN/ERROR 없음. 프런트 저장/복구/미리보기와 브라우저 인수는 아직 완료하지 않았다.
