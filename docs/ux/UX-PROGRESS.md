@@ -173,3 +173,17 @@ V4의선택categories/tags·Task.categoryId/tagIds, 이름NFC/공백정규화·�
 - Q29/Q30: 외곽390/실제375/scrollWidth375 iframe에서 모바일 다크 필터·관리·분류 이름/색상·태그·입력/저장 버튼 접근 확인. 색상 외 이름 라벨과 삭제/수정 버튼의 접근성 이름 제공. UX05-mobile-dark-classification.jpg. 실제 폰/실제200%확대는 미검증이고 최종 인수 목록 유지.
 - 로컬 합성2업무·카테고리2·태그1을 UI로 삭제했다. 가드가 tasks/categories/tags=0, 빈관리입력/빈editor, 마지막 undo가 시험태그 삭제임을 확인한 후 시험 undo/관리 초안만 정리: tasks0/categories0/tags0/undo없음/editor0/goalRefs0. 원래 목표 문구·이전 백업 보존, 라이트 복원, QA HTML 제거. 운영Pages에는 시험 계획을 만들지 않았다.
 - 남은 UX05 게이트: 최종 PR/CI→같은 SHA Pages 배포→운영 분류/검색·초안 안내 확인. 이 게이트 전 UX06에 착수하지 않는다.
+
+### UX05 배포 게이트 완료
+
+PR23 headf7299153549bf0a89a684d6f63084822db7446aa의 CI40609274947(verify122556524827) 통과·로그Node86/Deno34/빌드 성공 확인 후 병합했다. merge b92f8c3276bd3f579eeda28e9cf9a21052a4aa26, master40609398611 success(verify122556947288/deploy122557227847 Reported success), deployment7373932397 동일SHA. 서버는 별도 검증된plan-sync8/7695335...다.
+
+운영Pages에서 분류·검색·접히는 관리/빈목록0/SSO활성 확인. 검색어와 분류 이름 초안 입력→새로고침→검색어/작성중/이름 복원, 확정 categories0·tasks0 보호 확인→초안 취소/필터 초기화·관리 닫기, console warn/error0. 운영에 확정 합성자료는 만들지 않았다. .sync-test-runtime/UX05-deployed.jpg. 원본checkout도 같은SHA로ff했고 기존CSS·로고·별도계획문서 보존했다. 이제 UX06 중요도·마감·수동순서·여러날짜 선택을 진행한다.
+
+## UX06 중요도·마감·선택 — 계약 준비
+
+UX06-DESIGN.md에 새 importance와 기존 priority 분리, 선택 dueDate/dueTime, 날짜만 있으면 그날 종료 한국 자정 마감, 수동순서=기존Plan.tasks ID순서, 필터 안 이동은 보이는 ID 자리만 교환, 날짜/필터 이동에도 선택 유지·숨긴 개수·처리 전 대상 확인을 정의했다.
+
+공통 task-planning 검증과 정렬/긴급도/수동 이동/선택 집계 순수함수를 추가했다. 새로운 단위5개로 기존 priority=high도 중요도normal로 보존, 잘못된 중요도/배열/시간만/윤일/24시 거부, 오늘/내일/정확한 마감 경계, 정렬 후 원본 불변/동률 순서, 숨긴 자리 보존 이동과undo·stale순서 거부, 여러 날짜/원격삭제된 선택 개수 구분을 확인했다. 전체Node91/lint/typecheck/Deno진입점 check 및 신규 Deno5개 통과.
+
+아직 UX06은 UI와 연결하지 않았고 신규 Task 필드 검증 서버도 미배포다. 운영은 검증된UX05/plan-sync8을 유지한다. 다음은 수정창·목록 중요도/마감·정렬/선택 초안과 일괄 미리보기 연결, 공유 검증 서버 배포/전용계정 왕복, 브라우저·Pages 단계 게이트다. UX06 완료로 처리하지 않는다.

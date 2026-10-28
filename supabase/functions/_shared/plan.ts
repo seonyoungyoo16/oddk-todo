@@ -4,10 +4,12 @@ import { calculateSchedule, validAvailability } from "./schedule.ts";
 import type { Availability } from "./schedule.ts";
 import { validCategories, validTags, validTaskClassification, validTaxonomyReferences } from "./taxonomy.ts";
 import type { Category, Tag, TaskClassification } from "./taxonomy.ts";
+import { validTaskPlanning } from "./task-planning.ts";
+import type { TaskPlanning } from "./task-planning.ts";
 export type { Category, Tag } from "./taxonomy.ts";
 export { isClock, isPlanDate } from "./calendar.ts";
 export type Priority = "high" | "normal" | "low";
-export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean; plannedDate: string | null; notes?: string; endTime?: string | null; endDate?: string | null; endDayOffset?: 0 | 1 | null } & TaskClassification;
+export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean; plannedDate: string | null; notes?: string; endTime?: string | null; endDate?: string | null; endDayOffset?: 0 | 1 | null } & TaskClassification & TaskPlanning;
 export type Mandala = { goal: string; areas: Array<{ title: string; taskIds: string[] }> };
 export type Plan = { schemaVersion: 4; tasks: Task[]; start: string; mandala?: Mandala; review?: string; reviewsByDate: Record<string, string>; availabilityByDate?: Record<string, Availability>; categories?: Category[]; tags?: Tag[] };
 export type LegacyPlan = { tasks: Array<Omit<Task, "plannedDate">>; start: string; mandala?: Mandala; review?: string };
@@ -48,7 +50,7 @@ export function validTaskSnapshot(task: unknown, schemaVersion: number | undefin
       (schemaVersion !== undefined && task.startTime === undefined) ||
       (schemaVersion !== undefined && task.plannedDate !== null && !isPlanDate(task.plannedDate)) ||
       (task.notes !== undefined && (typeof task.notes !== "string" || task.notes.length > 2000)) ||
-      ((schemaVersion === 3 || schemaVersion === 4) && typeof task.notes !== "string") || !validTaskClassification(task)) return false;
+      ((schemaVersion === 3 || schemaVersion === 4) && typeof task.notes !== "string") || !validTaskClassification(task) || !validTaskPlanning(task)) return false;
     const explicitEnd = schemaVersion === 4 || ["endTime", "endDate", "endDayOffset"].some(key => Object.hasOwn(task, key));
     if (explicitEnd) {
       if (task.startTime === null) {
