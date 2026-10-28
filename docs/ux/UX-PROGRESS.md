@@ -201,3 +201,17 @@ UX06-DESIGN.md에 새 importance와 기존 priority 분리, 선택 dueDate/dueTi
 - Q29/Q30 브라우저: iframe390/내용375/scroll375, 다크 마감일·native 시각 한 열 표시와 저장 접근, 마감초안30일18시 입력→재시작→복원·명시취소 확인(저장본29일12시 유지). 마지막 저장에서Tab→첫 닫기 포커스 순환. 좁은 native 날짜/시각을 충분히 읽도록 너비를 보완했다. UX06-mobile-dark-deadline.jpg. 실제 폰/200%확대는 아직 미검증이며 최종 인수 목록 유지.
 - 합성3업무를 UI의3개 삭제 미리보기로 정리. 가드가 빈계획·합성3건undo·빈선택/빈editor를 확인한 뒤 시험undo만 정리: tasks0/undo없음/selected0/editors0/goalRefs0. 기존 목표 문구/백업 보존, 오늘·수동·라이트 복원, QA HTML 제거, console warn/error0. 운영Pages에는 아직 UX06 합성 계획을 만들지 않았다.
 - 남음: PR CI→병합→동일SHA Pages 성공→운영 정렬/선택·초안 동작 확인. 이 게이트 전 UX07로 넘어가지 않는다.
+
+### UX06 배포 게이트 완료
+
+PR24 head540815bdef56054efd437287070eee7c48dc01da, CI40611696950/verify122564506880 success 및 Node96/Deno44/빌드 로그를 확인한 후 병합했다. merge ed2f5efa97d1862f9e7395049162c7cf2c9adc16, master40611865994 success(verify122565068807/deploy122565392418 Reported success), deployment7374270216 동일SHA. 서버는 검증된plan-sync9/7b4c075...이며 인증/DB 변경 없다.
+
+운영Pages에서 새 정렬3옵션·빈목록0·SSO활성 확인. 중요도순/선택모드 입력→새로고침→둘 다 복원, 빈목록 전체선택 비활성/선택0 확인→수동/일반모드 복원, console warn/error0. 확정 시험 업무는 운영에 만들지 않았다. .sync-test-runtime/UX06-deployed.jpg. 원본checkout도 동일SHA로ff하고 사용자CSS/로고/별도계획문서를 보존했다. UX07에 착수한다.
+
+## UX07 가변 목표 — 공통 모델 준비
+
+UX07-DESIGN.md에 핵심1/세부32/전체연결5000, V5 전환·원문/구클라이언트 쓰기 보호, 목표 삭제 시 업무 보존, 원래8×8 조회와 초과 트리 비절단, 기존 연결 초안 비교/복구와 세분화/요약 집계 제외의 명시적 선택을 정리했다. 아직 실제 V5 이전이나 UI·서버는 구현하지 않았다.
+
+goal-tree.ts에 순수 모델/검증·기존 만다라트→트리 변환·그룹 증감·Task 연결/해제·8×8 투영을 준비했다. 기존 슬롯 원문은 변경하지 않고, 같은 그룹의 중복 링크는 트리에 한 번 표시하며 없는 업무 ID는 원래 그룹의 복구 대상으로 남긴다. 새로 만든 가짜 미해결 참조는 허용하지 않는다.32개/5000연결 상한과9그룹/9업무 초과 시 null(표로 자르지 않음)을 확인했다.
+
+새 단위6개/전체Node102/lint/typecheck/Deno새6개 통과. Deno가 콜백 안 unknown 속성의 좁히기를 유지하지 못한 오류를 발견해 지역 배열 참조로 명확하게 했고 재검증했다. CI 목록에는 목표 시험을 추가했다. 아직 Plan 타입·V5 로더/백업·캐시/초안/undo·Edge·목표 UI·세분화·실제 서버/브라우저·배포 게이트가 남아 있다. 운영은 UX06/plan-sync9를 유지하며 UX07 완료로 처리하지 않는다.
