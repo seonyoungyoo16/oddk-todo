@@ -13,6 +13,11 @@ import "./classification.css";
 import "./task-planning.css";
 import { TaskPlanningBadges, TaskPlanningFields, TaskMoveButtons, BulkActionDialog } from "./task-planning-controls";
 import { sortTasks, moveVisibleTask, selectedTaskSummary } from "./task-order";
+import { dropVisibleTask, shiftStart, previewTimeMove, applyTimeMove } from "./task-movement";
+import type { TimeMovePreview } from "./task-movement";
+import { TaskDragHandle } from "./task-drag-handle";
+import { TimeMoveDialog } from "./time-move-dialog";
+import "./task-movement.css";
 import type { TaskSort } from "./task-order";
 import { previewBulkAction, applyBulkAction } from "./bulk-actions";
 import type { BulkRequest } from "./bulk-actions";
@@ -156,6 +161,7 @@ function TodoWorkspace() {
   const [sortDraft, setSort] = field("sort");
   const sort: TaskSort = sortDraft ?? "manual";
   const [bulkRequest, setBulkRequest] = useState<BulkRequest | null>(null);
+  const [timeMove, setTimeMove] = useState<TimeMovePreview | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<{ message: string } | null>(null);
   const [editingId, setEditingId] = field("editingId");
@@ -382,6 +388,28 @@ function TodoWorkspace() {
     try { save(moveVisibleTask(plan, visibleTasks.map(task => task.id), task.id, direction), "보이는 할 일의 수동 순서를 바꿨어요. 숨긴 항목은 제자리에 있어요."); } catch (error) { setError((error as Error).message); }
   }
 
+  function dropTask(source: string, target: string) {
+    if (sort !== "manual" || source === target) return;
+    try {
+      if (!sameValue(readLatestPlan(), plan)) throw new Error("계획이 바뀌었어요. 최신 목록에서 다시 옮겨주세요.");
+      save(dropVisibleTask(plan, visibleTasks.map(task => task.id), source, target), "수동 순서를 바꿨어요. 숨긴 항목은 제자리에 있어요.");
+    } catch (error) { setError((error as Error).message); }
+  }
+  function startTimeMove(task: Task, delta = 15) {
+    try {
+      if (!sameValue(readLatestPlan(), plan)) throw new Error("계획이 바뀌었어요. 최신 시간표에서 다시 옮겨주세요.");
+      const next = shiftStart(task.plannedDate!, task.startTime!, delta);
+      setTimeMove(previewTimeMove(plan, task.id, next.date, next.time));
+    } catch (error) { setError((error as Error).message); }
+  }
+  function confirmTimeMove(preview: TimeMovePreview) {
+    try {
+      const next = applyTimeMove(readLatestPlan(), preview);
+      if (!save(next, "시간을 옮겼어요. 소요시간과 목표 연결은 유지했어요.")) return "저장하지 못했어요. 입력은 유지했어요. 최신 계획과 저장 공간을 확인해주세요.";
+      setTimeMove(null); return null;
+    } catch (error) { return (error as Error).message; }
+  }
+
   function toggleDone(task: Task) {
     if (task.summaryOnly) { setError("요약 업무는 완료율과 시간 집계에서 제외돼요. 나눈 실행 업무를 완료해주세요."); return; }
     if (task.done && plan.tasks.some((item) => item.id !== task.id && !item.done && !item.summaryOnly && taskTitleKey(item) === taskTitleKey(task))) {
@@ -513,7 +541,7 @@ function TodoWorkspace() {
                   <button className="oddk-selectionToggle" type="button" aria-pressed={selectionMode} onClick={() => setSelectionMode(!selectionMode)}>{selectionMode ? "선택 끝내기" : "선택"}</button>
                 </div>
 
-                <div className="oddk-sortControl"><label>표시 순서<select value={sort} onChange={event => setSort(event.target.value as TaskSort)}><option value="manual">수동 순서</option><option value="importance">중요도 높은 순</option><option value="deadline">마감 빠른 순</option></select></label><small>{sort === "manual" ? "위·아래 버튼으로 순서 변경 · 숨긴 항목은 제자리" : "표시만 변경 · 저장된 수동 순서는 유지"}</small></div>
+                <div className="oddk-sortControl"><label>표시 순서<select value={sort} onChange={event => setSort(event.target.value as TaskSort)}><option value="manual">수동 순서</option><option value="importance">중요도 높은 순</option><option value="deadline">마감 빠른 순</option></select></label><small>{sort === "manual" ? "손잡이 또는 위·아래 버튼으로 순서 변경 · 숨긴 항목은 제자리" : "표시만 변경 · 저장된 수동 순서는 유지"}</small></div>
                 {selectionMode && <div className="oddk-selectionBar">
                   <SelectionCheckbox label="현재 목록 전체 선택" checked={allSelected} disabled={visibleTasks.length === 0} mixed={selection.visible > 0 && !allSelected} onChange={toggleSelectAll} />
                   <button type="button" disabled={visibleTasks.length === 0} onClick={toggleSelectAll}>전체 선택</button>
@@ -528,7 +556,8 @@ function TodoWorkspace() {
                   {(classification.category !== "all" || classification.tags.length > 0 || classification.search) ? <><h3>필터에 맞는 할 일이 없어요</h3><p>다른 분류·태그·검색어를 선택하거나 필터를 초기화해보세요.</p><button type="button" onClick={() => changeClassification(defaultClassification)}>필터 초기화</button></> : <><h3>{filter === "done" ? "작은 완료가 쌓일 자리예요" : filter === "active" && doneCount > 0 ? "모든 할 일을 마쳤어요!" : "아직 비어 있는 하루예요"}</h3>
                   <p>{filter === "done" ? "끝낸 일을 체크하면 여기에 보여요." : filter === "active" && doneCount > 0 ? "필요할 때 다음 할 일을 더해보세요." : "첫 번째 할 일을 가볍게 적어보세요."}</p></>}
                 </div> : <ul className="oddk-taskList">
-                  {visibleTasks.map((task, index) => { const portion = range === "day" ? taskDaySlice(task, planDate) : null; return <li key={task.id} className={"oddk-task" + (task.done ? " oddk-completed" : "") + (selectionMode && selectedIds.has(task.id) ? " oddk-selected" : "")}>
+                  {visibleTasks.map((task, index) => { const portion = range === "day" ? taskDaySlice(task, planDate) : null; return <li key={task.id} data-order-task={task.id} className={"oddk-task" + (task.done ? " oddk-completed" : "") + (selectionMode && selectedIds.has(task.id) ? " oddk-selected" : "")}>
+                    {sort === "manual" && <TaskDragHandle title={task.title} onDrop={target => dropTask(task.id, target)} />}
                     <SelectionCheckbox id={"task-" + task.id} checked={selectionMode ? selectedIds.has(task.id) : task.done}
                       round={!selectionMode} disabled={!selectionMode && task.summaryOnly} label={task.title + (selectionMode ? " 선택" : " 완료")}
                       onChange={() => selectionMode ? toggleSelection(task.id) : toggleDone(task)} />
@@ -588,8 +617,8 @@ function TodoWorkspace() {
                           const work = task.segmentWork;
                           const conflict = task.conflict || allocation.overlaps.some(item => item.task.id === task.id);
                           const description = `${task.title}, ${clockLabel(task.start)}부터 ${clockLabel(task.end)}, 이 날짜의 작업 ${work}분, 여유 ${task.segmentBuffer}분${task.continuesBefore ? ", 전날부터 이어짐" : ""}${task.continuesAfter ? ", 다음 날 계속" : ""}${conflict ? ", 시간 겹침" : ""}`;
-                          return <button key={task.id} type="button" className="oddk-timeSlot" data-conflict={conflict}
-                            style={{ top: (task.start - timeline.start) * pixelsPerMinute + 12, height: task.segmentMinutes * pixelsPerMinute, left: `${task.lane / task.columns * 100}%`, width: `calc(${100 / task.columns}% - 5px)` }}
+                          return <div key={task.id} className="oddk-timeSlotGroup" style={{ top: (task.start - timeline.start) * pixelsPerMinute + 12, height: task.segmentMinutes * pixelsPerMinute, left: `${task.lane / task.columns * 100}%`, width: `calc(${100 / task.columns}% - 5px)` }}><button type="button" className="oddk-timeSlot" data-conflict={conflict}
+                            style={{ top: 0, left: 0, width: "100%", height: "100%" }}
                             aria-label={description + ", 시간 수정"} title={description} onClick={() => openEditor(task)}>
                             {work > 0 && <span className="oddk-slotWork" style={{ height: work * pixelsPerMinute }}>
                               <strong>{task.title}</strong><span>{clockLabel(task.start)} – {clockLabel(task.start + work)}</span>
@@ -598,13 +627,14 @@ function TodoWorkspace() {
                             {task.segmentBuffer > 0 && <span className="oddk-slotBuffer" style={{ height: task.segmentBuffer * pixelsPerMinute }}>
                               {!work && <strong>{task.title} · {task.continuesBefore ? "전날부터 이어진 여유" : "여유"}</strong>}<span>여유 {task.segmentBuffer}분</span>
                             </span>}
-                          </button>;
+                          </button>{task.segmentMinutes >= 15 && <span className="oddk-timeSlotGrip"><TaskDragHandle title={task.title} pixelsPerMinute={pixelsPerMinute} onShift={delta => startTimeMove(task, delta)} /></span>}</div>;
                         })}
                       </div>
                     </div>
                   </div>
                 </>}
                 {rhythmTasks.some(task => task.segmentMinutes < 20) && <ul className="oddk-shortSlots" aria-label="짧은 시간표 구간">{rhythmTasks.filter(task => task.segmentMinutes < 20).map(task => <li key={task.id}><button type="button" onClick={() => openEditor(task)}>{clockLabel(task.start)}~{clockLabel(task.end)} · {task.title} · 이 날짜 {task.segmentMinutes}분{task.continuesBefore ? " · 전날부터 이어짐" : ""}{task.continuesAfter ? " · 다음 날 계속" : ""}</button></li>)}</ul>}
+                {rhythmTasks.length > 0 && <div className="oddk-timeMoveControls" aria-label="시간표 이동"><p>손잡이를 위·아래로 끌면 5분 단위 이동안을 확인해요. 시간 이동 버튼에서는 날짜와 시각을 직접 정할 수 있어요.</p>{rhythmTasks.map(task => <div key={task.id}><TaskDragHandle title={task.title} pixelsPerMinute={pixelsPerMinute} onShift={delta => startTimeMove(task, delta)} /><span>{task.title}</span><button type="button" aria-label={task.title + " 시간 이동"} onClick={() => startTimeMove(task)}>시간 이동</button></div>)}</div>}
                 <p className="oddk-rhythmNote"><GoDotFill aria-hidden="true" />여유도 계획의 일부예요.</p>
               </aside>
               <div hidden={view !== "mandala"}>
@@ -686,6 +716,7 @@ function TodoWorkspace() {
         {replanTask && <form className="oddk-dialogForm" onSubmit={submitReplan}><header className="oddk-dialogHeader"><h2 id="replan-title">다시 계획하기</h2><button type="button" aria-label="다시 계획 창 닫기" onClick={() => setReplanId(null)}><HiOutlineXMark /></button></header><strong>{replanTask.title}</strong><p>기존 날짜 {replanTask.plannedDate}</p><label className="oddk-dialogField" htmlFor="replan-date">새 계획 날짜<input id="replan-date" type="date" min="0001-01-01" max="9999-12-31" required value={replanDate} onChange={(event) => { setReplanDate(event.target.value); setReplanError(""); }} /></label><p>시작 시간은 비우고, 할 일의 내용·시간·목표 연결은 그대로 유지해요.</p>{replanError && <p role="alert" className="oddk-dialogError">{replanError}</p>}<div className="oddk-dialogActions"><button type="button" onClick={() => setReplanId(null)}>취소</button><button type="submit" className="oddk-primary">날짜 옮기기</button></div></form>}
       </dialog>
       {bulkRequest && <BulkActionDialog request={bulkRequest} onCancel={() => setBulkRequest(null)} onConfirm={confirmBulk} />}
+      {timeMove && <TimeMoveDialog initial={timeMove} onCancel={() => setTimeMove(null)} onApply={confirmTimeMove} />}
       <div className={notice ? "oddk-toast" : "oddk-srOnly"} role="status" aria-live="polite" aria-atomic="true">
         {notice && <><span>{notice.message}</span>{history.value && <button type="button" onClick={undoLatest}>실행 취소</button>}<button type="button" aria-label="알림 닫기" onClick={() => setNotice(null)}><HiOutlineXMark aria-hidden="true" /></button></>}
       </div>
