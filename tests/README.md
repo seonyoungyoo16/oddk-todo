@@ -1,3 +1,11 @@
+## 현재 최종 검증 범위 — UX13
+
+이 문서 아래의 UX/T별 수치는 당시 이력이다. 현재 Node260/공통 Deno187·암호화2+guard1, 격리 계정 실제 통합14파일이다. `run-integration.mjs`가 실행 목록의 권위이며 execution 다음 replan까지 실행한다. 실행 시험을 반복할 때는 새 fixture를 준비한다. 모든 시험 계정/세션/seed/cleanup/generated 모듈과 임시 QA route는 종료 후 정리한다.
+
+`replan-browser-flow.tsx.template`은 실제 native IDB/Web Locks·앱 UI의 승인/취소/복구/quota/원안 변경/실적 경합을 검증한다. `replan-account-browser.tsx.template`은 로컬에서만 합성 credential을 주입해 실제 계정 UI/API의 응답 유실·오프라인·stale actual·계정 교체를 검증한다. `release-browser-flow.tsx.template`은 구 계획/목표 이전·화면 탐색·메모 초안·시간 수정·완료undo·새 등록·손상 원문 보존의 통합 흐름이다.
+
+이 템플릿을 app 안의 임시 QA 페이지로 복사하는 경우 원본 브라우저 저장소를 보관하고 복원 완료를 확인한 뒤 페이지를 제거한다. credentials를 템플릿에 커밋하지 않는다. 임시 페이지를 둔 채 공개 빌드/배포하지 않는다. `verify-push-export.mjs`가 QA 경로·계정 표식의 export를 거부한다. 실제 OAuth·물리 OS 알림은 이 하네스의 성공 범위가 아니다. 최종 근거는 `docs/ux/UX13-ACCEPTANCE.md`다.
+
 # 검증 명령
 
 Node 24에서 `npm ci` 후 실행한다.

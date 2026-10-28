@@ -2,6 +2,8 @@
 
 목표:UX00~UX13을 완료 조건/QA/배포 정상 확인 후 순차 진행한다. 사용자 직접 작업은 마지막 인수 목록으로 모은다. 원본 수정은 보존한다.
 
+최신 상태: UX00~UX12 단계별 운영 게이트 완료, UX13 소프트웨어 인수·최종 문서/배포 확인 진행 중. 아래 기록은 시간순 이력이며 현재 판정은 [UX13-ACCEPTANCE](UX13-ACCEPTANCE.md)와 각 단계 마지막 운영 게이트를 우선한다.
+
 ## UX00 기준선·설계 — 완료
 
 - 작업 기준2ac86f1e0822047320347a9c133084a5bdaca6a4. 별도 checkout/브랜치 codex/ux00-baseline.
@@ -456,3 +458,9 @@ UX12 서버 체크포인트: migration165034·plan-sync13 ACTIVE/hashd39127e...9
 UX12 클라이언트 인수: 오늘 전체 미완료 대상/기본 보호/원안·변경·유지·미배치 사유/명시 승인·취소, 원안/변경안 JSON 다운로드, 사전 durable 시각 복구안+SHA256 메타데이터 지문/원래시각 복구/최근undo를 구현했다. 계정 승인 전 원안·dirty/동기화 경쟁 검사, 서버 응답 유실→동일target/version pull 확인, 변경된 localcache 비교/계정교체 차단. 익명은 Web Lock으로 타이머와 직렬화하고 IDB commit 후 현재revision/no-active/원안·시각을 재확인한다. 일반 편집 전체가 localStorage 원자 트랜잭션인 것으로 표현하지 않는다.
 
 고정된 최종 소스에서 native UI 취소/적용/보호·미배치·사유/새로고침복구/외부계획변경거부/복구quota실패·재시도/실제timer경합 PASS. 실제 Auth/API/DB UI 응답유실pull확정/원격복구/preview후실적변경거부/offline보존·명시재시도/응답hold중같은문서 A→B 비노출 PASS. client375/scroll375·dialog324/scroll324 다크/키보드순환·Escape/opener복귀/새제품탭console0. Node260/Deno187/type/lint/전체Edgecheck/Pagesbuild/export 성공. 새 fixture 통합14파일exit0(session1631). 두 QA route·credential파일제거, 양 origin 원본저장소 복원, 시험사용자0/실적0/state0/기존계획3·사용자CSS해시유지. UX12-ACCEPTANCE와증거참조. 최종CI/동일SHA운영게이트전이며 UX13미착수.
+
+### UX12 운영 완료 / UX13 최종 인수
+
+PR30 head d61da4b / CI40735632991 verify122983267928 성공(Node260/Deno187/crypto2+guard1/전체check/type/lint/build/export). 병합 d5f20a84711a948cf381bf13093267cebeacc508, master40735948548 verify122984407944/deploy122985055586 success, deployment7392630187 같은SHA/success. 운영 HTML200/JS9전부200·로컬9개 바이트동일/재조정·실적코드, manifest200/정적4asset동일, 새영역·다른날짜제한·SSO활성·console0. plan-sync13 반환15원문일치/실적2/Cron2enabled·최근HTTP6/6정상. primary ff·사용자CSS해시/dirty로고·문서 보존. UX12-ACCEPTANCE 운영 기록 뒤 같은SHA에서 UX13을 시작했다.
+
+UX13 요구사항 Q01~32를 최종 시험/단계별 증거와 연결하고 Q25/29/30/31의 물리/독립 인수를 구분했다. 새 combined native 브라우저는 V3원문백업→V5/8×8목표연결/60·50·10→일간·주간·전체ID→메모초안close/reload→09:30~10:30/여유10저장→완료undo/목표동일업무→새한글업무ID·날짜/reload→손상원문보존/복구화면→정상복귀 PASS. 원래native/store 원문복원 확인/evidence/UX13-combined-flow·cleanup. README/RELEASE의 오래된형식·자정·계정초안·OAuth차단지시를 교정하고 과거기록을 최신설명과 구분했다. 닫힌검증Edge2개 원문410/데이터접근없음 재확인. 사용자직접작업은 FINAL-USER-CHECKS에 모은다. 최종CI/문서묶음배포 전이며 전체물리인수를 완료로 표시하지 않는다.
