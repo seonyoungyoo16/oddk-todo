@@ -60,3 +60,11 @@ UX10은 account-recurrence.test.mjs를11번째 격리계정 통합시험으로 �
 6. 두 계정 signOut과 해당 marker의 cleanup SQL 실행 후 잔여0을 확인하고 인증/seed/cleanup 파일을 정확한 경로로 제거한다. 실제 사용자 계정이나 로컬 계획을 시험에 쓰지 않는다.
 
 실제 OAuth·기기 알림 권한·푸시 전달은 이 서버 발생 시험이 검증하는 범위가 아니다.
+
+### UX10 Web Push 구독·관리 서버 시험
+
+- `push-subscriptions.test.mjs`는 순수 계약/HTTP 모사9개로 Node/Deno 양쪽에서 실행한다. 권한 요청이나 네트워크 전송은 없다. `npm test`/CI에 포함한다.
+- `account-push-subscriptions.test.mjs`는 일반 권한의 전용 시험 계정2개로 실제 API를 확인하는12번째 통합 runner다. 합성 FCM 경로와 시험 키만 사용하며 푸시를 보내지 않는다. 공개 설정/Vault 초기화의 안정성, deviceToken 증명·계정 소유권 전환·revision·내 기기 목록/원격 해제·동시5개 제한/최근20개 제한·직접 테이블/RPC 거부와 계획 불변을 검증한다.
+- 기기 이력 상한을 시험하므로 각 실행은 새 fixture 계정을 사용한다. 종료 시 합성 연결을 모두 끄고 signOut한다. 관리자 cleanup SQL로 해당 marker 사용자/세션을 제거한 뒤 구독0·시험 사용자0을 확인한다. 계정 생성/정리 절차는 기존 prepare-account-fixture를 따른다. 실제 OAuth 계정을 대신 쓰지 않는다.
+- `push-database.sql`은 공개 VAPID 초기화 뒤 관리자 연결에서 실행하는 별도 SQL 시험이다. 비로그인용 임시2사용자·비활성20기록을 트랜잭션 안에서 생성해30일 정리 범위, 원격 해제 소유권·키 삭제·stale 차단을 검증하고 전부 롤백한다. 외부 fixture UUID 입력이나 실제 사용자 자료가 필요 없다.
+- 동기화/CAS 반복 fixture는 명시적으로 생성한8일 범위에 종료일을 둬 실제 Cron이 시험 도중 범위를 연장하지 않게 한다. 무기한 반복의 앱 종료 중31일 준비·불변/no-op·경합은 별도 maintenance 시험으로 확인한다. Cron을 꺼서 경합을 숨기거나 시험의409 기대를 느슨하게 하지 않는다. 통합 전체 실행과 서버 주기 작업의 증거를 각각 기록한다.

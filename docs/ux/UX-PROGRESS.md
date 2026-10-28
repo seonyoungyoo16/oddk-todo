@@ -370,3 +370,16 @@ Node신규8/전체170, CI공통Deno111/Edge3check/typecheck/lint/Pages정적빌�
 권한제약을실측: pg_net객체는supabase_admin소유/PUBLIC기본권한이라postgres REVOKE성공응답만으로ACL이바뀌지않는다. 공식KB확인후실패를기록하고재설치/관리역할우회안함. DataAPI public/graphql_public만노출, net406·앱관리RPC/state브라우저거부가실제경계다. 직접DB접속역할은대기열열람가능하므로서버장기키/Vault복호화키를보내지않고단회짧은작업티켓만전송. 신규WARN/ERROR없고의도적RLSno-policy INFO신규1(합3)/기존passwordWARN1. UX10-DESIGN/ACCEPTANCE/OPERATIONS·재현시험절차기록.
 
 아직UX10미완료: 푸시구독API/ServiceWorker/서버예약·전달·취소·재시도/권한상태UI 및 최종CI·Pages동일SHA운영인수. 프런트는UX09/plan-sync11·travel2그대로다. 다음은WebPush구독·전달이며UX11시작하지않는다. 실제OAuth/실기기권한/전달인수는최종사용자목록에남긴다.
+
+
+### UX10 기기 구독·관리 API 배포와 실제 소유권/경합 검증
+
+push-subscriptions v2 ACTIVE/4c5e78d570487e1c2fe6659c687ac4dfb791d61ea83e9cce0956cf665c60fa92, 원격3소스전체일치. migration20261028050003/20261028050412, server-only settings/subscriptions 및 config/status/register/disable/devices/revoke. getUser실인증·사용자ID입력거부·기기증명해시/전역revision·동시개수제한·계정소유목록/원격해제·해제주소/키삭제. VAPID최초서버생성/Vault비밀1·public만응답, 두계정동시초기화와재실행에도같은키/유효참조. 실제비밀값조회·출력안함. 기존서버/프런트운영그대로.
+
+신규공통/HTTP9개 Node/Deno통과, 전체Node179/CI공통Deno120/typecheck/lint/Pages정적빌드성공. 발견차이: Deno가off-curve P256점을import단계에서허용했음. 플랫폼ECDH연산으로검증보강후양쪽회귀와실제HTTP400확인. WebCrypto생성VAPID가web-push3.6.7의aes128gcm암호화요청생성과호환(105bytes/네트워크0)됨도로컬확인, 라이브러리전송·실제푸시가구현됐다는뜻은아님. 평가용lock은무시된runtime에보존하고앱의미사용의존성으로추가하지않음.
+
+별도계정독립API인수: 미등록해제tombstone/늦은등록409·동일설정no-op·잘못된증명거부·증명보유계정전환/이전계정stale거부·다른설치동일endpoint거부·동시revision200/409·내목록안전필드/타계정목록없음/원격해제거부·내해제/재해제no-op/이전revision차단·활성4에서2기기동시200/429·해제후새연결성공·최근20개상한429. 임의호스트/잘못된곡선점/owner필드400. 양계정push관리RPC/두테이블42501 및plan/version/updated_at전체불변. 합성endpoint/키만사용·공급자전송/브라우저권한요청없음.
+
+그뒤새fixture에서통합runner12개전체실제API통과(exec49631 exit0). 기존CAS반복fixture는명시생성8일종료로제한해주기확장이동시시험을바꾸지않게함. 별도무기한서버준비/경합인수는유지하며Cron미중지. 독립SQL시험의첫변수명충돌실패수정후내부임시2계정/20기록생성·31일자기기록만정리/타계정·최근기록보존·원격해제소유권/키NULL/stale거부·전체rollback통과. 시험모든계정signOut·세션/사용자cleanup후사용자0/구독0/기존계획3/VAPID비밀1·Cron활성/오류0, 인증/seed/cleanup/생성store모듈정리. 사용자CSS해시동일. 새advisor는의도한RLSno-policy INFO2(합5), 기존passwordWARN1·신규WARN/ERROR없음. 실제스모크GET405/무인증401/운영originpreflight204.
+
+아직UX10미완료: 브라우저알림UI/ServiceWorker/계정전환수신차단, 서버알림예약·최신계획대조·전달·취소·만료/재시도·중복방지, 최종CI/Pages/동일SHA운영인수. 실제OAuth/실기기권한·전달은마지막사용자인수로남김. 다음은서버알림대기열/전달과클라이언트연결이며UX11미착수.

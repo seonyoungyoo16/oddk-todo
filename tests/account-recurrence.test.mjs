@@ -17,7 +17,10 @@ try {
   const loaded = loadPlan(JSON.stringify(original.plan)); assert.equal(loaded.ok, true);
   const baseline = loaded.plan, source = { id: "qa-repeat", title: "UX10 isolated routine", notes: "Private test fixture", plannedDate: "2026-10-28", startTime: "23:30", minutes: 60, bufferMinutes: 10, endTime: "00:30", endDate: "2026-10-29", endDayOffset: 1, priority: "high", done: false };
   const seeded = { ...baseline, tasks: [...baseline.tasks, source], goalTree: { ...baseline.goalTree, groups: baseline.goalTree.groups.map((group, index) => index ? group : { ...group, taskIds: [...group.taskIds, source.id] }) } };
-  const range = { from: "2026-10-28", through: "2026-11-04" }, rule = { frequency: "daily", interval: 1, startDate: range.from, untilDate: null };
+  // Bound this sync/CAS fixture to its materialized window so the live Cron
+  // does not extend it mid-assertion. Unbounded app-closed generation has a
+  // separate maintenance fixture and real server/DB acceptance evidence.
+  const range = { from: "2026-10-28", through: "2026-11-04" }, rule = { frequency: "daily", interval: 1, startDate: range.from, untilDate: range.through };
   const created = createRecurrence(seeded, source.id, "qa-series", rule, range);
   let saved = await api({ action: "push", plan: created, version: original.version });
   let pulled = await api({ action: "pull" }); assert.deepEqual(pulled.plan, created); assert.equal(pulled.plan.schemaVersion, 6);

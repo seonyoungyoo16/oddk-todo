@@ -42,3 +42,10 @@ update public.task_maintenance_state set enabled=false where singleton;
 - 프런트 롤백은 V6 백업/구버전 쓰기426 정책과 함께 판단한다. 정상 사용자 데이터를 삭제하거나 schemaVersion만 낮추는 방식으로 복구하지 않는다.
 
 현재 운영 검증은 UX10-ACCEPTANCE와 UX-PROGRESS에 기록한다. 실제 사용자 단말 알림을 이 경로로 보냈다고 주장하지 않는다.
+
+## 기기 구독 API와 키 보존
+
+- push-subscriptions의 config는 로그인 사용자에게 publicKey만 반환한다. 최초 호출은 서버에서 P-256 VAPID 키를 만들고 private scalar를 Vault의 oddk_web_push_vapid에 저장한다. 동시 초기화에도 같은 키를 유지한다. 기존 비밀을 삭제하거나 public key만 초기화해 재생성하면 이전 구독이 무효화될 수 있으므로 일반 복구 절차로 사용하지 않는다.
+- settings/subscriptions와 push 관리 RPC는 service_role 전용이다. 클라이언트에는 서버 키를 배포하지 않는다. 비밀 검사는 Vault 행 개수/참조 유효성만 확인하고 decrypted_secret 값은 출력하지 않는다.
+- devices는 로그인 계정의 기기 요약만, revoke는 그 계정 소유 기기와 최신 revision만 처리한다. 분실 기기의 알림을 끌 때 이 경로를 사용한다. 다른 계정의 설치 UUID로 요청하면 거부된다.
+- 이번 배포는 구독·관리 API까지다. 실제 브라우저 구독/Service Worker/푸시 전달부를 연결하기 전에는 사용자에게 알림 활성화나 수신 성공을 안내하지 않는다. 합성 구독 경로를 테스트한 기록을 실제 전달 증거로 쓰지 않는다.
