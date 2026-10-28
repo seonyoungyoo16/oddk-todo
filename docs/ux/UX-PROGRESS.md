@@ -438,3 +438,5 @@ execution.ts는계획제목/날짜/작업·전체snapshot불변,최대64개의�
 UX11 core fc98953 PR29(draft/attached) CI40709934214 verify122892128779 success: Node219/Deno147/Edgecheck·암호화2+guard1/type/lint/Pagesbuild/export검증통과,PR배포는정상skipped. UX11서비스완료가아니며운영은UX10/c361그대로다.
 
 2026-10-29 명령계약: execution-command.ts의strict status/history(366일·100행·cursor)/operation·revision/8종명령·정규fingerprint·기대active/전환2record delta·계획/context불변·다른active보호·기존ID재사용방어를구현했다. 신규7개Node/Deno각통과,전체Node226/type/lint성공. Node strip-only에서지원하지않는parameter property는일반명시필드constructor로수정한자체런타임호환문제이며Next오류아님. 다음은실제DB/API의owner·복합키/단일active·원자적commit·idempotency·전역겹침·계획완료삭제종료와실제fixture검증이다. 공개신규API나스키마/운영변경은아직없다.
+
+2026-10-29 저장 계층: migration20261028151545 적용, 실행 테이블3개/검증 함수6개. 합성44개 Node/실제DB 차이0. rollback 시험에서 단일 열린 기록·소유자 복합키·지연 포인터·원자적 전환/이력·실패 불변·operation 중복 방지·계정 정리 통과. service 실제 data 수정 허용/ID 수정42501, authenticated 실제 조회/anon helper42501, 익명 REST도 거부. 시험 후 세 테이블0/기존 계획3. 함수6개 원격=로컬, invoker/search_path 고정. CI47d6f18 성공 Node226/Deno154. 상세는 UX11-DESIGN. API/UI/실제 동시 요청/UX11 배포는 미완료, UX12 미착수.

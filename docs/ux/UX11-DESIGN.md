@@ -64,3 +64,12 @@ ALPEN: A 공통 규칙→저장/서버 경합→UI→실제 실패·복구→배
 - 별도7개 Node/Deno 시험은 요청 한도/추가 필드·시각/owner 주입 거부, 고정 fingerprint 형태, switch 실패 시 전체 context 불변, 지정한 기록만 조작, 종료 재요청/no-op,24시간 종료/active 해제, 수동 보정과 미래/중첩 거부를 확인했다. 아직 이 delta를 DB에 원자적으로 저장하거나 전역 겹침을 막는 기능은 구현하지 않았다.
 - 저장 계층은 record/operation을 `(user_id,id)` 복합 키로 구분하고 새 기록 INSERT와 기존 기록 UPDATE를 분리해야 한다. 동일 operation 재시도는 상태 버전 검사 전에 동일 fingerprint를 확인한다. create ID 충돌을 UPDATE로 바꿔 기존 이력을 덮어쓰지 않는다. no-op은 실행 상태 revision을 불필요하게 올리지 않는다.
 - core commit fc98953의 PR29 CI40709934214/verify122892128779가 Node219·Deno147·Edge/암호화/타입/린트/Pages/export 게이트를 통과했다. 새 명령 계약의 최신 전체 CI는 후속 기록으로 갱신한다.
+
+## 저장 스키마 체크포인트 — 2026-10-29
+
+- migration20261028151545를 원격에 적용했다. record/state/operation은 계획 JSON과 분리되며 소유자 복합 키, 사용자별 열린 기록 1개, 지연 제약으로 active 포인터 일치를 보장한다. 공통 JSON 검증 SQL 함수6개는 로컬과 원격 본문이 같고 invoker/고정 search_path다.
+- 합성44개 값에서 Node/실제 SQL 검증 결과 차이0. 실제 DB rollback 시험에서 두 소유자 ID 분리, 중복 시작 거부, 잘못된 포인터/음수 구간 거부와 이전 값 보존, 원자적 이전 종료+새 시작/이력 보존, operation 중복 거부, 계정 cascade를 확인했다.
+- service_role의 data 수정은 허용하고 ID 수정은 실제42501로 거부했다. authenticated 테이블 조회와 anon helper 실행도 실제 role 전환으로 거부했다. 익명 REST도 세 테이블/helper 모두42501. 모든 테이블 RLS/브라우저 ACL 차단, 불변 owner/ID/hash 수정 권한 없음.
+- 시험 후 record/state/operation 각0, 기존 계획3. Advisor는 서버 전용 RLS no-policy INFO11과 기존 비밀번호 보호 WARN1이며 새 WARN/ERROR 없음. 공개 실행 API·UI는 아직 없다.
+- 명령 계약47d6f18 CI40712972622/verify122902929776는 Node226·Deno154·전체 검증 성공. workflow의 같은 시험 경로 중복 표기 하나는 제거했다(Deno는 이미 중복 경로를 한 번만 실행했다).
+- 다음은 서버 명령 RPC/API, 실제 경합·전역 겹침·계획 완료/삭제 연동이다. 이 스키마 시험을 사용자 기능/UX11 인수 완료로 간주하지 않는다.
