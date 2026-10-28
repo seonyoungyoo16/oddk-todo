@@ -497,3 +497,4 @@
 .oddk-timeMode [aria-pressed="true"] { background: var(--oddk-highlight); border-color: #84a6e4; }
 .oddk-scheduleFields .oddk-dialogField > input, .oddk-scheduleFields .oddk-dialogField > select { min-height: 42px; padding: 8px 10px; border: 1px solid var(--oddk-border); background: var(--oddk-surface); color: inherit; border-radius: 5px; width: 100%; }
 .oddk-scheduleFields .oddk-timeGuide { margin: 0; color: #71809a; font-size: 12px; }
+@media (max-width: 480px) { .oddk-scheduleFields .oddk-editorTimeGrid { grid-template-columns: minmax(0, 1fr); } }

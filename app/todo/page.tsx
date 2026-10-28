@@ -542,13 +542,14 @@ function TodoWorkspace() {
                         {allocation.fixed.map(block => <div key={block.id} className="oddk-fixedSlot" style={{ top: (block.start - timeline.start) * pixelsPerMinute + 12, height: (block.end - block.start) * pixelsPerMinute }}><strong>{block.title}</strong><span>{clockLabel(block.start)}~{clockLabel(block.end)} · 고정·휴식</span></div>)}
                         {timeline.items.map((task) => {
                           const work = task.segmentWork;
-                          const description = `${task.title}, ${clockLabel(task.start)}부터 ${clockLabel(task.end)}, 이 날짜의 작업 ${work}분, 여유 ${task.segmentBuffer}분${task.continuesBefore ? ", 전날부터 이어짐" : ""}${task.continuesAfter ? ", 다음 날 계속" : ""}${task.conflict ? ", 시간 겹침" : ""}`;
-                          return <button key={task.id} type="button" className="oddk-timeSlot" data-conflict={task.conflict}
+                          const conflict = task.conflict || allocation.overlaps.some(item => item.task.id === task.id && item.fixed.length > 0);
+                          const description = `${task.title}, ${clockLabel(task.start)}부터 ${clockLabel(task.end)}, 이 날짜의 작업 ${work}분, 여유 ${task.segmentBuffer}분${task.continuesBefore ? ", 전날부터 이어짐" : ""}${task.continuesAfter ? ", 다음 날 계속" : ""}${conflict ? ", 시간 겹침" : ""}`;
+                          return <button key={task.id} type="button" className="oddk-timeSlot" data-conflict={conflict}
                             style={{ top: (task.start - timeline.start) * pixelsPerMinute + 12, height: task.segmentMinutes * pixelsPerMinute, left: `${task.lane / task.columns * 100}%`, width: `calc(${100 / task.columns}% - 5px)` }}
                             aria-label={description + ", 시간 수정"} title={description} onClick={() => openEditor(task)}>
                             {work > 0 && <span className="oddk-slotWork" style={{ height: work * pixelsPerMinute }}>
                               <strong>{task.title}</strong><span>{clockLabel(task.start)} – {clockLabel(task.start + work)}</span>
-                              <span>작업 {work}분{task.continuesBefore ? " · 전날부터" : ""}{task.continuesAfter ? " · 다음 날 계속" : ""}{task.conflict ? " · 시간 겹침" : ""}</span>
+                              <span>작업 {work}분{task.continuesBefore ? " · 전날부터" : ""}{task.continuesAfter ? " · 다음 날 계속" : ""}{conflict ? " · 시간 겹침" : ""}</span>
                             </span>}
                             {task.segmentBuffer > 0 && <span className="oddk-slotBuffer" style={{ height: task.segmentBuffer * pixelsPerMinute }}>
                               {!work && <strong>{task.title} · {task.continuesBefore ? "전날부터 이어진 여유" : "여유"}</strong>}<span>여유 {task.segmentBuffer}분</span>
