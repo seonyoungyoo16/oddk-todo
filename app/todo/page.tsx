@@ -409,6 +409,11 @@ function TodoWorkspace() {
       setTimeMove(null); return null;
     } catch (error) { return (error as Error).message; }
   }
+  function refreshTimeMove(date: string, time: string) {
+    if (!timeMove) return "이동할 할 일을 다시 선택해주세요.";
+    try { setTimeMove(previewTimeMove(readLatestPlan(), timeMove.before.id, date, time)); return null; }
+    catch (error) { return (error as Error).message; }
+  }
 
   function toggleDone(task: Task) {
     if (task.summaryOnly) { setError("요약 업무는 완료율과 시간 집계에서 제외돼요. 나눈 실행 업무를 완료해주세요."); return; }
@@ -716,7 +721,7 @@ function TodoWorkspace() {
         {replanTask && <form className="oddk-dialogForm" onSubmit={submitReplan}><header className="oddk-dialogHeader"><h2 id="replan-title">다시 계획하기</h2><button type="button" aria-label="다시 계획 창 닫기" onClick={() => setReplanId(null)}><HiOutlineXMark /></button></header><strong>{replanTask.title}</strong><p>기존 날짜 {replanTask.plannedDate}</p><label className="oddk-dialogField" htmlFor="replan-date">새 계획 날짜<input id="replan-date" type="date" min="0001-01-01" max="9999-12-31" required value={replanDate} onChange={(event) => { setReplanDate(event.target.value); setReplanError(""); }} /></label><p>시작 시간은 비우고, 할 일의 내용·시간·목표 연결은 그대로 유지해요.</p>{replanError && <p role="alert" className="oddk-dialogError">{replanError}</p>}<div className="oddk-dialogActions"><button type="button" onClick={() => setReplanId(null)}>취소</button><button type="submit" className="oddk-primary">날짜 옮기기</button></div></form>}
       </dialog>
       {bulkRequest && <BulkActionDialog request={bulkRequest} onCancel={() => setBulkRequest(null)} onConfirm={confirmBulk} />}
-      {timeMove && <TimeMoveDialog initial={timeMove} onCancel={() => setTimeMove(null)} onApply={confirmTimeMove} />}
+      {timeMove && <TimeMoveDialog initial={timeMove} stale={!sameValue(timeMove.expected, plan)} onCancel={() => setTimeMove(null)} onApply={confirmTimeMove} onRefresh={refreshTimeMove} />}
       <div className={notice ? "oddk-toast" : "oddk-srOnly"} role="status" aria-live="polite" aria-atomic="true">
         {notice && <><span>{notice.message}</span>{history.value && <button type="button" onClick={undoLatest}>실행 취소</button>}<button type="button" aria-label="알림 닫기" onClick={() => setNotice(null)}><HiOutlineXMark aria-hidden="true" /></button></>}
       </div>
