@@ -1,4 +1,5 @@
 "use client";
+import { taskTitleKey } from "./task-identity";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -26,6 +27,8 @@ import { layoutTimeline, clockLabel } from "./timeline";
 import { selectDay } from "./day-selectors";
 import { DailyReview } from "./daily-review";
 import { DayAvailability } from "./day-availability";
+import { TravelPlanner } from "./travel-planner";
+import { applyTravelPreview } from "./travel-core";
 import { availabilitySummary } from "./availability";
 import { defaultAvailability } from "../../supabase/functions/_shared/schedule";
 import { taskDaySlice } from "./task-period";
@@ -284,7 +287,7 @@ function TodoWorkspace() {
     const title = input.trim();
     if (range !== "all" && !isPlanDate(planDate)) { setError("등록할 날짜를 먼저 선택해주세요."); return; }
     if (!title) { setError("할 일을 먼저 입력해주세요."); inputRef.current?.focus(); return; }
-    if (plan.tasks.some((task) => !task.done && !task.summaryOnly && task.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
+    if (plan.tasks.some((task) => !task.done && !task.summaryOnly && taskTitleKey(task) === taskTitleKey({ title, plannedDate: range === "all" ? null : planDate, startTime: null }))) {
       setError("이미 남아 있는 할 일이에요. 기존 목록을 확인해주세요."); return;
     }
     const categoryId = classification.category.startsWith("category:") ? classification.category.slice(9) : null;
@@ -381,7 +384,7 @@ function TodoWorkspace() {
 
   function toggleDone(task: Task) {
     if (task.summaryOnly) { setError("요약 업무는 완료율과 시간 집계에서 제외돼요. 나눈 실행 업무를 완료해주세요."); return; }
-    if (task.done && plan.tasks.some((item) => item.id !== task.id && !item.done && !item.summaryOnly && item.title.toLocaleLowerCase() === task.title.toLocaleLowerCase())) {
+    if (task.done && plan.tasks.some((item) => item.id !== task.id && !item.done && !item.summaryOnly && taskTitleKey(item) === taskTitleKey(task))) {
       setError("같은 내용의 진행 중인 항목이 있어 완료를 취소할 수 없어요."); return;
     }
     save({ ...plan, tasks: plan.tasks.map((item) => item.id === task.id ? { ...item, done: !item.done } : item) },
@@ -442,7 +445,7 @@ function TodoWorkspace() {
     if (!title) { setEditError("수정할 내용을 입력해주세요."); return; }
     if (timeError) { setEditError(timeError); return; }
     if (editDate && !isPlanDate(editDate)) { setEditError("계획 날짜를 올바르게 선택해주세요."); return; }
-    if (!task.summaryOnly && !editDone && plan.tasks.some((item) => item.id !== task.id && !item.done && !item.summaryOnly && item.title.toLocaleLowerCase() === title.toLocaleLowerCase())) {
+    if (!task.summaryOnly && !editDone && plan.tasks.some((item) => item.id !== task.id && !item.done && !item.summaryOnly && taskTitleKey(item) === taskTitleKey({ title, plannedDate: editDate || null, startTime: editTime.startTime }))) {
       setEditError("같은 내용의 할 일이 이미 있어요."); return;
     }
     if (oldEditorLinksPending) { setEditError("이전 목표 연결 초안을 아래에서 확인한 뒤 저장해주세요."); return; }
@@ -489,6 +492,7 @@ function TodoWorkspace() {
               {planningView && range !== "all" && plan.tasks.some(task => task.plannedDate === null && !task.done) && <button type="button" className="oddk-undatedLink" onClick={() => navigateRange("all")}>날짜 없는 할 일 {plan.tasks.filter(task => task.plannedDate === null && !task.done).length}개 보기<HiOutlineArrowRight aria-hidden="true" /></button>}
             </header>
             {planningView && range === "day" && isPlanDate(planDate) && <DayAvailability day={day} saved={plan.availabilityByDate?.[planDate]} onSave={value => save({ ...plan, availabilityByDate: { ...plan.availabilityByDate, [planDate]: value } }, "활동 시간과 고정·휴식을 저장했어요.")} onEdit={openEditor} />}
+            {planningView && range === "day" && isPlanDate(planDate) && <TravelPlanner date={planDate} plan={plan} onApply={(preview, draft, expected) => { if (!sameValue(expected, plan)) { setError("미리보기 이후 계획이 바뀌었어요. 다시 확인해주세요."); return false; } try { return save(applyTravelPreview(plan, preview, draft), "여행 이동·방문 일정을 추가했어요."); } catch (error) { setError((error as Error).message); return false; } }} />}
             {planningView && <><ClassificationFilters plan={plan} value={classification} onChange={changeClassification} count={scopedTasks.length} total={rangeTasks.length} /><ClassificationManager plan={plan} onSave={save} /></>}
             {history.value && <div className="oddk-undoBar"><small>{history.value.label}</small><button type="button" onClick={undoLatest} title="이 기기의 최근 변경1건을 되돌려요. 다음 저장 시 교체되며 이후 바뀐 내용은 덮지 않아요."><HiOutlineArrowUturnLeft aria-hidden="true" />최근 변경 되돌리기</button></div>}
             {history.problem && <DraftFeedback draft={history} />}

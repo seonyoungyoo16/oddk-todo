@@ -1,0 +1,35 @@
+.oddk-travel { margin:20px 0; padding:18px; border:1px solid #dbe2ed; border-radius:10px; min-width:0; }
+.oddk-travel > summary { display:flex; flex-wrap:wrap; gap:8px; align-items:center; cursor:pointer; font-weight:600; }
+.oddk-travel summary small { font-weight:400; color:#64748b; }
+.oddk-travel p { line-height:1.7; overflow-wrap:anywhere; margin:12px 0; }
+.oddk-travel fieldset { min-width:0; border:0; padding:0; margin:18px 0; }
+.oddk-travel legend { font-weight:600; margin-bottom:12px; }
+.oddk-travelFields { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); gap:12px; }
+.oddk-travelFields > p { grid-column:1/-1; }
+.oddk-travel label { display:grid; gap:8px; min-width:0; line-height:1.5; }
+.oddk-travel input,.oddk-travel select { box-sizing:border-box; width:100%; min-width:0; padding:10px; border:1px solid #cbd5e1; border-radius:8px; background:transparent; color:inherit; font:inherit; }
+.oddk-travel button { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:10px 12px; border:1px solid #cbd5e1; border-radius:8px; color:inherit; font:inherit; cursor:pointer; background:transparent; }
+.oddk-travel button:disabled { opacity:.5; cursor:default; }
+.oddk-travel :focus-visible { outline:2px solid #4263eb; outline-offset:3px; }
+.oddk-travelStops { padding:0; list-style:none; display:grid; gap:16px; margin:20px 0; }
+.oddk-travelStops > li { padding:16px; border:1px solid #dbe2ed; border-radius:8px; min-width:0; }
+.oddk-travelStopHeading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px; }
+.oddk-travelStopHeading > div { display:flex; gap:6px; }
+.oddk-travelSearch { display:flex; gap:8px; align-items:flex-end; }
+.oddk-travelSearch > label { flex:1; }
+.oddk-travelSearch > button { flex:none; }
+.oddk-travelActions { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0; }
+.oddk-placeCandidates { list-style:none; display:grid; gap:6px; padding:0; margin:12px 0; }
+.oddk-placeCandidates button { width:100%; text-align:left; justify-content:flex-start; overflow-wrap:anywhere; line-height:1.6; }
+.oddk-travelSource,.oddk-travelHint { font-size:.85rem; color:#64748b; }
+.oddk-travelSource a { text-decoration:underline; text-underline-offset:3px; }
+.oddk-travelPreview { border:1px solid #a5b4fc; border-radius:8px; padding:16px; margin:18px 0; }
+.oddk-travelPreview h2 { font-size:1.05rem; font-weight:600; }
+.oddk-travelPreview ol { list-style:none; display:grid; gap:12px; padding:0; }
+.oddk-travelPreview li { overflow-wrap:anywhere; line-height:1.6; }
+.oddk-travelPreview ol > li { display:grid; gap:4px; padding:10px 0; border-bottom:1px solid #dbe2ed; }
+.oddk-travelPreview time { font-size:.85rem; }
+[data-theme="dark"] .oddk-travel,[data-theme="dark"] .oddk-travelStops > li,[data-theme="dark"] .oddk-travel input,[data-theme="dark"] .oddk-travel select,[data-theme="dark"] .oddk-travel button { border-color:#475569; }
+[data-theme="dark"] .oddk-travelSource,[data-theme="dark"] .oddk-travelHint,[data-theme="dark"] .oddk-travel summary small { color:#a8b7ca; }
+[data-theme="dark"] .oddk-travel option { background:#172033; color:#e2e8f0; }
+@media(max-width:600px) { .oddk-travel { padding:14px; } .oddk-travelFields { grid-template-columns:minmax(0,1fr); } .oddk-travelSearch { align-items:stretch; flex-direction:column; } .oddk-travelActions > button { flex:1 1 100%; } }
