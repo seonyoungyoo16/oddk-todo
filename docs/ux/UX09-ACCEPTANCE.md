@@ -1,6 +1,13 @@
 # UX09 인수 기록
 
-상태: 자체 QA 완료, 최종 CI·배포·운영 확인 대기. 다음 UX10은 착수하지 않는다.
+상태: 자체 QA·CI·배포·운영 확인 완료. 실제 OAuth·실물 단말·200% 확대는 UX13/최종 사용자 인수로 유지한다.
+
+## 출시 확인
+
+- PR27 head `26b0e19fdab52017c64011f0712338307aa3ac80`, CI `40626698118` / verify `122613213103`: Node134·Deno76·Edge2 check·lint/typecheck/Pages 정적 빌드 성공.
+- 병합 SHA `639fd6db359c2eb69b86ae173119b75c69c3ec75`, master run `40626803500`, verify `122613576875`·deploy `122613857725` 성공. deployment `7376392960`의 SHA도 일치한다.
+- 운영 화면에서 새 손잡이/버튼 정렬 안내, 수동 순서 선택, 확정 업무0·Google/GitHub 활성, 입력 초안 새로고침 복원 후 빈 입력으로 정리, console warn/error0 확인. 운영에 합성 확정 업무를 추가하지 않았다. 포인터·충돌·실패의 변경 시험은 같은 배포 소스의 로컬 브라우저 및 격리 계정 API 증거와 구분한다.
+- [운영 화면](evidence/UX09-deployed.jpg). 실제 소스 checkout을 ff 했고 사용자 CSS SHA256 `36ABC08A32269D3ED013C372DD10C07BB718C28489AABF0806C5FC2CC4FBAC83`와 미커밋 로고/문서를 보존했다.
 
 ## 요구와 근거
 

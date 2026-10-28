@@ -324,3 +324,10 @@ UX09 checkpoint: Pages 정적빌드·최종typecheck/lint성공, 신규공통이
 임시 로컬 QA프레임에서 원본업무0·목표/초안/테마스냅샷을보존하고 A/숨긴다음날/B/10분항목4개로시험. 계획quota실패원본09:00·4개/목표불변·팝업09:15유지→해제재시도09:15저장. 다른기기메모변경StorageEvent모사→오래된승인거부/원격메모유지. 즉시stale잠금과입력유지최신재검토를보완,09:30입력유지/확인활성재시험. 겹침10~11안/B10:30~11:30이름경고. 마지막버튼Tab→닫기/ESC후호출버튼복귀(초기문서포커스문제수정).390px다크10분일정대체버튼→11:50~12시/작업8+여유2=10. 물리터치/실제200%는UX13로명시.
 
 실제목록영역밖드롭무변경, A→B로B/숨긴날짜/A/짧은항목보존, 중요도정렬손잡이0/수동복귀유지. 종료guard원본계획전체JSON일치/tasks0/goalsSame/fixtureUndoRemoved=true, 초안·테마복원/QA탭닫음/public임시HTML삭제/콘솔warn-error0. UX09-ACCEPTANCE.md와스크린샷3개추가. 최종Node134/린트/typecheck/Pagesbuild성공. CI·운영배포는아직미완료, UX10미착수.
+
+
+### UX09 운영 게이트 완료 / UX10 달력 계약 착수
+
+PR27 head26b0e19, CI40626698118/122613213103 Node134·Deno76·Edge2/check/lint/type/Pagesbuild통과. 병합639fd6db359c2eb69b86ae173119b75c69c3ec75, master40626803500 verify122613576875/deploy122613857725 completed/success, deployment7376392960 SHA일치. 운영 새정렬안내/수동선택/업무0/SSO활성·초안입력reload복원후빈입력정리·consolewarn/error0. UX09-deployed.jpg. 실제소스ff/사용자CSS해시·미커밋로고/별도계획보존. UX09완료후codex/ux10-recurrence로전환.
+
+UX10-DESIGN.md에 반복원본/안정발생/이번·이후·전체/예외·완료보존/V6이전, ServiceWorker+서버예약/전달·취소, 사용자단말권한최종인수와ALPEN블록을작성했다. 공식MDN Push/subscribe·Supabase스케줄링문서확인. repeat-calendar.ts는 daily간격/월요일기준weekly요일/monthly없는날건너뛰기·한국달력/366일범위·안정원본+발생일ID계약을구현했다. 신규6개 Node/Deno각통과. V6연결·DB/Edge/푸시/반복UI/전체QA·배포는미완료이며UX11은미착수다.
