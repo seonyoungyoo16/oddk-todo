@@ -73,3 +73,13 @@ ALPEN: A 공통 규칙→저장/서버 경합→UI→실제 실패·복구→배
 - 시험 후 record/state/operation 각0, 기존 계획3. Advisor는 서버 전용 RLS no-policy INFO11과 기존 비밀번호 보호 WARN1이며 새 WARN/ERROR 없음. 공개 실행 API·UI는 아직 없다.
 - 명령 계약47d6f18 CI40712972622/verify122902929776는 Node226·Deno154·전체 검증 성공. workflow의 같은 시험 경로 중복 표기 하나는 제거했다(Deno는 이미 중복 경로를 한 번만 실행했다).
 - 다음은 서버 명령 RPC/API, 실제 경합·전역 겹침·계획 완료/삭제 연동이다. 이 스키마 시험을 사용자 기능/UX11 인수 완료로 간주하지 않는다.
+
+## 서버 명령 API 체크포인트 — 2026-10-29
+
+- migration20261028152946은 계획→실행 상태 잠금, owner-filtered context/DB 시각, 원자적 최대2행 commit, operation 재시도 선검사, plan/state 버전 CAS, 불변 snapshot, 미래·기록 간 겹침 거부, 완료/삭제 종료 trigger,24시간 방치 종료, 기간 전체 합계와 페이지 이력을 추가했다. 계획 JSON/version/updated_at은 실행 조작으로 바뀌지 않는다.
+- 실제 rollback DB 시험: 시작/동일 요청 재실행/다른 hash 거부/stale/no-op/전환 이력/계획 불변/다른 사용자 기록 차단/완료와 undo/겹침 실패 원복/수동 이력 합계/24시간 cap/계정 정리 PASS.
+- 실제 HTTP 두 계정13그룹 PASS: auth·origin·owner 주입 거부, 두 요청이 동시에 in-flight인 시작1성공/1충돌, 응답 유실 재시도/no-op/휴식·재개·전환·종료, 기존 계획 불변, 수동 추가·겹침 거부·보정 합계, 실제 plan-sync 완료/삭제 종료와 undo 비재시작, 테이블/RPC42501. 이는 실제 OAuth/브라우저 시험을 대체하지 않는다.
+- 발견/수정: 초기 CAS에 SQLSTATE40001을 사용해 PostgREST가 재시도하며503으로 지연됐다. [Supabase 공식 해결 안내](https://supabase.com/kb/troubleshooting/high-cpu-and-infinite-transaction-retries-when-using-custom-error-codes-in-rpc-functions)에 따라 migration20261028153728로 PT409로 변경했다. 새 fixture 전체13그룹을7.3초에 재실행해 PASS, 실행 RPC active backend0. 기존 반복 backend는 수정 뒤 이미 종료돼 지정 PID 종료 요청의 대상은0이었다.
+- execution Edge v2 ACTIVE, hash87c71442e57ae772ef9c16f00ca0c46485440c203a0e26606f28b6c493ab6df5, 원격16개 파일=로컬. strict boundedJSON/getUser·CORS/no-store와 소유자 서버 결정, 기간 합계와 cursor, 비밀/계획 응답 제외를 검증했다.
+- Node232 전체·새 handler6개 Node/Deno·실행 모델/명령/handler22개 Deno·typecheck/lint/Edge check PASS. 새 Edge entrypoint는 기존 관례대로 프런트 tsconfig에서 제외하고 별도 Deno check로 검사한다.
+- 실제 사용자/fixture 세션 정리 후 실행3표 각0/시험사용자0/기존 계획3. Advisor INFO11·기존 WARN1, 새 WARN/ERROR 없음. 브라우저 타이머/익명 저장·보정 UI·백업/가져오기·최종 인수/Pages 배포는 아직 남아 있으며 UX12로 넘어가지 않는다.
