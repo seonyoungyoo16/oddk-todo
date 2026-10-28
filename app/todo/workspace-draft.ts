@@ -16,7 +16,7 @@ export function validWorkspace(v: unknown): v is WorkspaceDraft {
     !(v.selectedDate === null || typeof v.selectedDate === "string") || !(v.editingId === null || typeof v.editingId === "string") || !object(v.editors) || Object.keys(v.editors).length > 5000 ||
     !(v.mandalaDraft === null || validMandala(v.mandalaDraft)) || !(v.mandalaBase === null || validMandala(v.mandalaBase))) return false;
   return Object.entries(v.editors).every(([id, e]) => object(e) && object(e.base) && e.base.id === id &&
-    validTaskSnapshot(e.base, 2) && validMandala(e.baseMandala) && validTaskClassification(e) &&
+    validTaskSnapshot(e.base, e.base.summaryOnly !== undefined || e.base.parentTaskId !== undefined ? 5 : 2) && validMandala(e.baseMandala) && validTaskClassification(e) &&
     ["title", "work", "buffer", "start", "date"].every(k => typeof e[k] === "string" && e[k].length <= 120) &&
     ["end", "endDate", "endDay", "dueDate", "dueTime"].every(k => e[k] === undefined || typeof e[k] === "string" && e[k].length <= 120) &&
     (e.timeMode === undefined || ["clock", "duration", "legacy"].includes(String(e.timeMode))) &&

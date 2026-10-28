@@ -3,7 +3,7 @@ import type { Task } from "../../supabase/functions/_shared/plan.ts";
 import { isClock, isPlanDate, dateOrdinal, clockMinute } from "../../supabase/functions/_shared/calendar.ts";
 import { intersectInterval } from "../../supabase/functions/_shared/schedule.ts";
 export function taskInterval(task: Task) {
-  if (!hasTaskTime(task) || !isClock(task.startTime) || !isPlanDate(task.plannedDate)) return null;
+  if (task.summaryOnly || !hasTaskTime(task) || !isClock(task.startTime) || !isPlanDate(task.plannedDate)) return null;
   const start = dateOrdinal(task.plannedDate) * 1440 + clockMinute(task.startTime);
   return { start, end: start + task.minutes, workEnd: start + task.minutes - task.bufferMinutes };
 }

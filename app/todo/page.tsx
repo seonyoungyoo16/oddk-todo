@@ -16,6 +16,7 @@ import type { TaskSort } from "./task-order";
 import { previewBulkAction, applyBulkAction } from "./bulk-actions";
 import type { BulkRequest } from "./bulk-actions";
 import { validTaskPlanning } from "../../supabase/functions/_shared/task-planning";
+import { deletePlanTasks } from "./goal-actions";
 import { TaskScheduleFields } from "./task-schedule-fields";
 import { parseEditorSchedule, retargetEditorDate } from "./editor-schedule";
 import { workFromStoredTime } from "./task-time";
@@ -62,7 +63,7 @@ type Filter = "all" | "active" | "done";
 
 const THEME_KEY = "oddk.theme.v1";
 const THEME_EVENT = "oddk-theme-change";
-const EMPTY_PLAN: Plan = initialPlan as Plan;
+const EMPTY_PLAN: Plan = (() => { const loaded = loadPlan(JSON.stringify(initialPlan)); if (!loaded.ok) throw new Error("기본 계획을 읽지 못했어요. 원문을 확인해주세요."); return loaded.plan; })();
 const EMPTY_SNAPSHOT = JSON.stringify(EMPTY_PLAN);
 const priorities: Record<Priority, { label: string; order: number }> = {
   high: { label: "높음", order: 0 },
@@ -335,8 +336,7 @@ function TodoWorkspace() {
   }
 
   function withoutTasks(ids: Set<string>): Plan {
-    const mandala = plan.mandala ? { ...plan.mandala, areas: plan.mandala.areas.map(area => ({ ...area, taskIds: area.taskIds.map(id => ids.has(id) ? "" : id) })) } : undefined;
-    return { ...plan, mandala, tasks: plan.tasks.filter(t => !ids.has(t.id)) };
+    return deletePlanTasks(plan, ids);
   }
   function deleteTask(task: Task) {
     if (save(withoutTasks(new Set([task.id])), "할 일을 삭제했어요.")) {

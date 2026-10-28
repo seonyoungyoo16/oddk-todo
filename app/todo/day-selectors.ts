@@ -1,9 +1,10 @@
 import { hasTaskTime, isPlanDate } from "../../supabase/functions/_shared/plan.ts";
 import type { Task } from "../../supabase/functions/_shared/plan.ts";
 import { taskDaySlice, taskTouchesDate } from "./task-period.ts";
+import { isExecutionTask } from "../../supabase/functions/_shared/task-hierarchy.ts";
 
 export function selectDay(allTasks: Task[], date: string) {
-  const tasks = isPlanDate(date) ? allTasks.filter((task) => taskTouchesDate(task, date)) : [];
+  const tasks = isPlanDate(date) ? allTasks.filter((task) => isExecutionTask(task) && taskTouchesDate(task, date)) : [];
   const active = tasks.filter((task) => !task.done);
   const timed = tasks.filter(hasTaskTime);
   const timedActive = active.filter(hasTaskTime);

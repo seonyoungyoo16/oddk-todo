@@ -14,7 +14,7 @@ async function api(body, expected = 200) {
 }
 try {
   const current = await api({ action: "pull" });
-  assert.equal(current.plan.schemaVersion, 4);
+  assert.equal(current.plan.schemaVersion, 5);
   const plan = { ...current.plan, tasks: current.plan.tasks.map(t => Object.fromEntries(Object.entries({ ...t, notes: "Synthetic detailed note\nsecond line" }).reverse())) };
   const saved = await api({ action: "push", plan, version: current.version });
   const snapshot = await api({ action: "pull" });
@@ -31,5 +31,5 @@ try {
   assert.deepEqual(await api({ action: "pull" }), snapshot);
   await api({ action: "push", plan, version: current.version }, 409);
   assert.deepEqual(await api({ action: "pull" }), snapshot);
-  console.log("PASS: note round trip in V4 and undo against JSONB reordered keys, V1/V2 downgrade426, oversized notes400 and stale CAS409 preserve plan/version/updated_at");
+  console.log("PASS: note round trip in V5 and undo against JSONB reordered keys, V1/V2 downgrade426, oversized notes400 and stale CAS409 preserve plan/version/updated_at");
 } finally { await client.auth.signOut(); }
