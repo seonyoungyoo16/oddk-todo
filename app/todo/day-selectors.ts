@@ -14,7 +14,9 @@ export function selectDay(allTasks: Task[], date: string) {
   const activeBuffer = timedActive.reduce((sum, task) => sum + portion(task).buffer, 0);
   const scheduled = timedActive.map(task => taskDaySlice(task, date)).filter((slice): slice is NonNullable<typeof slice> => slice !== null).sort((a, b) => a.start - b.start);
   const byPriority = { high: 0, normal: 0, low: 0 };
+  const byImportance = { high: 0, normal: 0, low: 0 };
   for (const task of timed) byPriority[task.priority] += portion(task).minutes;
+  for (const task of timed) byImportance[task.importance ?? "normal"] += portion(task).minutes;
   return {
     date, tasks, active, timed, timedActive, scheduled,
     total, buffer, work: total - buffer,
@@ -24,7 +26,7 @@ export function selectDay(allTasks: Task[], date: string) {
     untimedCount: tasks.length - timed.length,
     activeUntimedCount: active.length - timedActive.length,
     highPriorityCount: active.filter((task) => task.priority === "high").length,
-    byPriority,
+    byPriority, byImportance, highImportanceCount: active.filter(task => task.importance === "high").length,
   };
 }
 export type DayPlan = ReturnType<typeof selectDay>;
