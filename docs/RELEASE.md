@@ -1,14 +1,12 @@
-# 릴리스·운영 절차
+# 릴리스·운영·복구 절차
 
-## 범위와 순서
+2026-10-29 UX13 기준. T00–T11의 과거 상태는 `verification/`에 보존하고, 현재 인수/배포 결과는 [UX13](ux/UX13-ACCEPTANCE.md)과 [진행 기록](ux/UX-PROGRESS.md)을 우선한다. Google·GitHub 로그인은 활성화하며 사용자 실제 OAuth 인수 보류를 이유로 비활성화하지 않는다.
 
-2026-10-27 T00–T10 검증을 기반으로 T11 문서를 정리했다. 사용자 요청으로 실제 OAuth는 보류했고 신규 Google/GitHub 로그인은 준비 중이다. 비밀번호 시험을 OAuth 성공으로 대체하지 않는다.
+## 배포 순서
 
-ALPEN 작업 순서: 기준선 → 시간·날짜 계약 → 서버 검증 → 날짜별 계획/재계획 → 동기화 → 브라우저 인수 → 배포 확인. 각 작업 배포 확인 뒤 다음 작업을 시작했다. T11 집중 블록 예상45분+예비15분, CI 대기는 별도이며 실제 집중 시간은 정밀 계측하지 않았다.
+ALPEN: A 모델/저장/화면/시험/정리로 분해 → L 집중50분 추정 → P 수정·검증 여유15분 → E 데이터 보호와 호환 백엔드부터 → N 단계 증거와 미검증 환경 갱신. 외부 CI 대기는 집중 시간에 넣지 않고 실제 계측하지 않은 시간을 실측으로 만들지 않는다.
 
-배포 순서는 호환 백엔드 → 검사 통과 프런트 → 운영 인수다. Pages 성공으로 DB/Edge 적용을 대신 판단하지 않는다.
-
-## 실행·정적 빌드
+호환 DB/Edge 배포·원격 원문 검증 → 실제 격리 계정/DB·브라우저 QA → PR CI → 병합 → master Pages → 같은 SHA deployment와 운영 화면·자산·Cron 확인 후 다음 단계다. 단순 Pages 성공으로 DB/Edge 적용을 대신 판단하지 않는다.
 
 ~~~powershell
 npm.cmd ci
@@ -16,57 +14,47 @@ npm.cmd test
 npm.cmd run lint
 npm.cmd run typecheck
 $env:GITHUB_PAGES='true'
-try { npm.cmd run build; if ($LASTEXITCODE -ne 0) { throw 'build failed' } }
-finally { Remove-Item Env:GITHUB_PAGES -ErrorAction SilentlyContinue }
+try {
+  npm.cmd run build
+  if ($LASTEXITCODE -ne 0) { throw 'build failed' }
+  node tests/verify-push-export.mjs
+  if ($LASTEXITCODE -ne 0) { throw 'export verification failed' }
+} finally { Remove-Item Env:GITHUB_PAGES -ErrorAction SilentlyContinue }
 ~~~
 
-npm start는 일반 Next 서버용이다. 정적 Pages는 out/을 배포한다. .github/workflows/pages.yml이 배포 권위다. Edge 진입점은 supabase/functions/plan-sync/account.ts, 공통 계약은 supabase/functions/_shared/plan.ts다.
+`npm start`는 일반 Next 서버용이다. Pages는 `.github/workflows/pages.yml`에서 out/을 배포한다. 루트/`/todo/`/manifest와 not-found 이외의 임시 QA 경로는 export하지 않는다. 로컬 검증용3200은 기본3000과 분리한다.
 
-## 데이터·동기화 계약
+## 현재 서버와 저장 계약
 
-- schemaVersion:2는 데이터 형식, 서버 version은 전체 JSON의 동시 수정 비교 값이다.
-- V1→V2는 원문 백업 후 이전한다. 날짜 없는 기존 업무·점검을 임의로 오늘에 배정하지 않는다.
-- 날짜 YYYY-MM-DD 또는 null, 시간 HH:mm 또는 null. 목록은 전체 업무, ALPEN/시간표/통계는 같은 선택 날짜를 사용한다.
-- 검증 후 CAS 조건부 쓰기.409는 전체 계획 비교·선택 및 반대쪽 계정별 백업이며 자동 병합하지 않는다.
-- 오프라인 변경은 계정별 dirty 캐시에 보존한다. 전송 중 편집은 다음 push로 남긴다.401은 미전송 보존,426은 쓰기 중단·갱신 안내다.
-- 손상/미래 형식을 빈 목록으로 덮지 않는다. 원문·마지막 유효 백업으로 복구한다. 저장소 삭제 전 JSON 백업을 내보낸다.
-- 미전송 변경 시 로그아웃은 차단된다. 연결/인증 복구 후 전송 완료를 확인한다. 백업 다운로드가 dirty를 해제하지는 않는다.
+프로젝트 `synxmskamifpovuziecx`. plan-sync13 / execution2 / travel-lookup2 / task-maintenance1 / push-subscriptions2 / push-worker2 / push-receipt1. plan-sync hash `d39127e075b98cb52784733f8cd2e4b0a10b9cace00ae9ebe7f97d64ab946dc7`, 최신 재조정 migration `20261028165034`. 활성 Cron은 oddk-task-maintenance·oddk-push-worker 두 개다. 정확한 배포/함수 원문·인수는 각 단계 문서에 기록한다.
 
-## 실제 서버 구성
+- 계획 schemaVersion V5/V6와 서버 CAS version을 구분한다. V1~V4는 원문 백업 후 이전하며 V6→V5 구형 쓰기는426으로 중단한다. 기존 날짜 없는 업무·점검을 임의 배정하지 않는다.
+- 브라우저는 자기 계획 SELECT만 허용한다. 직접 쓰기와 실적·알림·캐시 테이블 조회는 차단하고 Edge가 사용자 인증/검증/소유권을 확인한다. 서비스 키·VAPID 비밀·토큰은 문서/브라우저/로그/저장소에 넣지 않는다.
+- 계획409는 전체 비교·선택이며 선택하지 않은 쪽을 계정별 백업한다. 자동 병합하지 않는다. dirty 변경은 전송 도중 편집·재연결·401에서도 보존하고426이면 새로고침을 요구한다. 미전송 변경이 있으면 로그아웃을 차단한다.
+- 실제 기록은 계획 JSON과 별도며 소유자별 단일 열린 기록/동작ID 재시도/revision을 사용한다. DB는 계획→실적 state 순으로 잠근다. 의도한 충돌은 PT409이며 SQLSTATE40001을 업무 오류에 쓰지 않는다.
+- 재조정은 plan/actual 두 버전·열린 기록 없음·오늘/현재 이후를 원자 검사한다. 계정은 온라인 서버 확인 뒤 확정하며 응답 유실은 pull로 같은 version/변경안을 확인한다. 미확정이면 재동기화부터 한다.
+- 비로그인 실제 기록은 native IDB transaction.oncomplete 이후 확정한다. 시간 기록과 재조정은 Web Locks로 직렬화한다. 일반 localStorage 편집 전체가 트랜잭션인 것으로 가정하지 않는다.
+- 초안/undo/재조정 시각 복구안은 브라우저 계정 범위별이다. 재조정 복구는 메타데이터 지문/시각 일치 때만 수행한다. 이미 변경/삭제/완료한 업무를 덮지 않는다.
 
-프로젝트 synxmskamifpovuziecx(서울), plan-sync **version5**를 T11에서 재확인했다. bundle SHA256: e896ce51ed51748b9d382d2cca417beba8085448c23ec3a62f807b10dcd3cd3c. verify_jwt=false이며 함수 본문이 Auth 사용자를 검증한다. 서비스 키는 서버에만 있다.
+기존 검증용 plan-sync-t03-verification3 / t04-verification2는 원격 파일을 다시 읽어 데이터 접근 없는410 응답 한 줄인 것을 확인했다. 닫힌 검증 endpoint의 메타데이터가 ACTIVE로 남아 있는 것을 실제 서비스로 오인하지 않는다.
 
-public 테이블 account_plans 하나, RLS=true, authenticated 자기 user_id SELECT만 허용. anon/authenticated 직접 INSERT/UPDATE/DELETE 권한은 없다. 쓰기는 Edge 인증·검증·version 조건으로 수행한다.
+Advisor INFO11은 의도한 서버전용 RLS 표다. 기존 leaked password protection WARN1은 유지된 알려진 설정이며 OAuth 인수 통과를 의미하지 않는다. 이번에 Auth 보안 설정을 임의 변경하지 않았다.
 
-마이그레이션:20261026201933 / 20261026202958 / 20261026203712 / 20261026225842 / **20261026230447 restrict_account_plan_writes** / 20261026230606 / 20261026231343 / 20261026231903. 검증 테이블은 제거됐다. 검증용 Edge 두 개는 데이터 접근 없는410 응답으로 닫혀 있으며 메타데이터만 남았다.
+## 실제 통합시험과 정리
 
-기존 보안 경고: leaked password protection 비활성. 이번에 설정은 바꾸지 않았다. [Supabase 보완 안내](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
+1. `node tests/prepare-account-fixture.mjs`로 무시된 fixture/seed/cleanup SQL을 생성한다. 기존 fixture가 있으면 그 실행부터 정리한다.
+2. 신뢰하는 관리자 연결에서 seed SQL을 적용한다. 비밀번호·토큰·SQL 원문은 출력하지 않는다.
+3. `npm.cmd run test:integration`은 격리 계정 두 개에14개 파일을 순서대로 실행한다. 마지막 재조정 시험까지 실행하며 실패 즉시 중단한다. 실행 시험은 새 fixture의 초기 revision을 전제로 하므로 재실행 때 새 fixture를 만든다.
+4. 결과와 관계없이 marker로 제한한 cleanup SQL을 적용해 시험 사용자·세션·실적/구독/예약을 정리하고 기존 실제 계획 수를 확인한다. fixture·seed/cleanup·생성 SDK store·임시 app QA route를 제거한 뒤 정적 빌드를 한다.
+5. 브라우저 QA는 원래 key/value/IDB를 보관하고 복원 완료를 확인한 뒤 페이지를 제거한다. 실제 사용자의 업무나 계정을 시험에 쓰지 않는다.
 
-## 전용 통합시험 fixture
+## 장애·복구·롤백
 
-일반 npm test는 네트워크를 대체한다. 실제 서버 시험은 전용 계정만 사용한다.
+- 저장소 손상: 원문을 다운로드/보관하고 정상 저장본 복구를 선택한다. 읽기 실패를 빈 계획으로 덮거나 localStorage 전체 삭제로 해결하지 않는다.
+- 409: 양쪽 내용을 비교하고 백업한 뒤 선택한다. 다시 원격 변경이 있으면 최신 버전으로 재비교한다.
+- 401/오프라인/미확정: 미전송 내용·복구안을 유지하고 연결/인증 상태를 복구한 뒤 서버를 읽어 확인한다. 백업 다운로드가 dirty를 해제하지 않는다.
+- 실제 기록: 활성/일시정지 상태는 보존하고 마지막 확인 시각을 본다. 종료 기록만 가져오며 계정으로 가져올 때 현재 업무에 명시적으로 연결한다. 충돌한 ID나 겹친 실제 구간은 원자 거부한다.
+- 코드 롤백: 마지막 검증 커밋을 별도 PR로 복원하되 최신 계획 V6를 읽을 수 있는 버전인지 먼저 확인한다. 구형 프런트가426으로 거부되는 것을 데이터 손실로 처리하지 않는다. DB 표/사용자 자료를 되돌리거나 삭제하지 않는다.
+- 백엔드 롤백: 이전 함수/서명과 현재 스키마·실적/알림 의존성을 먼저 확인한다. 프런트만 롤백해도 Edge/DB는 자동 복원되지 않는다. 배포 후 원문/버전·불변 SHA·실제 경로·Cron 상태를 각각 확인한다.
 
-1. node tests/prepare-account-fixture.mjs로 gitignored .sync-auth-fixture.json 및 .sync-test-runtime/seed-accounts.sql, cleanup-accounts.sql을 생성한다. 기존 fixture는 해당 실행 정리 후 생성한다.
-2. 신뢰하는 관리자 DB 연결로 seed SQL을 적용한다. 비밀번호·토큰·SQL 원문은 출력/문서/커밋에 남기지 않는다.
-3. npm.cmd run test:integration을 실행한다. 실제 사용자 계정이나 업무를 시험하지 않는다.
-4. 성공/실패와 관계없이 해당 marker cleanup SQL을 적용하고 잔여 계정0을 확인한다. fixture·생성 SQL·임시 QA 페이지를 제거한다.
-
-OAuth 재개 시 제공자별 시작→콜백→복귀→계정 데이터→두 저장소 상호 반영을 검증한 후 OAUTH_READY를 활성화한다. 기존 제공자 설정을 임의 교체하지 않는다.
-
-## 롤백·추적
-
-V2 읽기/검증을 지원하는 직전 호환 릴리스(T09/T10)로만 되돌린다. V1 화면 복귀, V2→V1 역변환, 직접 쓰기 권한 복원을 하지 않는다. 불확실하면 sync push를 중지해 plan/version을 보존한다.
-
-원문 백업→호환 커밋 CI→Pages 배포→조회·저장·다른 프로필 대조 순서로 복구한다. Edge version5의 형식 퇴행426 거부를 유지한다.
-
-T11 PR merge_commit_sha → master Actions head_sha → github-pages deployment sha를 대조한다. 자기 커밋 SHA를 문서에 하드코딩하는 순환을 피하고 최종 불변 결과는 완료 보고에 남긴다.
-
-## 2026-10-28 로그인 활성화 정정
-
-사용자가 기존 Google/GitHub 로그인 기능을 다시 활성화하도록 요청했다. 앱의 비활성 플래그와 준비 중 문구를 제거했다. 기존 Supabase 공급자 설정·콜백·계정 캐시·동기화는 유지한다. 앞의 T09/T11 보류 기록은 당시 검증 범위의 이력이며 현재 기능 차단 지침이 아니다. 실제 사용자 인증 여정을 새로 시험 완료했다고 주장하지 않는다.
-
-## 2026-10-28 UX02 V3 운영 기준
-
-이 절이 이전 V2 릴리스 스냅샷보다 우선한다. 프런트는 V3 계획을 저장하고 notes 문자열을 검증한다. V1/V2 원문 백업과 이전은 날짜·업무 ID·시간·목표·점검을 보존한다. Edge plan-sync version6(bundle86ed85747b0db9474143b8b6a252d4d6ea36ecdceab3c972e70a1cad0b163514)을 프런트보다 먼저 적용했다. V3 계정에 대한 V1/V2 push는 CAS와 함께 원자적으로 거부하고426을 반환한다. DB 구조·권한 변경은 없다.
-
-V3 저장 이후에는 T09/T10/UX01의 V2 프런트를 롤백 대상으로 사용하지 않는다. V3를 읽고 새 필드를 보존하는 릴리스로만 되돌리거나 쓰기를 중지한다. V3를 V2로 역변환하지 않는다. 초안·실행 취소 기록은 계획 서버 동기화 대상이 아니며 계정별 로컬 키다.
+실제 OAuth·물리 두 기기·OS 알림/설치·보조기술·독립 사용성은 [최종 사용자 확인](ux/FINAL-USER-CHECKS.md)에 모은다. 관리자 비밀이나 실제 로그인 정보를 채팅에 보내도록 요구하지 않는다.

@@ -1,0 +1,37 @@
+"use client";
+import {useRef,useState} from 'react';
+import {syncClient} from '../todo/supabase-client';
+import {localExecutionTransaction} from '../todo/execution-idb';
+import {replanClock} from '../../supabase/functions/_shared/replan';
+import {shiftDate} from '../todo/calendar-range';
+import {validPlan} from '../../supabase/functions/_shared/plan';
+import type {LocalExecutionData} from '../todo/execution-local-model';
+const sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
+async function wait(test:()=>boolean|Promise<boolean>,message:string){const end=Date.now()+20000;while(Date.now()<end){if(await test())return;await sleep(100);}throw Error(message);}
+export default function ReleaseQA(){
+ const frame=useRef<HTMLIFrameElement>(null),backup=useRef<{storage:[string,string][];data:LocalExecutionData}|null>(null);
+ const[events,setEvents]=useState<string[]>([]),[active,setActive]=useState(false),[running,setRunning]=useState(false);
+ const say=(s:string)=>setEvents(v=>[...v,s]),doc=()=>frame.current!.contentDocument!;
+ const read=()=>JSON.parse(localStorage.getItem('oddk.todo.v1')!);
+ const button=(name:string)=>[...doc().querySelectorAll<HTMLButtonElement>('button')].find(b=>(b.getAttribute('aria-label')===name||b.textContent?.trim()===name)&&b.getClientRects().length>0);
+ const click=async(name:string)=>{await wait(()=>Boolean(button(name)&&!button(name)!.disabled),'Button '+name);button(name)!.click();};
+ const input=(e:HTMLInputElement|HTMLTextAreaElement,value:string)=>{Object.getOwnPropertyDescriptor(Object.getPrototypeOf(e),'value')!.set!.call(e,value);e.dispatchEvent(new Event('input',{bubbles:true}));};
+ const reload=async(tag:string)=>{frame.current!.src='/todo/?release-qa='+tag;await wait(()=>doc()?.URL.includes('release-qa='+tag)&&Boolean(doc().getElementById('todo-input')),'Reload '+tag);};
+ async function run(){setRunning(true);try{
+  if((await syncClient().auth.getSession()).data.session)throw Error('Existing login: stop');const data=await localExecutionTransaction(v=>v);if(data.records.length||data.operations.length)throw Error('Existing records: stop');backup.current={storage:Object.entries(localStorage),data};
+  const today=replanClock(new Date().toISOString()).date,tomorrow=shiftDate(today,1);
+  const source={schemaVersion:3,start:'09:00',reviewsByDate:{[today]:'Synthetic dated review'},mandala:{goal:'QA release goal',areas:Array.from({length:8},(_,i)=>({title:i===0?'QA linked group':'',taskIds:i===0?['one','','','','','','','']:Array(8).fill('')}))},tasks:[{id:'one',title:'QA today',plannedDate:today,startTime:'09:00',minutes:60,bufferMinutes:10},{id:'two',title:'QA tomorrow',plannedDate:tomorrow,startTime:'10:00',minutes:30,bufferMinutes:5},{id:'none',title:'QA undated',plannedDate:null,startTime:null,minutes:null,bufferMinutes:null}].map(t=>({...t,notes:'Synthetic original note',done:false,priority:'normal'}))};
+  const raw=JSON.stringify(source,null,2);localStorage.clear();localStorage.setItem('oddk.todo.v1',raw);setActive(true);await wait(()=>Boolean(frame.current),'Mount');await reload('migration');
+  await wait(()=>read().schemaVersion===5,'Migration');const current=read(),linked=current.goalTree.groups[0].taskIds[0];if(!validPlan(current)||localStorage.getItem('oddk.todo.v1.before-v4')!==raw||localStorage.getItem('oddk.todo.v1.before-v5')!==raw||linked!=='one'||current.tasks[0].endTime!=='10:00')throw Error('Migration loss');say('PASS native V3→V5 migration retains exact original bytes, stable task IDs,60/50/10 timing and 8×8 goal link');
+  await click('이번 주');await wait(()=>Boolean(button('QA tomorrow 상세 수정')),'Week');if(doc().querySelector('[aria-label="QA undated 완료"]'))throw Error('Undated in week');await click('전체 할 일');await wait(()=>Boolean(button('QA undated 상세 수정')),'All');await click('오늘 계획');await wait(()=>Boolean(button('QA today 상세 수정'))&&!button('QA tomorrow 상세 수정'),'Today');say('PASS day/week/all share stable records; undated excluded from dated views');
+  await click('QA today 상세 수정');await wait(()=>Boolean(doc().getElementById('edit-notes')),'Editor');const note='검증 메모 첫 줄\n두 번째 줄';input(doc().getElementById('edit-notes') as HTMLTextAreaElement,note);await sleep(100);await click('수정 창 닫기');await reload('draft');await click('QA today 상세 수정');await wait(()=>doc().querySelector<HTMLTextAreaElement>('#edit-notes')?.value===note,'Draft after reload');
+  const start=doc().getElementById('edit-start') as HTMLInputElement,end=doc().getElementById('edit-end') as HTMLInputElement,buffer=doc().getElementById('edit-buffer') as HTMLInputElement;
+  input(start,'09:30');input(end,'10:30');await sleep(100);input(buffer,'10');await click('저장');await wait(()=>!doc().querySelector('dialog[open]'),'Save');await wait(()=>read().tasks[0].startTime==='09:30'&&read().tasks[0].notes===note,'Saved');say('PASS real editor draft survives close/reload; explicit save preserves total/work/buffer and commits memo');
+  const done=doc().querySelector<HTMLInputElement>('[aria-label="QA today 완료"]')!;done.click();await wait(()=>read().tasks[0].done,'Complete');await click('최근 변경 되돌리기');await wait(()=>!read().tasks[0].done,'Undo');await click('목표');await wait(()=>Boolean(doc().querySelector('#goal-tree-root')),'Goals');if(!doc().body.textContent!.includes('QA today')||doc().querySelector<HTMLInputElement>('#goal-tree-root')!.value!=='QA release goal')throw Error('Goal link lost');say('PASS completion/undo retains timing, notes and goal relation; goal tree displays same task');
+  await click('오늘 계획');await wait(()=>Boolean(doc().querySelector('#todo-input')),'Back to list');const title='QA 새 할 일';input(doc().getElementById('todo-input') as HTMLTextAreaElement,title);await sleep(100);await click('할 일 추가');await wait(()=>read().tasks.some((t:{title:string})=>t.title===title),'Add');const added=read().tasks.find((t:{title:string})=>t.title===title);await reload('added');await wait(()=>Boolean(button(title+' 상세 수정')),'Added after reload');if(read().tasks.find((t:{id:string})=>t.id===added.id)?.plannedDate!==today)throw Error('Added date/id');say('PASS new Korean task survives reload with exact ID and chosen date; no login required');
+  const latest=JSON.stringify(read());localStorage.setItem('oddk.todo.v1','{broken');await reload('broken');await wait(()=>doc().body?.textContent?.includes('복구')??false,'Recovery screen');if(localStorage.getItem('oddk.todo.v1')!=='{broken')throw Error('Corrupt overwritten');say('PASS corrupt current storage surfaces recovery without replacing original with empty plan');
+  localStorage.setItem('oddk.todo.v1',latest);await reload('final');await wait(()=>Boolean(button(title+' 상세 수정')),'Final reload');say('PASS RELEASE COMBINED FLOW READY');
+ }catch(e){say('FAIL '+(e instanceof Error?e.message:String(e)));}finally{setRunning(false);}}
+ async function cleanup(){setActive(false);await sleep(250);if(!backup.current)return;const b=backup.current;await localExecutionTransaction(()=>b.data);localStorage.clear();for(const[k,v]of b.storage)localStorage.setItem(k,v);backup.current=null;say('CLEANED original native/browser storage bytes restored');}
+ return <main style={{padding:20}}><h1>UX13 combined release flow</h1><button disabled={running||!!backup.current} onClick={()=>void run()}>Run release flow</button><button disabled={running} onClick={()=>void cleanup()}>Restore original browser data</button><ol>{events.map((e,i)=><li key={i}>{e}</li>)}</ol>{active&&<iframe ref={frame} title="Release application" style={{width:'100%',height:850}}/>}</main>;
+}

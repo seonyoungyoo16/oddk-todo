@@ -1,6 +1,6 @@
 # UX12 남은 시간 재조정 인수
 
-2026-10-29 · PR30 · 운영 이전 기준 e2da19e(UX11). 현재 소프트웨어 QA 완료, 최종 CI/같은 SHA Pages 운영 게이트 대기.
+2026-10-29 · PR30 · 운영 이전 기준 e2da19e(UX11). 소프트웨어 QA와 같은 SHA Pages 운영 게이트 완료.
 
 ## 완료 조건과 증거
 
@@ -34,3 +34,11 @@
 비로그인은 최신 계획 동기 비교 후 저장하며 시간 기록과 재조정만 Web Lock으로 직렬화한다. 모든 일반 localStorage 편집이 DB 트랜잭션이 되는 것은 아니다. Web Locks 미지원 시 재조정은 거부하고 기존 기능/계획/실적을 유지한다. 복구안은 계정별 해당 브라우저 보관이며 동기화 계획/실적과 별도다.
 
 실물 OAuth·두 기기·OS 권한/푸시/절전·200% 확대/보조기술·독립 사용성은 [마지막 사용자 목록](FINAL-USER-CHECKS.md)에서만 인수한다. 실제 경과 시간을 기록하지 않은 블록을 임의 측정값으로 보고하지 않는다. ALPEN 기준 모델→저장 경쟁→UI→실패 복구→배포로 진행했고 검증 여유 블록을 재시험에 사용했다.
+
+## 운영 게이트 완료
+
+PR30 head d61da4b904d107223461d80409e8d2a530ba86b3, CI40735632991/verify122983267928 성공. Node260/Deno187/암호화2+guard1/전체 Edge check/type/lint/Pages build/export 로그 확인. 병합 d5f20a84711a948cf381bf13093267cebeacc508의 master40735948548 verify122984407944/deploy122985055586 모두 success. deployment7392630187 SHA일치/success.
+
+운영 HTML200, JS9개 모두200·검증 로컬빌드9개 전부 바이트 동일, 재조정·실적 API 코드 포함. manifest200/standalone와 SW/core/192·512 PNG4개 동일. [운영 화면](evidence/UX12-deployed.png): 새 재조정 영역·선택한 다른 날짜에서 오늘만 가능 안내·SSO enabled·console0. 사용자 날짜/초안/계획을 수정하지 않았다.
+
+plan-sync13 원문15개 일치·execution2 유지. Cron2 enabled/최근3분 net HTTP6/6 상태200·timeout false/error null. Advisor INFO11(서버전용표)/기존 password WARN1, 신규 WARN/ERROR 없음. primary도 같은SHA로 fast-forward했고 사용자 CSS 해시와 미커밋 로고·별도문서를 보존했다. 이 게이트 뒤 UX13을 시작한다.
