@@ -1,0 +1,73 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>UX10 알림 연결 브라우저 QA</title>
+<style>body{font:14px system-ui;margin:12px}button{padding:10px;margin:4px}pre{white-space:pre-wrap}iframe{width:100%;height:480px;border:1px solid #ccd}</style>
+<h1>UX10 알림 연결 브라우저 QA</h1><p>실제 시험 계정/API/Worker 저장을 사용하며, 권한·PushManager만 모사합니다. 실제 알림을 보내지 않습니다.</p>
+<button id="run">QA 실행</button><button id="cleanup">시험 정리·원본 복원</button><pre id="result">대기</pre><div id="frame"></div>
+<script>
+const fixtures=/*FIXTURE*/null;
+const root='https://synxmskamifpovuziecx.supabase.co',key='sb_publishable_ACwZjSLbL_dU9hilmAV7CQ_FEH8AT29',authKey='sb-synxmskamifpovuziecx-auth-token';
+const out=document.querySelector('#result');let frame,backup,permission,reg,sub=null,permissionState='default',nextPermission='granted',permissionRequests=0,offline=false,holdRegister=false,held=false,release;
+let lastApi='none';function report(text){out.textContent+='\n'+text;}
+function assert(condition,text){if(!condition)throw Error(text);}
+async function until(check){const end=Date.now()+18000;while(!check()){if(Date.now()>end)throw Error('timeout: '+String(check).slice(0,160)+' / API '+lastApi+' / '+feedback());await new Promise(r=>setTimeout(r,40));}}
+const doc=()=>frame.contentDocument;
+const status=()=>doc().querySelector('.oddk-pushHeading>span')?.textContent;
+const feedback=()=>doc().querySelector('.oddk-pushSettings [role=status]')?.textContent||'';
+const action=()=>doc().querySelector('.oddk-pushActions>button');
+const enabled=async value=>{await until(()=>status()===(value?'이 기기 켜짐':'이 기기 꺼짐')&&action()&&!action().disabled);};
+async function login(index,path='/todo'){
+ const response=await fetch(root+'/auth/v1/token?grant_type=password',{method:'POST',headers:{apikey:key,'Content-Type':'application/json'},body:JSON.stringify({email:fixtures[index].email,password:fixtures[index].password})});assert(response.ok,'test account auth');
+ const session=await response.json();assert(session.user.id===fixtures[index].id,'fixture identity');localStorage.setItem(authKey,JSON.stringify(session));
+ frame.src=path;await until(()=>doc()?.querySelector('[aria-label="내 정보 보기"]')&&JSON.parse(localStorage.getItem('oddk.sync.session.v1')||'null')?.id===fixtures[index].id);
+ const style=doc().createElement('style');style.textContent='.oddk-profileEmail dd,.oddk-profileIdentity>strong,.oddk-accountButton>span{font-size:0!important}.oddk-profileEmail dd:after{content:"테스트 이메일";font-size:14px}.oddk-profileIdentity>strong:after,.oddk-accountButton>span:after{content:"QA 계정";font-size:14px}';doc().head.append(style);
+ installMocks();
+}
+function installMocks(){
+ const w=frame.contentWindow;assert(w.Notification!==window.Notification&&w.PushManager!==window.PushManager,'isolated permission realm');
+ Object.defineProperty(w.Notification,'permission',{get:()=>permissionState,configurable:true});
+ Object.defineProperty(w.Notification,'requestPermission',{value:async()=>{permissionRequests++;permissionState=nextPermission;return permissionState;},configurable:true});
+ Object.defineProperty(w.PushManager.prototype,'getSubscription',{value:async()=>sub,configurable:true});
+ Object.defineProperty(w.PushManager.prototype,'subscribe',{value:async options=>{
+  assert(options.userVisibleOnly===true,'visible subscription');const pair=await crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'},true,['deriveBits']);const bytes=new Uint8Array(await crypto.subtle.exportKey('raw',pair.publicKey));
+  const encode=bytes=>btoa(String.fromCharCode(...bytes)).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
+  const payload={endpoint:'https://fcm.googleapis.com/fcm/send/oddk-QA-browser-never-send-'+crypto.randomUUID(),keys:{p256dh:encode(bytes),auth:encode(crypto.getRandomValues(new Uint8Array(16)))}};
+  sub={options:{applicationServerKey:options.applicationServerKey.buffer},toJSON:()=>({...payload,expirationTime:null}),unsubscribe:async()=>{sub=null;return true;}};return sub;
+ },configurable:true});
+ const original=w.fetch.bind(w);w.fetch=async(url,options)=>{
+  if(String(url).endsWith('/push-subscriptions')){
+   if(offline)throw TypeError('QA offline');const body=JSON.parse(options.body),response=await original(url,options);lastApi=body.action+' '+response.status;
+   if(holdRegister&&body.action==='register'){holdRegister=false;held=true;await new Promise(resolve=>release=resolve);}
+   return response;
+  }return original(url,options);
+ };
+}
+async function openProfile(){doc().querySelector('[aria-label="내 정보 보기"]').click();await enabled(false);}
+async function message(body){reg=await navigator.serviceWorker.getRegistration(new URL('/',location.href));assert(reg,'worker registered');return new Promise((resolve,reject)=>{const channel=new MessageChannel(),timer=setTimeout(()=>reject(Error('worker message timeout')),6000);channel.port1.onmessage=e=>{clearTimeout(timer);channel.port1.close();assert(e.data.ok,'worker state response');resolve(e.data.state);};reg.active.postMessage(body,[channel.port2]);});}
+async function logout(){doc().querySelector('.oddk-logoutButton').click();await until(()=>doc().querySelector('.oddk-accountLogin')&&!localStorage.getItem('oddk.sync.session.v1'));}
+async function run(){
+ assert(fixtures?.length===2,'prepare private fixture first');assert(!backup,'already running');assert(!localStorage.getItem(authKey)&&!localStorage.getItem('oddk.sync.session.v1'),'must not replace existing login');
+ assert(!(await navigator.serviceWorker.getRegistration(new URL('/',location.href))),'must not replace existing app worker');
+ permission=Notification.permission;backup=new Map(Object.keys(localStorage).filter(k=>k.startsWith('oddk.')||k.startsWith('sb-synxmskamifpovuziecx-')).map(k=>[k,localStorage.getItem(k)]));
+ for(const k of backup.keys())localStorage.removeItem(k);localStorage.setItem('oddk.todo.v1',JSON.stringify({tasks:[],start:'09:00'}));frame=document.createElement('iframe');frame.title='실제 앱';document.querySelector('#frame').append(frame);out.textContent='진행 중';
+ await login(0);await openProfile();report('PASS 초기 알림 꺼짐·자동 권한 요청 없음');
+ nextPermission='denied';action().click();await until(()=>feedback().includes('브라우저 설정')&&!action().disabled);assert(!await navigator.serviceWorker.getRegistration(new URL('/',location.href)),'denied permission did not install');report('PASS 권한 거부 안내·Worker/구독 생성 없음 (권한 모사)');
+ permissionState='default';nextPermission='granted';action().click();await enabled(true);const first=await message({action:'state'});assert(first.enabled&&first.userId===fixtures[0].id,'account A binding');assert(await reg.pushManager.getSubscription()===null,'no actual provider subscription');report('PASS 실제 API/Worker 연결·서버 승인 후 A bind (PushManager 모사)');
+ action().click();await enabled(false);assert(!(await message({action:'state'})).enabled,'disabled locally');report('PASS 끄기·로컬 차단·서버 해제');
+ action().click();await enabled(true);offline=true;action().click();await until(()=>feedback().includes('수신은 차단')&&!action().disabled);assert(!(await message({action:'state'})).enabled,'offline block');assert(status()==='이 기기 꺼짐','offline state truthful');report('PASS 오프라인 해제 실패에도 수신 차단·꺼짐 상태 안내');
+ offline=false;doc().querySelectorAll('.oddk-pushActions>button')[1].click();await until(()=>feedback()==='연결 상태를 확인했어요.'&&doc().querySelector('.oddk-pushSettings li button')&&!action().disabled);const details=doc().querySelector('.oddk-pushSettings details');if(!details.open)details.querySelector('summary').click();await until(()=>doc().querySelector('.oddk-pushSettings li button').offsetParent!==null);doc().querySelector('.oddk-pushSettings li button').click();await until(()=>feedback()==='선택한 기기 알림을 해제했어요.'&&doc().querySelector('.oddk-pushSettings summary').textContent.includes('0개')&&!action().disabled);report('PASS 연결 기기 목록·현재 기기 원격 해제');
+ action().click();await enabled(true);await logout();assert(!(await message({action:'state'})).enabled,'logout block');const count=permissionRequests;report('PASS 실제 앱 로그아웃 시 선행 차단·SSO 복귀');
+ await login(1);await openProfile();assert(permissionRequests===count,'B did not auto-request permission');action().click();await enabled(true);const second=await message({action:'state'});assert(second.userId===fixtures[1].id&&second.installationId===first.installationId,'owner transfer');report('PASS B 로그인은 꺼짐·명시적 켜기 후 같은 기기 소유권 이전');
+ action().click();await enabled(false);holdRegister=true;action().click();await until(()=>held);await logout();release();await new Promise(r=>setTimeout(r,250));assert(!(await message({action:'state'})).enabled,'late register blocked');report('PASS 등록 응답 대기 중 로그아웃·늦은 응답 재연결 차단');
+ await login(0);const input=doc().querySelector('#todo-input'),title='QA 보존할 입력 초안';Object.getOwnPropertyDescriptor(frame.contentWindow.HTMLTextAreaElement.prototype,'value').set.call(input,title);input.dispatchEvent(new frame.contentWindow.Event('input',{bubbles:true}));
+ const draftKey='oddk.drafts.v1.'+encodeURIComponent(fixtures[0].id)+'.workspace';await until(()=>JSON.parse(localStorage.getItem(draftKey)||'null')?.data.input===title);
+ frame.src='/todo?reminder-date=2026-11-01';await until(()=>doc()?.querySelector('#plan-date')?.value==='2026-11-01');const draft=JSON.parse(localStorage.getItem(draftKey));assert(draft.data.input===title&&draft.data.selectedDate==='2026-11-01'&&draft.data.view==='rhythm','date navigation preserves account draft');report('PASS 알림 날짜 URL → 해당 날짜 시간표·입력 초안 보존');
+ assert(Notification.permission===permission,'physical permission unchanged');report('PASS 전체 브라우저 QA 완료. 실제 권한 요청·외부 구독·단말 전달 없음. 정리를 실행하세요.');
+}
+async function cleanup(){
+ if(release)release();offline=false;const session=JSON.parse(localStorage.getItem(authKey)||'null');if(session&&fixtures.some(u=>u.id===session.user?.id))await fetch(root+'/auth/v1/logout?scope=local',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+session.access_token}}).catch(()=>{});
+ frame?.remove();frame=null;
+ const registration=await navigator.serviceWorker.getRegistration(new URL('/',location.href));if(backup&&registration&&registration.active?.scriptURL===new URL('/oddk-push-sw.js',location.href).href){const channel=new MessageChannel();await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('cleanup block timeout')),6000);channel.port1.onmessage=e=>{clearTimeout(timer);e.data.ok?resolve():reject(Error('block failed'));};registration.active.postMessage({action:'block'},[channel.port2]);});await registration.unregister();await new Promise((resolve,reject)=>{const request=indexedDB.deleteDatabase('oddk-push:'+registration.scope);request.onsuccess=resolve;request.onerror=request.onblocked=()=>reject(Error('cleanup DB blocked'));});}
+ if(backup){for(const k of Object.keys(localStorage))if(k.startsWith('oddk.')||k.startsWith('sb-synxmskamifpovuziecx-'))localStorage.removeItem(k);for(const [k,v]of backup)localStorage.setItem(k,v);const restored=Object.keys(localStorage).filter(k=>k.startsWith('oddk.')||k.startsWith('sb-synxmskamifpovuziecx-'));assert(restored.length===backup.size&&[...backup].every(([k,v])=>localStorage.getItem(k)===v),'exact original storage restore');backup=null;}
+ assert(Notification.permission===permission,'physical permission unchanged');report('PASS 시험 Worker/DB/iframe 제거·원래 저장소 전체 원문 복원. 관리자 fixture 정리를 이어가세요.');
+}
+document.querySelector('#run').onclick=()=>run().catch(e=>report('FAIL '+e.message));document.querySelector('#cleanup').onclick=()=>cleanup().catch(e=>report('CLEANUP FAIL '+e.message));
+</script></html>

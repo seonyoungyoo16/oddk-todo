@@ -83,3 +83,13 @@ UX10은 account-recurrence.test.mjs를11번째 격리계정 통합시험으로 �
 - `deno test --config supabase/functions/push-worker/deno.json --frozen --allow-env=ECE_KEYLOG tests/edge/keylog-guard.test.mjs`는 별도 프로세스에서 위험한 키로그 설정의 import 거부를 확인한다. 환경 변경은 시험에만 있다.
 - live receipt: 새 전용2계정 seed 후 `node tests/receipt-fixture.mjs prepare`. 관리자 연결에서 `receipt-fixture-claim.sql`에 설명된 해당 fixture 사용자 GUC를 설정해 단일 트랜잭션으로 시각·lease를 준비한다. 반환 proof는 로그에 출력하지 않고 무시된 `.sync-test-runtime/receipt-claims.json`에만 보관한다. `node tests/receipt-fixture.mjs verify`는 서버 Date 헤더 기준으로 시각 경계를 판단한다. 실행 중 실패하면 기대값을 느슨하게 하지 말고 현재 plan/revision/lease와 시각부터 확인한다.
 - 종료 후 signOut·marker별 cleanup, 잔여0 확인 후 인증fixture/seed/cleanup/receipt-fixture.json/receipt-claims.json/시험 생성 store 모듈만 정확한 경로로 삭제한다. 실제 사용자 자료와 이전 증거는 보존한다. synthetic lease와 공급자 gone 응답을 물리 알림 수신 성공으로 표시하지 않는다.
+
+### 브라우저 연결·수신 정책
+
+- `push-browser.test.mjs`는 실제 정적 core를 VM에 로드해 수신·표시·ACK·계정 경합을 시험한다. `push-client.test.mjs`는 실제 TS 클라이언트를 브라우저 API/HTTP 모사와 함께 실행하고 실제 서버 request parser로 요청을 대조한다. 자동 권한 요청·잘못된 scope·지연 재연결·로그아웃 후 재표시를 회귀 검사한다. 둘 다 `npm test`에 포함되며 물리 알림 전달 증거는 아니다.
+- 실제 SW 저장 시험은 별도 scope에서만 state/bind/block을 메시지로 호출한다. 같은 epoch의 동시 bind는1건만 성공하고 stale transaction이 원본을 유지해야 한다. 새로고침 후 proof/차단을 대조하고 Worker unregister·해당 scope DB 삭제·QA marker 제거까지 확인한다. 기기 권한/구독은 요청하지 않는다.
+- 실제 프로필은 별도 이메일 fixture 계정으로 시험한다. 기존 로그인 상태가 있으면 중단하고, 원래 oddk 키/값을 보존한 뒤 시험 내용만 사용한다. 초기 조회의 권한/Worker/구독 불변, 프로필·기기 상태·로그아웃과 작은 화면/키보드 접근을 확인한다. 종료 시 전체 원문을 복원하고 임시 페이지/fixture 세션·사용자를 정리한다. 스크린샷에는 시험 이메일/ID를 남기지 않는다.
+- 통합 account-store는 supabase-client/push-client/sync-store 실제3모듈을 변환한다. Node 환경의 Service Worker 미지원 경로를 사용하며 로그아웃을 검증한다. 브라우저 수신 경합은 별도 core/실제 IndexedDB 증거와 구분한다.
+
+- `push-browser-flow.html`은 fixture 주입 전 템플릿이며 직접 열면 시험을 거부한다. 신뢰한 로컬 준비 과정에서 `/*FIXTURE*/null`만 무시된 전용 계정2개 배열로 바꿔 임시 public 페이지를 만들고 실제 앱 iframe에서 실행한다. 기존 로그인/Worker가 있으면 중단하고 원래 oddk 저장소를 보존한다. Notification/PushManager만 iframe에서 모사하며 실제 API·Worker·DB·로그아웃/계정 전환·지연 응답·날짜 이동/초안 보존을 시험한다. 갱신 피드백과 활성·표시 상태를 기다린다. 종료 후 원문 복원·Worker/DB 제거를 확인하고 임시 public 파일/계정·세션을 정리한다. fixture를 주입한 임시 페이지를 남긴 채 빌드하거나 커밋하지 않는다. 원본 템플릿은 비밀값 없이 저장한다.
+- Pages build 후 `node tests/verify-push-export.mjs`는 standalone manifest의 local/Pages 상대경로·PNG 크기·HTML manifest/Apple 링크/언어·정적 SW 원문 일치와 QA/fixture 계정의 export 미포함을 검사한다. CI의 artifact 업로드 전 게이트이며 실제 기기 설치·푸시 전달 인수를 대체하지 않는다.

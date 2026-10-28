@@ -1,6 +1,6 @@
 # UX10 인수 진행 기록
 
-상태: 공통 규칙·서버11 왕복·반복 수정 UI·브라우저 및 서버 반복 발생 준비, 기기 구독·관리 API, 예약/취소/재시도 대기열을 검증했다. 알림 클라이언트·Service Worker·sender/수신 HTTP·최종 회귀·Pages 배포는 미완료다. UX11은 시작하지 않는다.
+상태: 반복/V6·서버 준비·기기 API·예약 큐·암호화 sender/receipt를 배포·검증했다. SW/클라이언트·알림 설정 UI도 연결하고 수신 정책·실제 저장·프로필을 시험했다. 최종 클라이언트 인수·CI/Pages 운영 배포는 미완료이며 UX11은 시작하지 않는다. 과거 체크포인트의 미완료 표기는 아래 최신 절로 갱신한다.
 
 ## 공통 계약과 실제 서버
 
@@ -94,3 +94,28 @@
 - 최신 전체 Node197·공통 Deno138·실제 암호화2/안전한 import guard1, frozen 진입점 check/typecheck/lint/Pages 정적빌드 성공. 새 fixture의 실제 API 통합12개도 exit0(session33376), worker/receipt RPC·state의 두 계정 직접 접근42501 포함이다. 정리 후 시험 사용자0/구독·예약·전달0·기존계획3 확인, 인증/seed/cleanup/생성 store 모듈 제거. 서버 전용 no-policy INFO8·기존 password WARN1, 새 WARN/ERROR 없음.
 
 **남은 UX10:** 브라우저 SW·기기 증명/계정 마커·알림 설정/해제·로그아웃 차단·수신/클릭 흐름, 최종 CI/Pages/동일 SHA 운영 검증. 실제 OAuth·물리 단말 권한/수신은 마지막 사용자 인수로 유지한다. UX11 미착수.
+
+## 브라우저 수신·계정 연결 기본 인수 — 2026-10-28
+
+- static SW/core, scope별 IndexedDB proof/epoch·최대500개 표시 이력, 계정/revision/기한+서버 receipt 확인, 표시 후 durable commit/ACK와 실패 시 닫기, 현재 계정만 내부 날짜 시간표로 이동하는 경로를 추가했다. 앱은 최초 조회 때 Worker나 구독을 자동 생성하지 않는다.
+- Node 모사 수신6개: 서버 parser와 계약 일치·다른 계정/기기/revision/만료 거부·동시 중복 직렬화·최소 알림 데이터·표시 중 로그아웃·쓰기 실패 닫기·ACK 실패/재시작 중복 방지·클릭 자격·이력 상한. 브라우저 권한이나 실제 showNotification 성공을 뜻하지 않는다.
+- Node 클라이언트6개: 사용자 동작 즉시 권한 요청, 거부/닫기 시 미등록, Pages scope·정규 subscription JSON 서버 parser 통과, 서버 승인 후 bind, 오프라인 로그아웃의 선행 차단, 계정 변경/지연 bind 차단, 원격 해제·권한 철회·계정 정렬을 확인했다. 추가 store 시험은 차단 실패 시 signOut 거부와 정리 중 다른 계정 보호를 확인했다.
+- 실제 격리 scope의 SW/IndexedDB: transaction commit/abort·오래된 요청 거부·동시 bind 하나만 성공·proof 보존·새로고침 후 차단 복원. Worker/DB/marker 정리 완료. [저장 증거](evidence/UX10-push-storage.jpg). 사용자 권한·실제 구독·provider 요청 없음.
+- 실제 전용 이메일 계정 프로필: 알림 꺼짐/켜기/조회/연결 기기0 UI, 초기 권한 요청·자동 Worker 등록 없음, 앱 로그아웃 후 SSO 복귀와 scope/Auth 제거.390×480 다크 프레임에서도 알림/로그아웃 접근·마지막에서 닫기로 키보드 순환. [프로필 증거](evidence/UX10-profile-reminders.jpg)는 시험 이메일/이름을 화면에서 마스킹했다. 원래 저장소 키/값 전체 바이트 일치 복원, iframe/임시HTML 제거.
+- 첫 실제 로그인 시 로컬127.0.0.1:3200이 plan-sync CORS에 없어 실패했다. 이 정확한 개발 origin만 추가해 plan-sync v12 ACTIVE/SHA `4a5491f9ee3a1c73d8d56eddc9cbad4d2676a55ab463f9823fc818823a50835c`, 원격11개 소스 일치. 로컬 preflight204/허용 헤더, 임의 origin403/무인증401과 재시도 로그인 성공을 확인했다. 인증/소유권·CAS를 완화하지 않았다.
+- 전체 Node210/typecheck/lint/Pages build 성공. 클라이언트 연결 후 실제 API 통합12개 exit0(session53041, plan-sync12 CORS 수정 전 v11); 그 뒤 v12는 위 실제 UI 로그인/로그아웃 및 CORS 인수 범위로 확인했다. fixture 사용자0/구독·예약·전달0·기존계획3, 인증·seed·cleanup·생성3모듈/임시HTML 정리.
+- 서버 commit d786403의 CI40644144497/verify122668936215는 Node197/Deno138/암호화2+guard1/진입점check/type/lint/Pages build 성공, PR deploy는 정상 skipped다. 이번 클라이언트 변경을 검증한 CI로 재사용하지 않는다.
+
+**남은 UX10:** 실제 브라우저에서 권한·구독을 모사한 켜기/끄기/실패·계정 전환과 알림 클릭 날짜/초안 보존 확인, client 최종 CI·Pages 동일 SHA 운영 인수. 물리 권한·실물 수신·OAuth는 마지막 사용자 체크리스트로 유지한다. UX11 미착수.
+
+## 최종 브라우저 연결 흐름·배포 전 QA — 2026-10-28
+
+- 실제 시험2계정/Auth/기기 API/Service Worker/IndexedDB를 사용했다. iframe의 Notification·PushManager만 모사하며 실제 부모 브라우저의 권한과 공급자 구독은 바꾸지 않았다. 테스트 계정에는 빈 계획만 사용해 공급자로 전송할 예약도 만들지 않았다.
+- 최종 전체 흐름: 최초 꺼짐/자동 요청 없음 → 권한 거부 시 미등록 → 명시적 켜기/서버 승인 후 A bind → 끄기/서버 해제 → 오프라인 끄기 실패에도 로컬 차단·꺼짐 안내 → 기기 목록을 펼쳐 원격 해제 → 다시 켜기/앱 로그아웃 → B 로그인은 꺼짐/명시적 켜기 후 같은 설치 소유 이전 → 등록 HTTP 응답을 잡아둔 채 로그아웃 후 응답 해제/재연결 없음 → A 재로그인/입력 초안 작성/알림 날짜 URL 이동을 통과했다. [최종 결과](evidence/UX10-browser-flow.jpg).
+- 실제 발견한 결함: 날짜 이동 effect가 SSR의 임시 익명 workspace에서 먼저 실행되어 저장된 계정 초안을 덮었다. useLocalDraft의 hydration 완료를 확인하고 실제 Auth 사용자·현재 scope·컴포넌트 scope가 같을 때만 적용하도록 고쳤다. 같은 전체 흐름을 고정된 소스로 재실행해 `2026-11-01`·rhythm·입력 초안 원문 보존을 확인했다. 순수 수신 클릭 정책 시험과 실제 날짜 URL 소비 시험을 구분하며 OS 알림 클릭 성공으로 확대하지 않는다.
+- 시험 하네스가 React의 처리 중 상태 반영 전에 다음 기기를 누르던 문제도 보완했다. 최종 실행은 갱신 완료 피드백과 활성/표시 상태를 기다린 뒤 실제 사용자 순서로 조작했으며 전체 PASS였다. 제품 오류나 인수 조건 완화로 기록하지 않는다.
+- 정리: Worker/해당 scope DB/iframe 제거·원래 저장소 키/값 원문 일치·부모 권한 불변 확인, 비밀을 포함한 임시 HTML 삭제. 새 계정으로 plan-sync v12와 최신 client store를 포함한 통합12개도 성공(session49760 exit0). 시험 사용자·구독·예약·전달0, 기존 계획3, 운영 Cron2 활성. fixture/seed/cleanup/생성3모듈 모두 정리했다.
+- 홈 화면용 정적 manifest(standalone, 상대 URL), 기존 SVG에서 생성한192/512 PNG와 Apple 아이콘 metadata·한국어 문서 언어를 추가했다. Pages build 성공, `verify-push-export.mjs`로 local/Pages scope·아이콘 크기·실제 HTML 링크·SW 소스 일치·시험 파일/계정의 export 미포함 확인. CI에서도 업로드 전 검사한다. 실제 iOS 설치/수신은 사용자 인수로 남긴다.
+- 최신 Node210·typecheck/lint/Pages build 성공. 서버 advisor는 의도적 서버 전용 no-policy INFO8/기존 password WARN1, 신규 WARN/ERROR 없음.
+
+남은 개발 게이트는 최신 커밋 CI·Pages 배포와 같은 SHA의 운영 화면/정적 자산/서버 예약 확인이다. 이를 확인한 뒤 UX11로 진행한다. 실제 OAuth·물리 권한/수신·실기기 사용성은 전체 작업 마지막 사용자 인수로 유지한다.

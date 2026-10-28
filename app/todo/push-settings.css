@@ -1,0 +1,15 @@
+.oddk-pushSettings { border-block-start: 1px solid var(--line, #e4e7ee); padding-block-start: 20px; font-size: 14px; line-height: 1.6; }
+.oddk-pushHeading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.oddk-pushHeading h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+.oddk-pushHeading > span, .oddk-pushSettings small { font-size: 12px; opacity: .75; }
+.oddk-pushSettings p { margin: 10px 0; }
+.oddk-pushActions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
+.oddk-pushSettings button { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line, #e4e7ee); border-radius: 8px; padding: 8px 12px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.oddk-pushSettings button:disabled { opacity: .5; cursor: wait; }
+.oddk-pushSettings button:focus-visible, .oddk-pushSettings summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.oddk-pushSettings summary { cursor: pointer; padding-block: 8px; }
+.oddk-pushSettings ul { list-style: none; padding: 0; margin: 0; }
+.oddk-pushSettings li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 10px; border-block-start: 1px solid var(--line, #e4e7ee); }
+.oddk-pushSettings li > div { min-width: 0; overflow-wrap: anywhere; }
+.oddk-pushSettings li small { display: block; }
+.oddk-pushSettings > small { display: block; margin-block-start: 12px; }

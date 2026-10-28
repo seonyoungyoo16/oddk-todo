@@ -26,7 +26,7 @@ export function RepeatEditorFields({ task, plan, value, reminder, scheduled, can
     {value.action === "stop" && <p>선택 범위의 미완료 일정을 지워요. 완료 기록은 남아요. 내용 수정은 먼저 저장한 뒤 중단해주세요.</p>}
     {value.action === "detach" && <p>이 일정의 내용·날짜는 유지하고 반복 연결만 풀어요. 다른 날짜는 계속 반복해요.</p>}
     <label>시작 알림<select value={scheduled ? reminder : ""} disabled={!scheduled || value.action === "stop"} onChange={event => onReminder(event.target.value)}><option value="">알림 없음</option>{reminderOptions.map(minutes => <option key={minutes} value={String(minutes)}>{minutes === 0 ? "시작 시각" : `${minutes}분 전`}</option>)}</select></label>
-    <small>{scheduled ? "로그인 후 이 기기의 알림을 켜면 받을 수 있어요. 기기 알림 권한은 이 설정에서 자동 요청하지 않아요." : "날짜와 시작·종료 시각을 정하면 알림을 설정할 수 있어요. 시각을 지우고 저장하면 기존 알림 설정도 해제돼요."}</small>
+    <small>{scheduled ? "로그인 후 ‘내 정보 → 일정 알림’에서 이 기기의 알림을 켜주세요. 기기 권한은 여기서 자동 요청하지 않아요." : "날짜와 시작·종료 시각을 정하면 알림을 설정할 수 있어요. 시각을 지우고 저장하면 기존 알림 설정도 해제돼요."}</small>
   </details>;
 }
 export function RepeatEditSummary({ preview, stale, onBack }: { preview: RepeatEditPreview; stale: boolean; onBack: () => void }) {

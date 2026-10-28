@@ -1,4 +1,5 @@
 import { syncClient } from "./supabase-client";
+import { alignPushBinding, clearPushBinding, stopPushForLogout } from "./push-client";
 import { validPlan } from "../../supabase/functions/_shared/plan";
 import { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } from "../../supabase/functions/_shared/plan-migration";
 import type { Session as AuthSession } from "@supabase/supabase-js";
@@ -65,7 +66,7 @@ function publish(next: SyncStatus) { state = JSON.stringify(next); listeners.for
 function status(s: Session, phase: SyncStatus["phase"], message: string, updatedAt?: string) { publish({ connected: true, name: s.name, displayName: s.displayName, provider: s.provider, createdAt: s.createdAt, lastSignInAt: s.lastSignInAt, phase, message, updatedAt }); }
 function current(s: Session) { const now = session(); return now?.id === s.id && now.deviceId === s.deviceId; }
 class SyncError extends Error { readonly code: number; constructor(message: string, code: number) { super(message); this.code = code; } }
-async function api(action: string, values: object = {}, s?: Session): Promise<Cloud & { id: string }> {
+async function api(action: string, values: object = {}, s?: Pick<Session, "id">): Promise<Cloud & { id: string }> {
   const { data: auth, error } = await syncClient().auth.getSession();
   if (error || !auth.session || (s && auth.session.user.id !== s.id)) throw new SyncError("로그인이 필요해요. 저장한 내용은 이 기기에 남아 있어요.", 401);
   const response = await fetch(ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${auth.session.access_token}` }, body: JSON.stringify({ action, ...values }), signal: AbortSignal.timeout(15000), cache: "no-store" });
@@ -196,13 +197,14 @@ export function startSync(fallback: string) {
     return () => {};
   }
   const check = () => { if (document.visibilityState === "visible") void syncNow(); };
-  const storage = (event: StorageEvent) => { if (event.key === SESSION_KEY) { conflict = null; if (!session()) publish(INITIAL); check(); changed(); } };
+  const privacyError = () => { if (active) publish({ ...INITIAL, phase: "error", message: "이전 계정의 알림 연결을 차단하지 못했어요. 브라우저 알림 설정을 확인해주세요." }); };
+  const storage = (event: StorageEvent) => { if (event.key === SESSION_KEY) { conflict = null; void alignPushBinding(session()?.id ?? null).catch(privacyError); if (!session()) publish(INITIAL); check(); changed(); } };
   const interval = setInterval(check, 5000);
   let active = true;
-  const hydrate = (auth: AuthSession | null) => { if (active && auth) void connectAccount(auth, fallback).catch((error) => { if (active) publish({ ...INITIAL, phase: "error", message: error instanceof Error ? error.message : "계정 데이터를 불러오지 못했어요." }); }); };
+  const hydrate = (auth: AuthSession | null) => { if (active) void alignPushBinding(auth?.user.id ?? null).then(() => { if (active && auth) return connectAccount(auth, fallback); }).catch((error) => { if (active) publish({ ...INITIAL, phase: "error", message: error instanceof Error ? error.message : "계정 데이터를 불러오지 못했어요." }); }); };
   const { data: authListener } = syncClient().auth.onAuthStateChange((event, auth) => {
-    if (event === "SIGNED_OUT") { localStorage.removeItem(SESSION_KEY); conflict = null; publish(INITIAL); changed(); }
-    else if (auth && session()?.id !== auth.user.id) { localStorage.removeItem(SESSION_KEY); changed(); setTimeout(() => hydrate(auth), 0); }
+    if (event === "SIGNED_OUT") { void clearPushBinding().catch(privacyError); localStorage.removeItem(SESSION_KEY); conflict = null; publish(INITIAL); changed(); }
+    else if (auth && session()?.id !== auth.user.id) { localStorage.removeItem(SESSION_KEY); changed(); void clearPushBinding().then(() => { if (active) setTimeout(() => hydrate(auth), 0); }).catch(privacyError); }
     else if (auth && event === "SIGNED_IN") setTimeout(() => hydrate(auth), 0);
   });
   void syncClient().auth.getSession().then(({ data, error }) => { if (error) publish({ ...INITIAL, phase: "error", message: "로그인 상태를 확인하지 못했어요. 다시 로그인해주세요." }); else hydrate(data.session); });
@@ -224,7 +226,7 @@ async function connectAccount(auth: AuthSession, fallback: string) {
   try {
   const local = localStorage.getItem(LOCAL_KEY) ?? fallback;
   const loaded = loadPlan(local); if (!loaded.ok) throw new Error(loaded.error);
-  const remote = await api("ensure", { plan: loaded.plan });
+  const remote = await api("ensure", { plan: loaded.plan }, { id: auth.user.id });
   const latest = await syncClient().auth.getSession();
   if (latest.data.session?.user.id !== auth.user.id) return;
   const s: Session = { id: auth.user.id, deviceId: crypto.randomUUID(), ...profile };
@@ -254,6 +256,8 @@ export async function disconnectSync() {
   const s = session();
   if (s && cache(s).dirty) throw new Error("아직 전송하지 못한 내용이 있어요. 동기화하거나 백업한 뒤 다시 시도해주세요.");
   if (s) backup(cacheKey(s), cache(s).plan, "before-logout");
+  if (s) await stopPushForLogout(s.id);
+  if (s && !current(s)) throw new Error("로그인한 계정이 바뀌었어요. 현재 계정에서 다시 시도해주세요.");
   const { error } = await syncClient().auth.signOut({ scope: "local" });
   if (error) throw error;
   localStorage.removeItem(SESSION_KEY); conflict = null; publish(INITIAL); changed();

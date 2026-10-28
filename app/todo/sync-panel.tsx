@@ -5,6 +5,8 @@ import { SiGoogle, SiGithub } from "react-icons/si";
 import { loginSync, disconnectSync, resolveSyncConflict, exportPlanBackup, syncNow, startSync, getSyncSnapshot, getServerSyncSnapshot, subscribeSync, conflictPreview } from "./sync-store";
 import type { SyncStatus } from "./sync-store";
 import { keepFocusInDialog } from "./dialog-focus";
+import { PushSettings } from "./push-settings";
+import { getPlanScope } from "./sync-store";
 
 export function SyncPanel({ fallback }: { fallback: string }) {
   const raw = useSyncExternalStore(subscribeSync, getSyncSnapshot, getServerSyncSnapshot);
@@ -33,6 +35,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
         <header className="oddk-dialogHeader"><h2 id="profile-title">내 정보</h2><button type="button" aria-label="내 정보 닫기" onClick={() => profileDialog.current?.close()}><HiOutlineXMark /></button></header>
         <div className="oddk-profileIdentity"><span className="oddk-providerMark"><ProviderIcon aria-hidden="true" /></span><strong>{state.displayName || state.name}</strong><span className="oddk-providerBadge">{providerName} 계정으로 로그인</span></div>
         <dl className="oddk-profileDetails"><div className="oddk-profileEmail"><dt><HiOutlineEnvelope aria-hidden="true" />이메일</dt><dd>{state.name}</dd></div><div><dt>가입일</dt><dd>{date(state.createdAt)}</dd></div><div><dt>최근 로그인</dt><dd>{date(state.lastSignInAt)}</dd></div></dl>
+        {state.connected && <PushSettings key={getPlanScope()} userId={getPlanScope()} />}
         {message && <p className="oddk-syncFeedback" role="status">{message}</p>}
         <div className="oddk-profileFooter"><button type="button" className="oddk-logoutButton" disabled={busy} onClick={() => void perform(async () => { await disconnectSync(); profileDialog.current?.close(); })}><HiOutlineArrowRightOnRectangle aria-hidden="true" />{busy ? "로그아웃 중…" : "로그아웃"}</button><small>이 기기에서만 로그아웃돼요.</small></div>
       </div>

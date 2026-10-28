@@ -63,6 +63,8 @@ update public.task_maintenance_state set enabled=false where singleton;
 
 현재 push-worker v2와 push-receipt v1이 배포되어 `oddk-push-worker` Cron이 분마다 실행된다. 위의 미구현 표기는 각 이전 체크포인트 당시 상태다. 프런트 SW/UI·실제 단말 수신 인수는 여전히 남아 있다.
 
+최신 클라이언트 SW/UI는 로컬 기본 및 종합 브라우저 인수를 마쳤고 Pages 배포 게이트를 기다린다. plan-sync는 로컬 QA origin을 정확히 허용한 v12이며 인증·소유권·CAS는 유지했다. 실제 단말 수신은 여전히 최종 사용자 인수다.
+
 ```sql
 select enabled,last_request_id,last_finished_at,last_result from public.push_worker_state;
 select r.id,r.status_code,r.timed_out,r.error_msg,r.content
@@ -76,3 +78,11 @@ from net._http_response r join public.push_worker_state s on s.last_request_id=r
 - sent는 실제 화면 표시의 증거가 아니다. request87의 gone1은 가짜 FCM endpoint의 만료 정리이며 실물 기기 전달로 보고하지 않는다.
 - 안전한 암호화 설정을 위해 ECE_KEYLOG=1 상태에서는 시작을 거부한다. hosted Edge가 Deno.env.set을 지원하지 않으므로 환경을 코드로 변경하지 않는다. 실패 시 제한된 오류 로그와 고정 버전 소스를 확인한다.
 - 만료/재시도/중복 보호를 우회하려고 receipt_hash나 displayed_at을 초기화하지 않는다. 계정 fixture 검증은 전용 계정만 사용하고 종료 후 연결·세션·사용자를 정리한다.
+
+## 브라우저 연결과 복구
+
+- 권한 요청은 내 정보의 ‘이 기기 알림 켜기’에서만 한다. 사이트 재방문·SSO 로그인·업무 알림 시각 저장은 권한을 자동 요청하지 않는다. iPhone/iPad는 standalone 홈 화면 앱이 필요하며 manifest·Apple 아이콘을 배포하지만 실제 설치와 수신은 별도 인수다.
+- 로컬 차단과 서버 연결 해제는 구분된다. 오프라인 해제 실패라도 IndexedDB의 enabled=false/새 epoch가 먼저 확정되므로 receipt 제목을 표시하지 않는다. 온라인 후 상태를 갱신하고 남은 서버 연결을 해제한다. 표시된 피드백과 기기 목록을 확인한다.
+- 로그아웃은 로컬 차단 실패 때 중지한다. 서버 해제 실패만으로 로그인 데이터를 버리거나 proof를 새로 만들지 않는다. Auth 정리 중 계정이 바뀌면 이전 조작으로 새 계정을 로그아웃하지 않는다.
+- 손상된 알림 DB는 조용히 초기화하지 않는다. 앱의 기기 목록에서 해당 연결을 먼저 해제하고, 필요한 원문을 보존한 뒤 해당 사이트 알림 저장소만 복구한다. 계획/초안 localStorage나 다른 사이트 Worker를 일괄 삭제하지 않는다.
+- 정적 manifest·SW/core·아이콘은 Pages basePath를 함께 유지한다. `node tests/verify-push-export.mjs` 실패 시 배포하지 않는다. 테스트 계정 정보가 들어간 임시 QA 페이지는 public에서 제거한 뒤 빌드한다.

@@ -21,7 +21,7 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
   if (cached && !values.has(key)) values.set(key, JSON.stringify({ plan: JSON.stringify(cached), version: 4, dirty }));
   const jobs = new Map(); let nextJob = 0;
   const remote = { plan: copy(plan), version: 4, updated_at: "synthetic-time" };
-  const calls = [], oauthCalls = []; let intercept;
+  const calls = [], oauthCalls = [], privacyCalls = []; let intercept, privacyIntercept;
   let download;
   const window = new EventTarget(), document = Object.assign(new EventTarget(), { visibilityState: "visible", createElement: () => ({ click() {} }) });
   window.location = { origin: "https://example.invalid" };
@@ -30,10 +30,10 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
     signInWithOAuth: async (options) => { oauthCalls.push(copy(options)); return { error: null }; },
     getSession: async () => ({ data: { session: login }, error: null }),
     onAuthStateChange: (callback) => { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; },
-    signOut: async () => { login = null; listener?.("SIGNED_OUT", null); return {}; },
+    signOut: async () => { privacyCalls.push("signout"); login = null; listener?.("SIGNED_OUT", null); return {}; },
   } };
   const exports = {};
-  vm.runInNewContext(js, { exports, require: (name) => name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } : name.includes("_shared/plan") ? { validPlan } : { syncClient: () => client },
+  vm.runInNewContext(js, { exports, require: (name) => name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } : name.includes("_shared/plan") ? { validPlan } : name === "./push-client" ? { alignPushBinding: async () => {}, clearPushBinding: async () => {}, stopPushForLogout: async () => { privacyCalls.push("block"); await privacyIntercept?.(); } } : { syncClient: () => client },
     process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } }, localStorage: storage, window, document, Event, Error, TypeError, Set, crypto, AbortSignal, Blob, URL: { createObjectURL(blob) { download = blob; return "blob:synthetic"; }, revokeObjectURL() {} },
     setTimeout: (job) => { jobs.set(++nextJob, job); return nextJob; }, clearTimeout: (id) => jobs.delete(id), setInterval: () => 0, clearInterval() {},
     fetch: async (_url, options) => {
@@ -46,7 +46,7 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
       return new Response(JSON.stringify(remote));
     },
   });
-  return { store: exports, values, remote, calls, oauthCalls, set intercept(fn) { intercept = fn; }, async jobs() { const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
+  return { store: exports, values, remote, calls, oauthCalls, privacyCalls, set privacyIntercept(fn) { privacyIntercept = fn; }, set intercept(fn) { intercept = fn; }, async jobs() { await new Promise(setImmediate); const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
     async login(id) { login = id ? auth(id) : null; listener?.(id ? "SIGNED_IN" : "SIGNED_OUT", login); await this.jobs(); await new Promise(setImmediate); },
     async download() { exports.exportPlanBackup("null", true); return JSON.parse(await download.text()); }, cache() { return JSON.parse(values.get(key)); }, snapshot() { return JSON.parse(exports.getPlanSnapshot("null")); }, status() { return JSON.parse(exports.getSyncSnapshot()); } };
 }
@@ -162,6 +162,7 @@ test("logout restores anonymous plan; account switch never exports another accou
   h.values.set("oddk.sync.backup.v1", JSON.stringify({ ...modern(), review: "Old unscoped sensitive backup" }));
   h.store.backupReviewPlan({ ...modern(), review: "A only backup" });
   await h.store.disconnectSync(); assert.equal(h.snapshot().review, "Anonymous original");
+  assert.deepEqual(h.privacyCalls, ["block", "signout"]);
   assert.equal(h.store.getPlanScope(), "local");
   const stop = h.store.startSync(JSON.stringify(modern())); await h.login("account-b");
   assert.equal(h.status().connected, true);
@@ -169,6 +170,16 @@ test("logout restores anonymous plan; account switch never exports another accou
   assert.equal((await h.download()).review, "Anonymous original");
   assert.equal(JSON.parse(h.values.get("oddk.sync.plan.account-b.backup")).review, "Anonymous original");
   assert.equal(JSON.parse(h.values.get(`${key}.backup`)).schemaVersion, 5); stop();
+});
+
+test("failed local notification block prevents logout; an account changed during cleanup cannot be signed out by the old request", async () => {
+  const failed = harness(); const before = failed.snapshot(); failed.privacyIntercept = () => { throw new Error("notification storage failed"); };
+  await assert.rejects(failed.store.disconnectSync(), /notification storage/); assert.deepEqual(failed.snapshot(), before); assert.equal(failed.store.getPlanScope(), "account-a"); assert.deepEqual(failed.privacyCalls, ["block"]);
+  const h = harness(); const stop = h.store.startSync(JSON.stringify(modern())); await h.jobs();
+  let release, entered; const enteredPromise = new Promise(resolve => { entered = resolve; });
+  h.privacyIntercept = () => new Promise(resolve => { release = resolve; entered(); });
+  const pending = h.store.disconnectSync(); await enteredPromise; await h.login("account-b"); release();
+  await assert.rejects(pending, /계정/); assert.equal(h.store.getPlanScope(), "account-b"); assert.equal(h.privacyCalls.includes("signout"), false); stop();
 });
 
 test("V6 opt-in writes preserve exact V5 bytes per scope before candidate storage; backup quota failure keeps the prior plan", () => {

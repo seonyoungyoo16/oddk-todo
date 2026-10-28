@@ -402,3 +402,23 @@ push-worker2/receipt1 ACTIVE, migration20261028060414·분 단위 sender 활성.
 실제receipt API의시각/owner/revision/installation/deviceproof/ACK·최신제목최소응답·중복·완료/undo/retime/delete/계정재연결/타계정불변시험통과. 서버Date기준시각대조·관리자syntheticlease로물리권한요청없이검증했다. 전체Node197/Deno138/독립복호화·VAPID서명2/unsafeenvguard1/frozen진입점check/type/lint/Pagesbuild성공. 새fixture실제API통합12개exit0(33376),worker/receiptRPC+state42501추가. 정리사용자0/구독·예약·전달0/기존계획3,인증·seed·cleanup·생성store모듈제거. advisor서버전용INFO8/기존WARN1·신규WARN/ERROR없음.
 
 UX10미완료: SW/클라이언트기기·계정마커/알림설정·로그아웃차단/수신클릭·최종CI와Pages동일SHA운영인수. 실제OAuth·실물권한/수신은마지막사용자인수. UX11은아직시작하지않는다.
+
+### UX10 SW·알림 설정 연결 / 클라이언트 기본 인수
+
+정적SW/core와scope별IndexedDB proof/epoch/표시이력·최신receipt·표시후commit/ACK·계정변경/실패닫기·내부날짜클릭을연결했다. 내정보에알림켜기/끄기/상태/내기기원격해제 UI, 버튼에서만권한요청, 서버revision확인후bind. 로그아웃은차단선행·원격정리·SDKsignOut이며로컬실패/정리중계정변경을보호한다. 기존초안유지날짜시간표이동도구현했으나최종브라우저인수는남음.
+
+신규core6/client6/store경합1 포함전체Node210/type/lint/Pagesbuild성공. 실제격리SW저장commit/abort/동시bind1·지연거부·reloadproof/차단복원후worker/DB정리. 실제전용이메일계정프로필상태/자동권한·등록없음/로그아웃SSO복귀·390×480다크/키보드순환확인,원래스토리지전체바이트복원·임시HTML제거. 초기QA CORS누락을정확한127:3200추가로수정,plan-sync12 ACTIVE/sha4a5491f9ee3a1c73d8d56eddc9cbad4d2676a55ab463f9823fc818823a50835c·원격11소스일치·preflight204/evil403/무인증401·실제로그인재시험성공. Node자체시험수정은비동기privacy후속timer를실제대기하는하네스보완이며계정불변검증유지.
+
+클라이언트연결후새fixture실제API12개exit0(53041,v12origin수정전v11),이후v12는UI/CORS검증. 사용자0/구독·예약·전달0/기존계획3·인증/seed/cleanup/생성3모듈정리. 서버commitd786403 CI40644144497 verify122668936215 Node197/Deno138/edge3/type/lint/build성공·PRdeployskipped확인. 새클라이언트CI·운영배포는아직아님.
+
+다음필수: 브라우저권한·구독모사켜기/끄기/실패·계정전환/날짜클릭·초안보존,최종CI/Pages동일SHA운영인수후UX11. 실제OAuth/실기기권한·수신은마지막사용자인수에남긴다.
+
+### UX10 최종 브라우저 QA 통과 / CI·운영 배포 대기
+
+tests/push-browser-flow.html 기반 실제2계정/Auth/API/SW/IndexedDB+iframe권한/PushManager모사. 최초off·거부미등록·A켜기/끄기·오프라인선행차단·기기목록펼쳐해제·로그아웃·B꺼짐/명시적이전·register응답지연중로그아웃후재연결없음·A초안/11월1일날짜이동전체PASS. QA하네스는React갱신완료피드백/활성·표시기다림으로보완했으며인수조건유지. 실제부모권한/공급자구독변경없음. UX10-browser-flow.jpg.
+
+발견제품결함: 알림URLeffect가SSR임시익명workspace에서계정초안을덮음. drafthydrated+실제Auth/현재/컴포넌트scope일치후적용하도록수정,고정된최종소스전체재시험에서날짜/rhythm/입력초안원문보존. scope정렬의오래된callback조건부epoch와ensure기대사용자검사도보강했고순수회귀통과.
+
+SW/DB/iframe·privateHTML정리/원래스토리지전체원문복원. 새fixture통합12개최신store+plan-sync12 exit0(49760),시험사용자/구독/예약/전달0·기존계획3·Cron2활성,fixture/seed/cleanup/생성3모듈정리. 전체Node210/type/lint/Pagesbuild성공. 정적standalone manifest·192/512기존아이콘·Apple metadata/ko언어와export검증추가: local/Pages경로·PNG·HTML·SW원문·시험자료미포함PASS. 새WARN/ERROR없음.
+
+아직UX10완료아님: 최신CI·동일SHA Pages배포/운영자산·예약스모크확인후UX11. 물리권한·실물수신·OAuth/실기기인수는사용자요청대로전체작업마지막에모은다.

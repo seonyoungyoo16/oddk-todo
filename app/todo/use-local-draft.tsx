@@ -5,11 +5,13 @@ import { decodeDraft, draftKey, saveDraft } from "./draft-store";
 import { getPlanScope } from "./sync-store";
 
 const eventName = "oddk-draft-change";
+const subscribeHydration = () => () => {};
 function subscribe(notify: () => void) {
   window.addEventListener("storage", notify); window.addEventListener(eventName, notify);
   return () => { window.removeEventListener("storage", notify); window.removeEventListener(eventName, notify); };
 }
 export function useLocalDraft<T>(slot: string, initial: T, valid: (value: unknown) => value is T) {
+  const hydrated = useSyncExternalStore(subscribeHydration, () => true, () => false);
   const scope = getSafeScope();
   const key = draftKey(scope, slot);
   const read = useCallback(() => { try { return localStorage.getItem(key); } catch { return "!storage-unavailable"; } }, [key]);
@@ -46,7 +48,7 @@ export function useLocalDraft<T>(slot: string, initial: T, valid: (value: unknow
       localStorage.removeItem(key); setFailed(null); window.dispatchEvent(new Event(eventName));
     } catch { setFailed({ key, value: current.current, message: "초안 원문을 보관하지 못했어요. 입력과 원문을 유지했어요." }); }
   }
-  return { value, set: setValue, problem, updatedAt, retry: () => setValue(current.current), download, discardUnreadable };
+  return { value, set: setValue, hydrated, problem, updatedAt, retry: () => setValue(current.current), download, discardUnreadable };
 }
 function getSafeScope() { try { return getPlanScope(); } catch { return "unreadable-session"; } }
 export function DraftFeedback({ draft }: { draft: { problem: string; updatedAt: string; retry: () => void; download: () => void; discardUnreadable: () => void } }) {

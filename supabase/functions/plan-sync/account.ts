@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 import { parsePlanRequest } from "./request.ts";
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-const origins = new Set(["https://seonyoungyoo16.github.io", "http://localhost:3000"]);
+const origins = new Set(["https://seonyoungyoo16.github.io", "http://localhost:3000", "http://127.0.0.1:3200"]);
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   const headers = { "Content-Type": "application/json", "Cache-Control": "no-store", "Vary": "Origin", ...(origin && origins.has(origin) ? { "Access-Control-Allow-Origin": origin } : {}), "Access-Control-Allow-Headers": "authorization, content-type, apikey", "Access-Control-Allow-Methods": "POST, OPTIONS" };

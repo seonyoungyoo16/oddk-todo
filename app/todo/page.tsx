@@ -64,6 +64,7 @@ import { emptyWorkspace, validWorkspace, withoutEditor } from "./workspace-draft
 import type { WorkspaceDraft, EditorDraft, DraftView } from "./workspace-draft";
 import initialPlan from "./initial-plan.json";
 import { SyncPanel } from "./sync-panel";
+import { syncClient } from "./supabase-client";
 import { getPlanSnapshot, getPlanScope, subscribePlan, writePlan, exportPlanBackup, restoreLastValidPlan, backupReviewPlan } from "./sync-store";
 
 type View = DraftView;
@@ -130,10 +131,10 @@ function SelectionCheckbox({ label, checked, mixed = false, round = false, disab
 
 export default function Todo() {
   const scope = useSyncExternalStore(subscribePlan, getPlanScope, () => "local");
-  return <TodoWorkspace key={scope} />;
+  return <TodoWorkspace key={scope} scope={scope} />;
 }
 
-function TodoWorkspace() {
+function TodoWorkspace({ scope }: { scope: string }) {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_SNAPSHOT);
   const planLoad = useMemo(() => loadPlan(snapshot), [snapshot]);
   const plan = planLoad.ok ? planLoad.plan : EMPTY_PLAN;
@@ -170,6 +171,26 @@ function TodoWorkspace() {
   const [repeatPreview, setRepeatPreview] = useState<{ value: RepeatEditPreview; destination: "alpen" | "split" | null } | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<{ message: string } | null>(null);
+  const reminderHandled = useRef(false);
+  useEffect(() => {
+    if (!workspace.hydrated || reminderHandled.current) return;
+    let active = true;
+    const navigate = async () => {
+      const url = new URL(window.location.href), date = url.searchParams.get("reminder-date");
+      if (!date || !isPlanDate(date) || reminderHandled.current) return;
+      const { data, error } = await syncClient().auth.getSession();
+      // The anonymous SSR workspace must not consume an authenticated account's
+      // link or overwrite its draft before account and draft hydration finish.
+      if (!active || error || getPlanScope() !== scope || (data.session?.user.id ?? "local") !== scope || reminderHandled.current) return;
+      reminderHandled.current = true;
+      if (workspace.set(current => ({ ...current, selectedDate: date, range: "day", view: "rhythm" }))) {
+        url.searchParams.delete("reminder-date"); window.history.replaceState(window.history.state, "", url.href);
+      }
+    };
+    const check = () => { void navigate().catch(() => {}); };
+    const unsubscribe = subscribePlan(check); window.addEventListener("focus", check); check();
+    return () => { active = false; unsubscribe(); window.removeEventListener("focus", check); };
+  }, [workspace, scope]);
   const [editingId, setEditingId] = field("editingId");
   const [replanId, setReplanId] = useState<string | null>(null);
   const [replanDate, setReplanDate] = useState("");
