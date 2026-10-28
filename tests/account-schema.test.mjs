@@ -1,3 +1,4 @@
+import { goalTreeFromMandala } from "../supabase/functions/_shared/goal-tree.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
@@ -18,6 +19,7 @@ try {
   const before = await api({ action: "pull" });
   const loaded = loadPlan(JSON.stringify(before.plan)); assert.equal(loaded.ok, true);
   const plan = { ...loaded.plan, tasks: [taskToV4({ id: "synthetic-date", title: "Synthetic date", notes: "", minutes: 30, bufferMinutes: 5, startTime: "09:00", plannedDate: "2026-10-27", priority: "normal", done: false })], reviewsByDate: { "2026-10-27": "Synthetic review" } };
+  plan.goalTree = goalTreeFromMandala(plan.mandala, plan.tasks);
   const saved = await api({ action: "push", plan, version: before.version });
   const v1 = structuredClone(plan); delete v1.schemaVersion; delete v1.reviewsByDate;
   for (const task of v1.tasks) { delete task.plannedDate; delete task.endTime; delete task.endDate; delete task.endDayOffset; }
@@ -31,6 +33,7 @@ try {
   dated.tasks[0].startTime = "23:30";
   dated.tasks[0] = taskToV4(dated.tasks[0]);
   dated.mandala = { goal: "Synthetic goal", areas: Array.from({ length: 8 }, (_, i) => ({ title: `Area ${i}`, taskIds: [i === 0 ? "synthetic-date" : "", ...Array(7).fill("")] })) };
+  dated.goalTree = goalTreeFromMandala(dated.mandala, dated.tasks);
   const linked = await api({ action: "push", plan: dated, version: saved.version });
   let replanned = rescheduleTask(dated, "synthetic-date", "2026-10-28", "2026-10-27");
   replanned = saveDatedReview(replanned, "2026-10-26", "Yesterday review", "");

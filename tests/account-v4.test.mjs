@@ -1,3 +1,4 @@
+import { goalTreeFromMandala } from "../supabase/functions/_shared/goal-tree.ts";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
@@ -13,8 +14,9 @@ async function api(body, expected = 200) {
   const data = await response.json(); assert.equal(response.status, expected, data.error); return data;
 }
 try {
-  const before = await api({ action: "pull" }); assert.equal(before.plan.schemaVersion, 4);
+  const before = await api({ action: "pull" }); assert.equal(before.plan.schemaVersion, 5);
   const plan = { ...before.plan, tasks: [{ id: "v4-endpoints", title: "Synthetic endpoint plan", notes: "", minutes: 60, bufferMinutes: 10, plannedDate: "2026-10-28", startTime: "09:00", endDate: "2026-10-28", endTime: "10:00", endDayOffset: 0, done: false, priority: "normal" }], availabilityByDate: { "2026-10-28": { start: "09:00", end: "18:00", fixed: [{ id: "lunch", title: "Lunch", start: "12:00", end: "13:00" }] } } };
+  plan.goalTree = goalTreeFromMandala(plan.mandala, plan.tasks);
   const saved = await api({ action: "push", plan, version: before.version }); const snapshot = await api({ action: "pull" });
   assert.deepEqual(snapshot.plan, plan); assert.equal(snapshot.version, before.version + 1);
   assert.deepEqual(applyUndo(snapshot.plan, makeUndo(before.plan, plan, "Endpoints and availability")), before.plan);

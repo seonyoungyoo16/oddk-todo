@@ -1,10 +1,11 @@
 import { validPlan } from "./plan.ts";
-import type { Plan, PlanV2, PlanV3, PlanData, Task } from "./plan.ts";
+import type { Plan, PlanV2, PlanV3, PlanV4, PlanData, Task } from "./plan.ts";
 import { deriveScheduleEnd } from "./schedule.ts";
+import { goalTreeFromMandala } from "./goal-tree.ts";
 
 export type PlanLoad = { ok: true; plan: Plan; migrated: boolean } | { ok: false; error: string; raw: string };
 
-function datedPlan(value: PlanData): value is Plan | PlanV3 | PlanV2 { return "schemaVersion" in value; }
+function datedPlan(value: PlanData): value is Plan | PlanV4 | PlanV3 | PlanV2 { return "schemaVersion" in value; }
 
 // Use for legacy saved tasks, draft bases and undo records; never for partial UI input.
 export function taskToV4(task: Task): Task | null {
@@ -19,18 +20,18 @@ export function loadPlan(raw: string): PlanLoad {
   let value: unknown;
   try { value = JSON.parse(raw); }
   catch { return { ok: false, error: "저장된 JSON을 읽을 수 없어요. 원본을 백업한 뒤 복구해주세요.", raw }; }
-  if (value && typeof value === "object" && "schemaVersion" in value && ![2, 3, 4].includes(Number(value.schemaVersion))) return { ok: false, error: "이 앱에서 지원하지 않는 데이터 버전이에요. 원본은 그대로 보관돼 있어요.", raw };
+  if (value && typeof value === "object" && "schemaVersion" in value && ![2, 3, 4, 5].includes(Number(value.schemaVersion))) return { ok: false, error: "이 앱에서 지원하지 않는 데이터 버전이에요. 원본은 그대로 보관돼 있어요.", raw };
   if (!validPlan(value)) return { ok: false, error: "저장된 내용의 형식을 확인해야 해요. 원본을 백업한 뒤 복구해주세요.", raw };
-  let dated: PlanV2 | PlanV3;
+  let dated: PlanV2 | PlanV3 | PlanV4;
   if (datedPlan(value)) {
-    if (value.schemaVersion === 4) return { ok: true, plan: value, migrated: false };
+    if (value.schemaVersion === 5) return { ok: true, plan: value, migrated: false };
     dated = value;
   } else {
     dated = { ...value, schemaVersion: 2, tasks: value.tasks.map(task => ({ ...task, startTime: task.startTime ?? null, plannedDate: null })), reviewsByDate: {} };
   }
-  const tasks = dated.tasks.map(taskToV4);
+  const tasks = dated.schemaVersion === 4 ? dated.tasks : dated.tasks.map(taskToV4);
   if (tasks.some(task => task === null)) return { ok: false, error: "기존 일정의 종료 날짜가 지원 범위를 넘어요. 원본을 백업한 뒤 날짜를 확인해주세요.", raw };
-  const plan: Plan = { ...dated, schemaVersion: 4, tasks: tasks as Task[] };
+  const plan: Plan = { ...dated, schemaVersion: 5, tasks: tasks as Task[], goalTree: dated.goalTree ?? goalTreeFromMandala(dated.mandala, tasks as Task[]) };
   if (!validPlan(plan)) return { ok: false, error: "기존 시간 정보를 보존해 변환하지 못했어요. 원본을 백업한 뒤 확인해주세요.", raw };
   return { ok: true, migrated: true, plan };
 
@@ -52,5 +53,6 @@ export function preserveMigrationBackup(storage: StoragePort, key: string, raw: 
   const value = JSON.parse(raw);
   if (value.schemaVersion === undefined && storage.getItem(key + ".before-v2") === null) storage.setItem(key + ".before-v2", raw);
   if ((value.schemaVersion === undefined || value.schemaVersion === 2) && storage.getItem(key + ".before-v3") === null) storage.setItem(key + ".before-v3", raw);
-  if (storage.getItem(key + ".before-v4") === null) storage.setItem(key + ".before-v4", raw);
+  if ((value.schemaVersion === undefined || value.schemaVersion === 2 || value.schemaVersion === 3) && storage.getItem(key + ".before-v4") === null) storage.setItem(key + ".before-v4", raw);
+  if (storage.getItem(key + ".before-v5") === null) storage.setItem(key + ".before-v5", raw);
 }

@@ -8,7 +8,7 @@ const v3 = () => ({ schemaVersion: 3, start: "09:00", tasks: [task("dated"), tas
 const memory = raw => { const map = new Map([["plan", raw], ["plan.before-v3", "keep old backup"]]); return { map, getItem: k => map.get(k) ?? null, setItem: (k, v) => map.set(k, v) }; };
 test("V3 migration keeps dated, floating, duration-only and untimed tasks and all previous content", () => {
   const before = v3(); before.tasks[0].extension = { future: "preserve" };
-  const loaded = loadPlan(JSON.stringify(before)); assert.equal(loaded.ok, true); assert.equal(loaded.migrated, true); assert.equal(loaded.plan.schemaVersion, 4);
+  const loaded = loadPlan(JSON.stringify(before)); assert.equal(loaded.ok, true); assert.equal(loaded.migrated, true); assert.equal(loaded.plan.schemaVersion, 5);
   assert.deepEqual(loaded.plan.mandala, before.mandala); assert.deepEqual(loaded.plan.reviewsByDate, before.reviewsByDate);
   loaded.plan.tasks.forEach((t, i) => { for (const key of Object.keys(before.tasks[i])) assert.deepEqual(t[key], before.tasks[i][key]); });
   assert.deepEqual(loaded.plan.tasks.map(t => [t.endTime, t.endDate, t.endDayOffset]), [["00:30", "2026-10-29", 1], ["00:30", null, 1], [null, null, null], [null, null, null]]);

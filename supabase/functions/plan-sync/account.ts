@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
       // This predicate and the version predicate are evaluated in one UPDATE.
       // Older clients must never remove fields added by a newer schema.
       const incomingSchema = "schemaVersion" in body.plan ? body.plan.schemaVersion : 1;
-      const allowed = ["plan->>schemaVersion.is.null", ...[2, 3, 4].filter(v => v <= incomingSchema).map(v => "plan->>schemaVersion.eq." + v)].join(",");
+      const allowed = ["plan->>schemaVersion.is.null", ...[2, 3, 4, 5].filter(v => v <= incomingSchema).map(v => "plan->>schemaVersion.eq." + v)].join(",");
       update = update.or(allowed);
       const { data, error } = await update.select("plan,version,updated_at").maybeSingle();
       if (error) throw error;

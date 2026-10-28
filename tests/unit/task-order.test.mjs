@@ -17,7 +17,7 @@ test("ALPEN and time analysis use importance independently of legacy priority", 
 test("importance and optional deadline do not reinterpret legacy priority or change planning dates", () => {
   const before = plan([task("legacy", { priority: "high" })]);
   const loaded = loadPlan(JSON.stringify(before)); assert.equal(loaded.ok, true);
-  assert.deepEqual(loaded.plan, before); assert.equal(taskImportance(loaded.plan.tasks[0]), "normal");
+  assert.deepEqual(loaded.plan, { ...before, schemaVersion: 5, goalTree: { goal: "", groups: [] } }); assert.equal(taskImportance(loaded.plan.tasks[0]), "normal");
   const next = plan([task("new", { importance: "low", dueDate: "2026-10-30", dueTime: "18:00" })]);
   assert.equal(validPlan(next), true); assert.equal(next.tasks[0].plannedDate, "2026-10-28");
   for (const patch of [{ importance: "urgent" }, { importance: ["high"] }, { importance: null }, { dueDate: "2026-02-29" }, { dueTime: "10:00" }, { dueDate: null, dueTime: "10:00" }, { dueDate: "2026-10-28", dueTime: "24:00" }]) assert.equal(validPlan(plan([task("bad", patch)])), false);

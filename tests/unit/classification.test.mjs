@@ -6,6 +6,7 @@ import { validCategories, validTags, normalizeTagName } from "../../supabase/fun
 import { saveCategory, saveTag, removeCategory, removeTag, filterClassifiedTasks } from "../../app/todo/classification-actions.ts";
 import { makeUndo, applyUndo, validUndo } from "../../app/todo/plan-history.ts";
 import { validWorkspace, emptyWorkspace } from "../../app/todo/workspace-draft.ts";
+import { goalTreeFromMandala } from "../../supabase/functions/_shared/goal-tree.ts";
 import { validClassificationDraft, emptyClassificationDraft } from "../../app/todo/classification-draft.ts";
 import { saveDraft, decodeDraft, draftKey } from "../../app/todo/draft-store.ts";
 import { selectDay } from "../../app/todo/day-selectors.ts";
@@ -83,9 +84,10 @@ test("category, exact tag AND and title/note searches combine without changing s
   assert.equal(filterClassifiedTasks(tasks, { ...filter, tags: ["missing"] }).length, 0);
   assert.deepEqual(filterClassifiedTasks(tasks, { category: "all", tags: [], search: "" }), tasks); assert.deepEqual(tasks, original);
 });
-test("optional V4 classification extensions survive old-plan normalization without a schema reinterpretation", () => {
+test("optional V4 classification extensions survive V5 migration without changing classification meaning", () => {
   const value = { ...plan(), categories: [{ id: "work", name: "업무", color: "#123456" }], tasks: [task("a", { categoryId: "work", tagIds: [] })] };
-  assert.deepEqual(loadPlan(JSON.stringify(value)).plan, value); assert.equal(loadPlan(JSON.stringify(value)).migrated, false);
+  const latest = { ...value, schemaVersion: 5, goalTree: goalTreeFromMandala(value.mandala, value.tasks) };
+  assert.deepEqual(loadPlan(JSON.stringify(value)).plan, latest); assert.equal(loadPlan(JSON.stringify(latest)).migrated, false);
   const v3 = { ...value, schemaVersion: 3, tasks: value.tasks.map(t => { const old = { ...t }; delete old.endTime; delete old.endDate; delete old.endDayOffset; return old; }) };
-  assert.deepEqual(loadPlan(JSON.stringify(v3)).plan, value);
+  assert.deepEqual(loadPlan(JSON.stringify(v3)).plan, latest);
 });
