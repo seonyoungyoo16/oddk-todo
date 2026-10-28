@@ -434,3 +434,7 @@ UX10소프트웨어QA·배포게이트완료후c361기반codex/ux11-actual-time�
 UX11-DESIGN에계획JSON과분리한실적/현재상태·소유권·단일active/계획→실행잠금순서·operation/revision/CAS·작업완료삭제종료·익명IDB/계정scope·수동보정/백업/가져오기/기간집계·시간계약·ALPEN/인수를정리했다. DB/API/UI는아직미구현이며소프트웨어기록설계부터진행한다.
 
 execution.ts는계획제목/날짜/작업·전체snapshot불변,최대64개의정수ms UTC work/break 구간, pause미합산·명시휴식·재개·종료/중복no-op·역행거부,24시간cap/확인필요·미래/중첩/손상거부·종료후수동보정·한국자정집계를구현했다. 신규9개Node/Deno각PASS,전체Node219/type/lint성공. 계정단일active/다른record겹침/실제persist·서버/브라우저/배포는아직아니며UX12에착수하지않는다. 다음블록은실적저장/API·원자적전환과실제2계정/두기기경합증거다.
+
+UX11 core fc98953 PR29(draft/attached) CI40709934214 verify122892128779 success: Node219/Deno147/Edgecheck·암호화2+guard1/type/lint/Pagesbuild/export검증통과,PR배포는정상skipped. UX11서비스완료가아니며운영은UX10/c361그대로다.
+
+2026-10-29 명령계약: execution-command.ts의strict status/history(366일·100행·cursor)/operation·revision/8종명령·정규fingerprint·기대active/전환2record delta·계획/context불변·다른active보호·기존ID재사용방어를구현했다. 신규7개Node/Deno각통과,전체Node226/type/lint성공. Node strip-only에서지원하지않는parameter property는일반명시필드constructor로수정한자체런타임호환문제이며Next오류아님. 다음은실제DB/API의owner·복합키/단일active·원자적commit·idempotency·전역겹침·계획완료삭제종료와실제fixture검증이다. 공개신규API나스키마/운영변경은아직없다.
