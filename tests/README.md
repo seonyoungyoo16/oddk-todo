@@ -39,3 +39,5 @@ UX07 통합시험은8개다. 서버10은 V1~V5를 읽고 V5 저장 계정의 구
 `node tests/travel-lookup.test.mjs`는 실제 배포된 travel-lookup에 공개 베를린 관광지 검색·도보/자동차 경로를 요청하는 명시적 네트워크 시험이다. 기본 npm test/PR CI에 포함하지 않는다. 개인 여행지·주소·위치나 실제 계정은 사용하지 않는다. 공급자 한도429는 최대2회/2.1초 간격으로만 재시도한다. 결과는 .sync-test-runtime/UX08-live-example.json에 보관하며 비밀정보가 없다. 캐시 적중 시 최초 조회 시각을 유지하는지 확인한다. 이 시험만으로 브라우저 사용성 비교·일정 저장을 검증했다고 표시하지 않는다.
 
 CI는 새 travel-lookup/index.ts를 Deno로 별도 검사하고, travel.test.mjs/travel-handler.test.mjs의 순수 계약·HTTP모사 시험을 실행한다. Next 타입 검사는 이 Deno 진입점만 정확히 제외하고 공유 모듈·handler·클라이언트는 검사한다. 기존 plan-sync 및 로그인 검증은 유지한다.
+
+UX08은 account-travel.test.mjs를9번째 격리계정 통합시험으로 실행한다. 실제 provider HTTP 시험과 분리한 직접입력 여행 fixture로 V5 자정/시간/메모·기존목표 보존·400/409·계정격리·다른날짜 같은여행의 완료/undo와 전체복구를 검증한다. 모든 테스트 계정·세션과 인증 fixture는 통합시험 후 정리한다.

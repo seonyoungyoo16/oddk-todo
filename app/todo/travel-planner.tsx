@@ -63,8 +63,8 @@ export function TravelPlanner({ date, plan, onApply }: Props) {
   return <details className="oddk-travel"><summary><HiOutlineMapPin aria-hidden="true" />여행 이동 계획 <small>조회하고 확인한 뒤 일정에 추가</small></summary>
     <p>방문할 장소와 순서를 정하면 이동 시간을 조회해요. 체류 시간은 직접 정해주세요.</p>
     <p className="oddk-travelSource">장소 검색어는 <a href="https://github.com/komoot/photon#demo-server" target="_blank" rel="noreferrer">Photon</a>, 선택 좌표는 <a href="https://routing.openstreetmap.de/about.html" target="_blank" rel="noreferrer">FOSSGIS</a>로 전송돼요. 공개된 장소 이름으로 검색해주세요. 실시간 교통·출발 시각별 혼잡은 반영하지 않아요.</p>
+    <DraftFeedback draft={local} />
     {!draft ? <button type="button" onClick={begin}>이동 계획 작성</button> : <>
-      <DraftFeedback draft={local} />
       <fieldset disabled={busy} className="oddk-travelInputs"><legend>여행 조건</legend><div className="oddk-travelFields">
         <label>여행 날짜<input type="date" min="0001-01-01" max="9999-12-31" value={draft.date} onChange={event => change({ ...draft, date: event.target.value })} /></label>
         <label>출발 시각<input type="time" value={draft.departure} onChange={event => change({ ...draft, departure: event.target.value })} /></label>
@@ -90,7 +90,9 @@ export function TravelPlanner({ date, plan, onApply }: Props) {
         <div className="oddk-travelActions"><button type="button" onClick={() => setPreview(null)}>미리보기 닫기</button><button type="button" disabled={stale || applied || busy} onClick={() => { try { if (onApply(preview.proposal, draft, preview.base)) { setPreview(null); setMessage("일정에 추가했어요. 목록에서 수정하거나 최근 변경 되돌리기로 복구할 수 있어요."); } else setMessage("반영하지 못했어요. 입력과 미리보기는 유지했으니 저장 상태를 확인해주세요."); } catch (error) { setMessage((error as Error).message); } }}>{applied ? "이미 반영한 계획" : `${preview.proposal.tasks.length}개 일정에 추가`}</button></div>
       </section>}
       {applied && <p>이미 반영한 여행이에요. 수정은 할 일 목록에서 해주세요.</p>}
-      <button type="button" disabled={busy} onClick={() => { local.download(); begin(); }}>초안 백업 후 새 여행 계획</button>
+      <div className="oddk-travelActions"><button type="button" disabled={busy} onClick={() => { local.download(); begin(); }}>초안 백업 후 새 여행 계획</button>
+      <button type="button" disabled={busy} onClick={() => { local.download(); if (!local.set(null)) { local.set(draft); setMessage("초안 취소를 저장하지 못했어요. 기존 입력은 유지했으니 저장 상태를 확인하고 다시 취소해주세요."); return; } setPreview(null); setCandidates({}); setMessage("여행 초안을 백업하고 취소했어요."); }}>초안 백업 후 취소</button>
+      </div>
     </>}
     {busy && <p role="status">조회 중이에요. 입력은 보관돼요.</p>}{message && <p role="status">{message}</p>}
     <p className="oddk-travelSource">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap 기여자</a> · <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">지도 오류 수정</a> · 공개 시제품은 조회가 제한될 수 있어요.</p>

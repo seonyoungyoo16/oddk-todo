@@ -27,8 +27,10 @@ export function useLocalDraft<T>(slot: string, initial: T, valid: (value: unknow
     try {
       saveDraft(localStorage, scope, slot, next, valid);
       setFailed(null); window.dispatchEvent(new Event(eventName));
+      return true;
     } catch {
       setFailed({ key, value: next, message: "초안을 기기에 저장하지 못했어요. 입력은 화면에 남아 있어요. 내용을 보관하고 재시도해주세요." });
+      return false;
     }
   }
   function download() {

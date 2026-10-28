@@ -1,0 +1,54 @@
+{
+  "method": "Agent-controlled UI experiment; wall time includes tool and reasoning waits; not a human speed study",
+  "reference": "Public Berlin landmarks, 2026-10-28 09:00, foot, buffer 10, stays 60 and 45; manual received route times in advance",
+  "matchedFields": [
+    "title",
+    "plannedDate",
+    "startTime",
+    "endDate",
+    "endTime",
+    "minutes",
+    "bufferMinutes",
+    "notes",
+    "done"
+  ],
+  "manual": {
+    "mode": "manual",
+    "startedAt": "2026-10-28T02:37:14.986Z",
+    "finishedAt": "2026-10-28T02:38:02.084Z",
+    "elapsedMs": 47098,
+    "steps": 32,
+    "matched": true,
+    "goalsUnchanged": true,
+    "tasks": 4,
+    "issues": []
+  },
+  "planner": {
+    "mode": "planner",
+    "startedAt": "2026-10-28T02:38:50.923Z",
+    "finishedAt": "2026-10-28T02:39:55.154Z",
+    "elapsedMs": 64231,
+    "steps": 20,
+    "matched": true,
+    "goalsUnchanged": true,
+    "tasks": 4,
+    "issues": []
+  },
+  "excluded": [
+    {
+      "mode": "manual",
+      "startedAt": "2026-10-28T02:34:30.348Z",
+      "finishedAt": "2026-10-28T02:36:39.572Z",
+      "elapsedMs": 129224,
+      "steps": 11,
+      "matched": false,
+      "goalsUnchanged": true,
+      "tasks": 1,
+      "issues": [],
+      "reason": "Incomplete trial: locator-based time entry did not commit React changes; stopped and repeated using native input"
+    }
+  ],
+  "stepReductionPercent": 37.5,
+  "wallDifferenceMs": 17133,
+  "decision": "Keep the bounded prototype; defer expansion and human speed claims pending independent user evaluation"
+}
