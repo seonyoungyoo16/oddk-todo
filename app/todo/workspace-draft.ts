@@ -4,8 +4,10 @@ import { validTaskClassification } from "../../supabase/functions/_shared/taxono
 import type { Importance } from "../../supabase/functions/_shared/task-planning.ts";
 import type { TaskSort } from "./task-order.ts";
 import type { ClassificationFilter } from "./classification-actions.ts";
+import type { GoalTree } from "../../supabase/functions/_shared/goal-tree.ts";
+import { validGoalSnapshot } from "./goal-draft.ts";
 export type DraftView = "list" | "rhythm" | "mandala" | "alpen" | "stats";
-export type EditorDraft = { base: Task; baseMandala: Mandala; title: string; notes?: string; importance?: Importance; dueDate?: string; dueTime?: string; categoryId?: string | null; tagIds?: string[]; work: string; buffer: string; start: string; date: string; timeMode?: "clock" | "duration" | "legacy"; end?: string; endDate?: string; endDay?: string; priority: Priority; done: boolean; links: string[] };
+export type EditorDraft = { base: Task; baseMandala: Mandala; baseGoalTree?: GoalTree; goalLinks?: string[]; splitTitles?: string[]; splitSummary?: boolean; title: string; notes?: string; importance?: Importance; dueDate?: string; dueTime?: string; categoryId?: string | null; tagIds?: string[]; work: string; buffer: string; start: string; date: string; timeMode?: "clock" | "duration" | "legacy"; end?: string; endDate?: string; endDay?: string; priority: Priority; done: boolean; links: string[] };
 export type WorkspaceDraft = { selectedIds?: string[]; selectionMode?: boolean; sort?: TaskSort; classification?: ClassificationFilter; range?: "day" | "week" | "all"; input: string; view: DraftView; selectedDate: string | null; editingId: string | null; editors: Record<string, EditorDraft>; mandalaDraft: Mandala | null; mandalaBase: Mandala | null };
 export const emptyWorkspace: WorkspaceDraft = { range: "day", input: "", view: "list", selectedDate: null, editingId: null, editors: {}, mandalaDraft: null, mandalaBase: null };
 const object = (v: unknown): v is Record<string, unknown> => Boolean(v && typeof v === "object" && !Array.isArray(v));
@@ -17,6 +19,10 @@ export function validWorkspace(v: unknown): v is WorkspaceDraft {
     !(v.mandalaDraft === null || validMandala(v.mandalaDraft)) || !(v.mandalaBase === null || validMandala(v.mandalaBase))) return false;
   return Object.entries(v.editors).every(([id, e]) => object(e) && object(e.base) && e.base.id === id &&
     validTaskSnapshot(e.base, e.base.summaryOnly !== undefined || e.base.parentTaskId !== undefined ? 5 : 2) && validMandala(e.baseMandala) && validTaskClassification(e) &&
+    (e.splitTitles === undefined || Array.isArray(e.splitTitles) && e.splitTitles.length >= 2 && e.splitTitles.length <= 32 && e.splitTitles.every(title => typeof title === "string" && title.length <= 120)) &&
+    (e.splitSummary === undefined || typeof e.splitSummary === "boolean") &&
+    (e.baseGoalTree === undefined || validGoalSnapshot(e.baseGoalTree, e.baseMandala)) &&
+    (e.goalLinks === undefined || Array.isArray(e.goalLinks) && e.goalLinks.length <= 32 && new Set(e.goalLinks).size === e.goalLinks.length && e.goalLinks.every(id => typeof id === "string" && id.length > 0 && id.length <= 100)) &&
     ["title", "work", "buffer", "start", "date"].every(k => typeof e[k] === "string" && e[k].length <= 120) &&
     ["end", "endDate", "endDay", "dueDate", "dueTime"].every(k => e[k] === undefined || typeof e[k] === "string" && e[k].length <= 120) &&
     (e.timeMode === undefined || ["clock", "duration", "legacy"].includes(String(e.timeMode))) &&

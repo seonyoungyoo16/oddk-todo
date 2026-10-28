@@ -22,3 +22,9 @@
 [data-theme="dark"] .oddk-goalTree input,[data-theme="dark"] .oddk-goalTree select,[data-theme="dark"] .oddk-goalTree button,[data-theme="dark"] .oddk-goalGroup,[data-theme="dark"] .oddk-goalProjection section { border-color:#475569; }
 [data-theme="dark"] .oddk-goalTree option { background:#172033; color:#e2e8f0; }
 [data-theme="dark"] .oddk-goalTree .is-complete { color:#94a3b8; }
+.oddk-taskSplit > div { display:flex; gap:8px; align-items:flex-end; margin:12px 0; }
+.oddk-taskSplit label { display:grid; gap:8px; flex:1; min-width:0; }
+.oddk-taskSplit input:not([type="radio"]) { width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; font:inherit; color:inherit; background:transparent; }
+.oddk-taskSplit fieldset { display:grid; gap:12px; margin:16px 0; padding:12px; border:1px solid #cbd5e1; border-radius:8px; }
+.oddk-taskSplit fieldset label { display:flex; align-items:flex-start; line-height:1.6; }
+.oddk-taskSplit p { line-height:1.7; margin:12px 0; }
