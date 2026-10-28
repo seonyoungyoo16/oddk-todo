@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { taskGoalIds, editorGoalIds, editorGoalConflict, legacyEditorLinksChanged, convertLegacyEditorLinks, mergeLegacyGoalDraft } from "../../app/todo/goal-editor.ts";
 import { goalTreeFromMandala } from "../../supabase/functions/_shared/goal-tree.ts";
 import { validWorkspace, emptyWorkspace } from "../../app/todo/workspace-draft.ts";
+import { previewBulkAction, applyBulkAction } from "../../app/todo/bulk-actions.ts";
 const task = { id: "a", title: "A", notes: "", plannedDate: null, minutes: null, bufferMinutes: null, startTime: null, endTime: null, endDate: null, endDayOffset: null, priority: "normal", done: false };
 const archive = { goal: "G", areas: Array.from({ length: 8 }, (_, i) => ({ title: "Area " + i, taskIds: [i === 0 ? "a" : "", ...Array(7).fill("")] })) };
 const plan = { schemaVersion: 5, tasks: [task], start: "09:00", reviewsByDate: {}, mandala: archive, goalTree: goalTreeFromMandala(archive, [task]) };
@@ -46,4 +47,16 @@ test("legacy goal draft imports only deltas, preserves new groups and rejects co
   const unlinked = mergeLegacyGoalDraft(current, archive, removed);
   assert.deepEqual(unlinked.goalTree.groups[0].taskIds, []);
   assert.deepEqual(unlinked.goalTree.groups.at(-1).taskIds, ["a"]);
+});
+
+test("bulk completion undo ignores a summary title that matches a restored execution task", () => {
+  const execution = { ...task, id: "execution", done: true };
+  const summary = { ...task, id: "summary", summaryOnly: true };
+  const before = { ...plan, tasks: [summary, execution], goalTree: { goal: "G", groups: [] } };
+  const request = previewBulkAction(before, [summary.id, execution.id], [summary.id, execution.id], "undone");
+  assert.equal(request.excludedSummaries, 1);
+  const restored = applyBulkAction(before, request);
+  assert.equal(restored.tasks[0].summaryOnly, true);
+  assert.equal(restored.tasks[1].done, false);
+  assert.equal(before.tasks[1].done, true);
 });

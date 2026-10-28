@@ -649,7 +649,7 @@ function TodoWorkspace() {
             </summary>
             {editor && <TaskScheduleFields draft={editor} onChange={patchEditor} />}
           </details>
-          <details className="oddk-dialogLinks oddk-editorDisclosure" open={editGoalLinks.length > 0 || oldEditorLinksPending}>
+          <details className="oddk-dialogLinks oddk-editorDisclosure" open={editor?.goalExpanded ?? (editGoalLinks.length > 0 || oldEditorLinksPending)} onToggle={event => { const open = event.currentTarget.open; if (editor && editor.goalExpanded !== open) patchEditor({ goalExpanded: open }); }}>
             <summary><HiOutlineChevronDown aria-hidden="true" /><span>목표 연결<small>같은 할 일을 여러 세부 목표와 연결해요</small></span></summary>
             <div className="oddk-dialogLinkContent">
               {oldEditorLinksPending && <section role="alert"><p>이전 칸 연결 초안이 남아 있어요. 새 목표 연결로 가져오거나 현재 연결을 선택해주세요. 다른 입력은 유지돼요.</p><button type="button" onClick={() => { workspace.download(); try { if (editor) patchEditor({ goalLinks: convertLegacyEditorLinks(editor, plan), baseGoalTree: plan.goalTree }); } catch (error) { setEditError((error as Error).message); } }}>백업 후 이전 연결 가져오기</button><button type="button" onClick={() => { workspace.download(); patchEditor({ goalLinks: taskGoalIds(plan.goalTree, editingTask.id), baseGoalTree: plan.goalTree }); }}>백업 후 현재 연결 사용</button></section>}

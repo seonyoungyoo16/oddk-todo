@@ -16,7 +16,7 @@ export function applyBulkAction(current: Plan, request: BulkRequest): Plan {
   if (request.kind === "delete") return deletePlanTasks(current, ids);
   if (request.tasks.some(task => task.summaryOnly)) throw new Error("요약은 완료 처리 대상에서 제외해요. 실행 업무를 다시 확인해주세요.");
   const tasks = current.tasks.map(task => ids.has(task.id) ? { ...task, done: request.kind === "done" } : task);
-  const titles = tasks.filter(task => !task.done).map(task => task.title.toLocaleLowerCase());
+  const titles = tasks.filter(task => !task.done && !task.summaryOnly).map(task => task.title.toLocaleLowerCase());
   if (request.kind === "undone" && new Set(titles).size !== titles.length) throw new Error("같은 내용의 진행 중인 항목이 있어 완료를 취소할 수 없어요. 선택은 유지했어요.");
   return { ...current, tasks };
 }
