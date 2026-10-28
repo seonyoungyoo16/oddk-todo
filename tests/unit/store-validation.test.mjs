@@ -1,3 +1,4 @@
+import { sameValue } from "../../supabase/functions/_shared/json-equality.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -15,6 +16,7 @@ test("invalid writes, local recovery and review backups preserve snapshots", () 
   vm.runInNewContext(js, {
     exports,
     require: (name) => {
+      if (name.includes("json-equality")) return { sameValue };
       if (name.includes("_shared/plan-migration")) return { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup };
       if (name.includes("_shared/plan")) return { validPlan };
       if (name === "./supabase-client") return { syncClient: () => { throw new Error("Offline test must not access auth/network"); } };

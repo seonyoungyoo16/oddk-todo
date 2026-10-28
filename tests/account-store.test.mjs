@@ -11,7 +11,7 @@ mkdirSync(new URL("../.sync-test-runtime/", import.meta.url), { recursive: true 
 for (const name of ["supabase-client", "push-client", "sync-store"]) {
   const source = readFileSync(new URL(`../app/todo/${name}.ts`, import.meta.url), "utf8");
   const configuredSource = source.replaceAll("https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync", `https://synxmskamifpovuziecx.supabase.co/functions/v1/${process.env.ODDK_TEST_EDGE_FUNCTION ?? "plan-sync"}`);
-  const js = ts.transpileModule(configuredSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText.replace('"./supabase-client"', '"./supabase-client.mjs"').replace('"./push-client"', '"./push-client.mjs"').replace('"../../supabase/functions/_shared/plan"', '"../supabase/functions/_shared/plan.ts"').replace('"../../supabase/functions/_shared/plan-migration"', '"../supabase/functions/_shared/plan-migration.ts"');
+  const js = ts.transpileModule(configuredSource, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText.replace('"./supabase-client"', '"./supabase-client.mjs"').replace('"./push-client"', '"./push-client.mjs"').replace('"../../supabase/functions/_shared/plan"', '"../supabase/functions/_shared/plan.ts"').replace('"../../supabase/functions/_shared/json-equality"', '"../supabase/functions/_shared/json-equality.ts"').replace('"../../supabase/functions/_shared/plan-migration"', '"../supabase/functions/_shared/plan-migration.ts"');
   writeFileSync(new URL(`../.sync-test-runtime/${name}.mjs`, import.meta.url), js);
 }
 let store = await import("../.sync-test-runtime/sync-store.mjs");

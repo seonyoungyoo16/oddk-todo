@@ -1,6 +1,7 @@
 "use client";
 import { taskTitleKey } from "./task-identity";
 import { ExecutionPanel } from "./execution-panel";
+import { ReplanPanel } from "./replan-panel";
 import { useExecution } from "./use-execution";
 import { HiOutlinePlay } from "react-icons/hi2";
 
@@ -576,6 +577,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
               {planningView && range !== "all" && plan.tasks.some(task => task.plannedDate === null && !task.done) && <button type="button" className="oddk-undatedLink" onClick={() => navigateRange("all")}>날짜 없는 할 일 {plan.tasks.filter(task => task.plannedDate === null && !task.done).length}개 보기<HiOutlineArrowRight aria-hidden="true" /></button>}
             </header>
             <ExecutionPanel scope={scope} plan={plan} date={planDate} model={execution} switchTask={switchExecution} onCancelSwitch={() => setSwitchExecution(null)} />
+            {planningView && range === "day" && <ReplanPanel key={scope} scope={scope} date={planDate} today={today} plan={plan} execution={execution} onApplied={preview => { history.set(makeUndo(preview.expected, preview.after, "남은 시간을 재조정했어요.")); setNotice({ message: "남은 시간을 재조정했어요." }); }} onRestore={next => save(next, "재조정 전 시각을 복구했어요.", true, false)} />}
             {planningView && range === "day" && isPlanDate(planDate) && <DayAvailability day={day} saved={plan.availabilityByDate?.[planDate]} onSave={value => save({ ...plan, availabilityByDate: { ...plan.availabilityByDate, [planDate]: value } }, "활동 시간과 고정·휴식을 저장했어요.")} onEdit={openEditor} />}
             {planningView && range === "day" && isPlanDate(planDate) && <TravelPlanner date={planDate} plan={plan} onApply={(preview, draft, expected) => { if (!sameValue(expected, plan)) { setError("미리보기 이후 계획이 바뀌었어요. 다시 확인해주세요."); return false; } try { return save(applyTravelPreview(plan, preview, draft), "여행 이동·방문 일정을 추가했어요."); } catch (error) { setError((error as Error).message); return false; } }} />}
             {planningView && <><ClassificationFilters plan={plan} value={classification} onChange={changeClassification} count={scopedTasks.length} total={rangeTasks.length} /><ClassificationManager plan={plan} onSave={save} /></>}

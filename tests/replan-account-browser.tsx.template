@@ -1,0 +1,46 @@
+"use client";
+import {useRef,useState} from 'react';
+import {syncClient} from '../todo/supabase-client';
+import {getPlanScope} from '../todo/sync-store';
+import {executionApi} from '../todo/execution-client';
+import type {ExecutionState} from '../todo/execution-client';
+import {loadPlan} from '../../supabase/functions/_shared/plan-migration';
+import {replanClock} from '../../supabase/functions/_shared/replan';
+import {sameValue} from '../todo/json-equality';
+const fixture: {id:string;email:string;password:string;marker:string}[] | null = null;
+const sleep=(ms:number)=>new Promise(r=>setTimeout(r,ms));
+async function wait(test:()=>boolean|Promise<boolean>,message:string){const end=Date.now()+25000;while(Date.now()<end){if(await test())return;await sleep(100);}throw Error(message);}
+export default function AccountReplanQA(){
+ const frame=useRef<HTMLIFrameElement>(null),backup=useRef<[string,string][]|null>(null);
+ const [events,setEvents]=useState<string[]>([]),[running,setRunning]=useState(false),[active,setActive]=useState(false);
+ const say=(s:string)=>setEvents(v=>[...v,s]);const doc=()=>frame.current!.contentDocument!;
+ const button=(text:string)=>[...doc().querySelectorAll<HTMLButtonElement>('button')].find(b=>b.textContent?.trim()===text&&b.getClientRects().length>0);
+ const click=async(text:string)=>{await wait(()=>Boolean(button(text)&&!button(text)!.disabled),'Missing '+text);button(text)!.click();};
+ async function login(i:number){const{error}=await syncClient().auth.signInWithPassword({email:fixture![i].email,password:fixture![i].password});if(error)throw Error('Fixture login');}
+ async function api(body:unknown){const s=(await syncClient().auth.getSession()).data.session!;const r=await fetch('https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-sync',{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${s.access_token}`},body:JSON.stringify(body)});if(!r.ok)throw Error('Fixture API '+r.status);return r.json();}
+ async function prepare(i:number){const date=replanClock(new Date().toISOString()).date;const loaded=loadPlan(JSON.stringify({schemaVersion:2,start:'09:00',reviewsByDate:{},tasks:[{id:'one',title:`QA ${i===0?'A':'B'} replan`,minutes:10,bufferMinutes:2,startTime:'00:00',plannedDate:date,priority:'normal',done:false}]}));if(!loaded.ok)throw Error(loaded.error);const plan={...loaded.plan,schemaVersion:6,recurrences:[],availabilityByDate:{[date]:{start:'00:00',end:'24:00',fixed:[]}}};const before=await api({action:'ensure',plan});await api({action:'push',plan,version:before.version});return plan;}
+ async function mount(tag:string){setActive(true);await wait(()=>Boolean(frame.current),'Mount');frame.current!.src='/todo/?replan-account='+tag;await wait(()=>doc()?.URL.includes('replan-account='+tag)&&Boolean(button('남은 시간 재조정')&&!button('남은 시간 재조정')!.disabled),'Frame '+tag);}
+ async function preview(){await click('남은 시간 재조정');await wait(()=>Boolean(doc().querySelector('dialog[open] input[type=time]')),'Dialog');const m=replanClock(new Date().toISOString()).minute+5,t=doc().querySelector<HTMLInputElement>('dialog[open] input[type=time]')!;Object.getOwnPropertyDescriptor(Object.getPrototypeOf(t),'value')!.set!.call(t,`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`);t.dispatchEvent(new Event('input',{bubbles:true}));await click('변경안 미리보기');await wait(()=>Boolean(doc().querySelector('.oddk-replanResult input[type=checkbox]')),'Preview');doc().querySelector<HTMLInputElement>('.oddk-replanResult input[type=checkbox]')!.click();}
+ async function run(){setRunning(true);try{
+  if(!fixture||fixture.some(u=>!u.marker.startsWith('oddk-verification-')))throw Error('Fixture missing');if((await syncClient().auth.getSession()).data.session)throw Error('Existing login: stop');backup.current=Object.entries(localStorage);
+  await login(0);const original=await prepare(0);await syncClient().auth.signOut({scope:'local'});await login(1);await prepare(1);await syncClient().auth.signOut({scope:'local'});await login(0);await mount('A');await wait(()=>getPlanScope()===fixture[0].id,'A scope');
+  await preview();const win=doc().defaultView as Window&typeof globalThis,working=win.fetch.bind(win);let lost=false;
+  win.fetch=async(input,options)=>{const response=await working(input,options);if(String(input).includes('/plan-sync')&&JSON.parse(String(options?.body)).action==='replan'){lost=true;throw new TypeError('Synthetic lost response after server commit');}return response;};
+  await click('확인한 변경 적용');await wait(()=>!doc().querySelector('dialog[open]'),'Lost-response confirmation');win.fetch=working;if(!lost||(await api({action:'pull'})).plan.tasks[0].startTime==='00:00')throw Error('Lost response not confirmed');say('PASS real Auth/API/DB UI replan confirms server commit after lost response by pull');
+  await click('최근 재조정 시각 복구');await wait(async()=>sameValue((await api({action:'pull'})).plan,original),'Remote restore');say('PASS compact recovery uses normal CAS sync and restores exact server timing');
+  await preview();let s=await executionApi(fixture[0].id,{action:'status'}) as ExecutionState;
+  s=await executionApi(fixture[0].id,{action:'command',operationId:crypto.randomUUID(),revision:s.revision,command:{type:'start',taskId:'one'}}) as ExecutionState;
+  await executionApi(fixture[0].id,{action:'command',operationId:crypto.randomUUID(),revision:s.revision,command:{type:'stop',recordId:s.current!.id}});
+  await click('확인한 변경 적용');await wait(()=>doc().querySelector('dialog[open]')!.textContent!.includes('바뀌'),'Stale actual feedback');if(!sameValue((await api({action:'pull'})).plan,original))throw Error('Stale actual changed plan');await click('취소');say('PASS actual revision changed after preview is refused with exact remote source preserved');
+  await mount('A-refresh');await preview();const offlineWin=doc().defaultView as Window&typeof globalThis,fetchOK=offlineWin.fetch.bind(offlineWin);
+  offlineWin.fetch=async(input,options)=>{if(String(input).includes('/plan-sync'))throw new TypeError('Synthetic offline');return fetchOK(input,options);};
+  await click('확인한 변경 적용');await wait(()=>doc().querySelector('dialog[open]')!.textContent!.includes('저장 결과를 확인하지 못했어요'),'Offline message');offlineWin.fetch=fetchOK;if(!sameValue((await api({action:'pull'})).plan,original))throw Error('Offline mutation');await click('확인한 변경 적용');await wait(()=>!doc().querySelector('dialog[open]'),'Retry');say('PASS actual browser offline preserves proposal and source; explicit retry confirms server result');
+  await click('최근 재조정 시각 복구');await wait(async()=>sameValue((await api({action:'pull'})).plan,original),'Restore before swap');await preview();
+  const swapWin=doc().defaultView as Window&typeof globalThis,swapFetch=swapWin.fetch.bind(swapWin);let release:(()=>void)|undefined,held=false;
+  swapWin.fetch=async(input,options)=>{const response=await swapFetch(input,options);if(String(input).includes('/plan-sync')&&JSON.parse(String(options?.body)).action==='replan'){held=true;await new Promise<void>(r=>{release=r;});}return response;};
+  await click('확인한 변경 적용');await wait(()=>held,'Held replan response');await syncClient().auth.signOut({scope:'local'});await login(1);await wait(()=>getPlanScope()===fixture[1].id&&(doc().body?.textContent?.includes('QA B replan')??false),'Same-document B');release?.();swapWin.fetch=swapFetch;
+  await sleep(250);if(doc().body.textContent!.includes('QA A replan')||!sameValue((await api({action:'pull'})).plan.tasks[0].startTime,'00:00'))throw Error('A response leaked into B');say('PASS held A replan response never updates B UI/cache/recovery after same-document account switch');say('PASS ACCOUNT READY FOR CLEANUP');
+ }catch(e){say('FAIL '+(e instanceof Error?e.message:String(e)));}finally{setRunning(false);}}
+ async function cleanup(){setActive(false);await sleep(250);await syncClient().auth.signOut({scope:'local'});if(backup.current){localStorage.clear();for(const[k,v]of backup.current)localStorage.setItem(k,v);backup.current=null;}say('CLEANED fixture signed out, original browser storage restored');}
+ return <main style={{padding:20}}><h1>UX12 isolated account UI QA</h1><button disabled={running||!!backup.current} onClick={()=>void run()}>Run account replan QA</button><button disabled={running} onClick={()=>void cleanup()}>Restore original browser data</button><ol>{events.map((e,i)=><li key={i}>{e}</li>)}</ol>{active&&<iframe ref={frame} title="Account replan application" style={{width:'100%',height:850}}/>}</main>;
+}
