@@ -47,3 +47,16 @@ UX09은 account-movement.test.mjs를10번째 격리계정 통합시험으로 실
 
 
 UX10은 account-recurrence.test.mjs를11번째 격리계정 통합시험으로 추가한다. plan-sync11은 V1~V6 읽기/쓰기 검증과 저장된 V6의 구버전 쓰기426을 원자적 CAS 조건으로 보호한다. 새 시험은 발생ID·자정·시간/여유·목표·리마인더 JSONB 왕복, V1~5의426 및400/409 원본불변, 날짜이동예외·건너뛰기·이후수정·완료보존·전체중단·종합undo·계정격리를 실제API로 확인한다. 반복/리마인더 첫 사용 전후 원문 백업과 실패 보호는 실제 브라우저 store 코드를 VM에서 실행하는 회귀에도 포함한다. 푸시 구독·실제 단말 전달·반복 UI 인수는 이 데이터 시험과 별도다.
+
+### UX10 앱을 열지 않은 서버 반복 준비
+
+`task-maintenance.test.mjs`는 Node/Deno 공통 시험이다. 실제 배포 검증은 CI에서 관리자 비밀을 사용하지 않도록 별도로 실행한다.
+
+1. `prepare-account-fixture.mjs`로 전용 계정2개를 준비하고 무시된 seed SQL을 신뢰할 수 있는 DB 관리 연결로 실행한다.
+2. `node tests/maintenance-fixture.mjs prepare`는 일반 시험 계정 권한으로 과거 발생2개·완료·이동 예외·미생성 건너뛰기·알림분·목표를 저장한다. 앱/클라이언트 발생 준비를 실행하지 않는다.
+3. 기존 사용자의 활성 V6 반복 계정이 없는 전용 시험 조건을 먼저 확인한다. `oddk.maintenance_fixture_user`에 방금 fixture UUID를 설정한 뒤 `maintenance-database.sql`을 관리자 연결로 실행한다. 티켓·lease·CAS·V6 보호와 임시7계정의5+3+0 커서 순회를 검증한다. 모든 시험 변경은 하나의 트랜잭션에서 롤백된다. 조건이 다르면 운영 데이터에 맞춰 시험을 완화하지 말고 격리 환경을 사용한다.
+4. 예약 작업이 활성화된 상태에서 Cron 실행과 해당 pg_net 응답을 확인한다. 수동 dispatch로 전송 경로도 확인할 수 있지만 Cron 자동 실행 증거와 구분한다. 요청 대기열의 body/headers나 티켓 원문을 출력하지 않는다.
+5. `node tests/maintenance-fixture.mjs verify`로 공통 함수의 기대 계획 전체와 실제32개 발생·버전+1·다른V5 계정 불변을 대조한다. 다음 실제 순회 후 `verify-noop`으로 버전/updated_at까지 변화 없음과 모든 관리 RPC/상태·net 스키마의 API 접근 거부를 재검증한다.
+6. 두 계정 signOut과 해당 marker의 cleanup SQL 실행 후 잔여0을 확인하고 인증/seed/cleanup 파일을 정확한 경로로 제거한다. 실제 사용자 계정이나 로컬 계획을 시험에 쓰지 않는다.
+
+실제 OAuth·기기 알림 권한·푸시 전달은 이 서버 발생 시험이 검증하는 범위가 아니다.

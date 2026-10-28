@@ -359,3 +359,14 @@ RepeatMaintenance/prepareRepeatWindow는오늘31일+선택한날짜/주만누락
 현재전체Node162/공통Deno103/typecheck/lint성공. UX10-ACCEPTANCE에증거4개/검증범위와남은서버정기생성·푸시/권한/실물/배포게이트를명시했다. 서버11·PagesUX09는유지. UX10완료나UX11착수로표시하지않는다.
 
 UX10 UI checkpoint 최종Pages정적빌드도성공했다. 임시QA HTML2개·인증fixture없음을확인하고브랜치에저장한다. 다음필수범위는서버정기반복생성/CAS·Web Push구독/예약/전달/취소·권한상태UI와그실제API/모사/최종인수다.
+
+
+### UX10 서버 반복 발생 준비 배포·실제 DB/예약 경로 검증
+
+task-maintenance v1 ACTIVE/88e9304aa46f1291b60a380e696a7620b51d9303c10b3ecf6e2f18107f55c9b7, 원격14소스 일치. migration20261028044251/20261028044335, pg_cron1.6.4/pg_net0.20.4 설치·분 단위 Cron1 활성. DB 단회32바이트 티켓(해시·2분 만료)/45초 lease, 5계정 keyset/끝에서초기화, 한국 날짜31일 공통함수, lease+version CAS로 다른기기/구형데이터 보호. 브라우저Origin403·GET405·위조401 실측.
+
+Node신규8/전체170, CI공통Deno111/Edge3check/typecheck/lint/Pages정적빌드성공. 실제DB DO트랜잭션: 티켓재사용/만료lease/disable/잘못된lease/V5/staleCAS거부·유효CAS버전+1, 임시7+fixture1의5+3+0배치/커서wrap 후전체rollback. 격리2계정: 발생2(완료/이동예외)+미생성skip/목표/알림→DB수동dispatch request1에서정확32개/fullplan/version+1, 다른V5동일. 실제Cron04:48 request2 빈배치초기화,04:49 request3 unchanged1/prepare0, 모두HTTP200·timeoutfalse/errornull. verify-noop의plan/version/updated_at전체동일. auth두계정의관리RPC전체/상태42501·anon/auth net스키마406확인. OAuth/기기권한조작없음. signOut·cleanup후시험사용자0/기존계획수3·인증/seed/cleanup파일삭제. 사용자CSS해시동일.
+
+권한제약을실측: pg_net객체는supabase_admin소유/PUBLIC기본권한이라postgres REVOKE성공응답만으로ACL이바뀌지않는다. 공식KB확인후실패를기록하고재설치/관리역할우회안함. DataAPI public/graphql_public만노출, net406·앱관리RPC/state브라우저거부가실제경계다. 직접DB접속역할은대기열열람가능하므로서버장기키/Vault복호화키를보내지않고단회짧은작업티켓만전송. 신규WARN/ERROR없고의도적RLSno-policy INFO신규1(합3)/기존passwordWARN1. UX10-DESIGN/ACCEPTANCE/OPERATIONS·재현시험절차기록.
+
+아직UX10미완료: 푸시구독API/ServiceWorker/서버예약·전달·취소·재시도/권한상태UI 및 최종CI·Pages동일SHA운영인수. 프런트는UX09/plan-sync11·travel2그대로다. 다음은WebPush구독·전달이며UX11시작하지않는다. 실제OAuth/실기기권한/전달인수는최종사용자목록에남긴다.
