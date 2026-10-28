@@ -9,6 +9,13 @@ import { GoDotFill } from "react-icons/go";
 import "./todo.css";
 import "./task-editor.css";
 import "./classification.css";
+import "./task-planning.css";
+import { TaskPlanningBadges, TaskPlanningFields, TaskMoveButtons, BulkActionDialog } from "./task-planning-controls";
+import { sortTasks, moveVisibleTask, selectedTaskSummary } from "./task-order";
+import type { TaskSort } from "./task-order";
+import { previewBulkAction, applyBulkAction } from "./bulk-actions";
+import type { BulkRequest } from "./bulk-actions";
+import { validTaskPlanning } from "../../supabase/functions/_shared/task-planning";
 import { TaskScheduleFields } from "./task-schedule-fields";
 import { parseEditorSchedule, retargetEditorDate } from "./editor-schedule";
 import { workFromStoredTime } from "./task-time";
@@ -24,7 +31,7 @@ import { rescheduleTask, saveDatedReview, moveLegacyReview } from "./planning-ac
 import { MandalaView, AlpenView, TimeStatsView, safeMandala } from "./planning-views";
 import type { Mandala, Plan, Task, Priority } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, isPlanDate, validPlan } from "../../supabase/functions/_shared/plan";
-import { koreanToday } from "./plan-date";
+import { koreanToday, koreanClock } from "./plan-date";
 import { dayLabel, weekDates, shiftDate, selectRangeTasks } from "./calendar-range";
 import type { RangeScope } from "./calendar-range";
 import { loadPlan, taskToV4 } from "../../supabase/functions/_shared/plan-migration";
@@ -115,6 +122,7 @@ function TodoWorkspace() {
   const planLoad = useMemo(() => loadPlan(snapshot), [snapshot]);
   const plan = planLoad.ok ? planLoad.plan : EMPTY_PLAN;
   const today = useSyncExternalStore(subscribeToday, koreanToday, () => "");
+  const nowTime = useSyncExternalStore(subscribeToday, koreanClock, () => "");
   const workspace = useLocalDraft("workspace", emptyWorkspace, validWorkspace);
   function field<K extends keyof WorkspaceDraft>(key: K): [WorkspaceDraft[K], (value: SetStateAction<WorkspaceDraft[K]>) => void] {
     return [workspace.value[key], value => workspace.set(current => ({ ...current, [key]: typeof value === "function" ? (value as (v: WorkspaceDraft[K]) => WorkspaceDraft[K])(current[key]) : value }))];
@@ -128,7 +136,7 @@ function TodoWorkspace() {
   const classification = workspace.value.classification ?? defaultClassification;
   function changeClassification(value: ClassificationFilter) {
     workspace.set(current => ({ ...current, classification: value }));
-    setSelectedIds(new Set()); setSelectionMode(false); setError("");
+    setError("");
   }
   const [filter, setFilter] = useState<Filter>("all");
   const [view, setView] = field("view");
@@ -137,7 +145,11 @@ function TodoWorkspace() {
   const planningView = view !== "mandala";
   const week = weekDates(planDate);
   const headerTitle = !planningView ? viewHeaders.mandala.title : range === "all" ? "생각나는 할 일을 모두 적어주세요." : range === "week" ? `${week[0] ?? "—"} ~ ${week.at(-1) ?? "—"}` : dayLabel(planDate);
-  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectionModeDraft, setSelectionMode] = field("selectionMode");
+  const selectionMode = selectionModeDraft ?? false;
+  const [sortDraft, setSort] = field("sort");
+  const sort: TaskSort = sortDraft ?? "manual";
+  const [bulkRequest, setBulkRequest] = useState<BulkRequest | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<{ message: string } | null>(null);
   const [editingId, setEditingId] = field("editingId");
@@ -170,7 +182,10 @@ function TodoWorkspace() {
   const [alpenTaskId, setAlpenTaskId] = useState<string | null>(null);
   const submitDestination = useRef<"alpen" | null>(null);
   const history = useLocalDraft<PlanUndo | null>("undo", null, validUndo);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectedIds = new Set(workspace.value.selectedIds ?? []);
+  function setSelectedIds(value: SetStateAction<Set<string>>) {
+    workspace.set(current => { const previous = new Set(current.selectedIds ?? []); const next = typeof value === "function" ? value(previous) : value; return { ...current, selectedIds: [...next] }; });
+  }
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const replanDialogRef = useRef<HTMLDialogElement>(null);
@@ -217,11 +232,10 @@ function TodoWorkspace() {
   const rhythmTasks = filteredDay.scheduled;
   const timeline = layoutTimeline(rhythmTasks, { start: Math.min(allocation.window.start, ...allocation.fixed.map(block => block.start)), end: Math.max(allocation.window.end, ...allocation.fixed.map(block => block.end)), maxEnd: 1440 });
   const pixelsPerMinute = 3;
-  const visibleTasks = scopedTasks
-    .filter((task) => filter === "all" || (filter === "done" ? task.done : !task.done))
-    .sort((a, b) => Number(a.done) - Number(b.done));
-  const selectedTasks = visibleTasks.filter((task) => selectedIds.has(task.id));
-  const allSelected = visibleTasks.length > 0 && selectedTasks.length === visibleTasks.length;
+  const visibleTasks = sortTasks(scopedTasks.filter((task) => filter === "all" || (filter === "done" ? task.done : !task.done)), sort);
+  const selection = selectedTaskSummary(plan.tasks, [...selectedIds], visibleTasks.map(task => task.id));
+  const selectedTasks = selection.tasks;
+  const allSelected = visibleTasks.length > 0 && selection.visible === visibleTasks.length;
   const allSelectedDone = selectedTasks.length > 0 && selectedTasks.every((task) => task.done);
 
   function toggleSelection(id: string) {
@@ -242,7 +256,7 @@ function TodoWorkspace() {
   }
 
   function toggleSelectAll() {
-    setSelectedIds(allSelected ? new Set() : new Set(visibleTasks.map((task) => task.id)));
+    setSelectedIds(current => { const next = new Set(current); for (const task of visibleTasks) { if (allSelected) next.delete(task.id); else next.add(task.id); } return next; });
   }
 
   function save(next: Plan, message: string, recordHistory = true) {
@@ -272,9 +286,9 @@ function TodoWorkspace() {
     }
     const categoryId = classification.category.startsWith("category:") ? classification.category.slice(9) : null;
     if (!validTaxonomyReferences([{ categoryId, tagIds: classification.tags }], plan.categories, plan.tags)) { setError("선택한 분류가 삭제됐어요. 필터를 다시 선택하거나 초기화해주세요. 입력은 유지했어요."); return; }
-    const task: Task = { id: crypto.randomUUID(), title, minutes: null, bufferMinutes: null, startTime: null, endTime: null, endDate: null, endDayOffset: null, priority: "normal", done: false, plannedDate: range === "all" ? null : planDate, notes: "", categoryId, tagIds: classification.tags };
+    const task: Task = { id: crypto.randomUUID(), title, minutes: null, bufferMinutes: null, startTime: null, endTime: null, endDate: null, endDayOffset: null, priority: "normal", importance: "normal", dueDate: null, dueTime: null, done: false, plannedDate: range === "all" ? null : planDate, notes: "", categoryId, tagIds: classification.tags };
     if (save({ ...plan, tasks: [...plan.tasks, task] }, "할 일을 추가했어요.")) {
-      setInput(""); setFilter("all"); setSelectedIds(new Set()); setSelectionMode(false); inputRef.current?.focus();
+      setInput(""); setFilter("all"); inputRef.current?.focus();
       if (classification.search) { workspace.set(current => ({ ...current, classification: { ...classification, search: "" } })); setNotice({ message: "할 일을 추가하고 검색어를 해제했어요. 분류·태그 필터는 유지돼요." }); }
     }
   }
@@ -334,26 +348,33 @@ function TodoWorkspace() {
     if (!history.value) return;
     try {
       const next = applyUndo(readLatestPlan(), history.value);
-      if (save(next, "직전 변경을 되돌렸어요.", false)) { history.set(null); setSelectedIds(new Set()); }
+      if (save(next, "직전 변경을 되돌렸어요.", false)) { history.set(null); }
     } catch (error) { setError((error as Error).message); }
   }
   function deleteSelected() {
-    const ids = new Set(selectedTasks.map(t => t.id)); if (!ids.size) return;
-    if (save(withoutTasks(ids), ids.size + "개의 할 일을 삭제했어요.")) {
-      workspace.set(current => [...ids].reduce((result, id) => withoutEditor(result, id), current));
-      setSelectedIds(new Set());
-    }
+    requestBulk("delete");
   }
 
   function completeSelected() {
-    const ids = new Set(selectedTasks.map((task) => task.id));
-    if (ids.size === 0) return;
-    const tasks = plan.tasks.map((task) => ids.has(task.id) ? { ...task, done: !allSelectedDone } : task);
-    const titles = tasks.filter((task) => !task.done).map((task) => task.title.toLocaleLowerCase());
-    if (allSelectedDone && new Set(titles).size !== titles.length) {
-      setError("같은 내용의 진행 중인 항목이 있어 완료를 취소할 수 없어요."); return;
-    }
-    if (save({ ...plan, tasks }, ids.size + (allSelectedDone ? "개의 완료를 취소했어요." : "개의 할 일을 완료했어요."))) setSelectedIds(new Set());
+    requestBulk(allSelectedDone ? "undone" : "done");
+  }
+  function requestBulk(kind: BulkRequest["kind"]) {
+    try { setBulkRequest(previewBulkAction(plan, [...selectedIds], visibleTasks.map(task => task.id), kind)); } catch (error) { setError((error as Error).message); }
+  }
+  function confirmBulk() {
+    if (!bulkRequest) return "처리할 대상을 다시 선택해주세요.";
+    try {
+      const next = applyBulkAction(readLatestPlan(), bulkRequest);
+      const message = bulkRequest.tasks.length + (bulkRequest.kind === "delete" ? "개의 할 일을 삭제했어요." : bulkRequest.kind === "done" ? "개의 할 일을 완료했어요." : "개의 완료를 취소했어요.");
+      if (!save(next, message)) return "저장하지 못했어요. 선택과 초안은 유지했어요. 저장 공간과 최신 계획을 확인한 뒤 다시 시도해주세요.";
+      const ids = new Set(bulkRequest.tasks.map(task => task.id));
+      workspace.set(current => { const next = bulkRequest.kind === "delete" ? [...ids].reduce((result, id) => withoutEditor(result, id), current) : current; return { ...next, selectedIds: (next.selectedIds ?? []).filter(id => !ids.has(id)) }; });
+      setBulkRequest(null); return null;
+    } catch (error) { return (error as Error).message; }
+  }
+  function moveTask(task: Task, direction: -1 | 1) {
+    if (sort !== "manual") { setError("수동 순서에서만 이동할 수 있어요."); return; }
+    try { save(moveVisibleTask(plan, visibleTasks.map(task => task.id), task.id, direction), "보이는 할 일의 수동 순서를 바꿨어요. 숨긴 항목은 제자리에 있어요."); } catch (error) { setError((error as Error).message); }
   }
 
   function toggleDone(task: Task) {
@@ -367,8 +388,6 @@ function TodoWorkspace() {
   function changeFilter(value: Filter) {
     changeView("list");
     setFilter(value);
-    setSelectedIds(new Set());
-    setSelectionMode(false);
   }
 
   function changeView(value: View) {
@@ -379,11 +398,11 @@ function TodoWorkspace() {
 
   function navigateRange(value: RangeScope) {
     workspace.set(current => ({ ...current, range: value, view: "list", selectedDate: value === "all" ? current.selectedDate : koreanToday() }));
-    setFilter("all"); setSelectedIds(new Set()); setSelectionMode(false); setError("");
+    setFilter("all"); setError("");
   }
 
   function editorFrom(task: Task): EditorDraft {
-    return { base: task, baseMandala: safeMandala(plan.mandala), title: task.title, notes: task.notes ?? "", categoryId: task.categoryId ?? null, tagIds: task.tagIds ?? [], work: workFromStoredTime(task.minutes, task.bufferMinutes), buffer: task.bufferMinutes === null ? "" : String(task.bufferMinutes), start: task.startTime ?? "", date: task.plannedDate ?? "", timeMode: task.startTime || task.minutes === null ? "clock" : "duration", end: task.endTime ?? "", endDate: task.endDate ?? task.plannedDate ?? "", endDay: String(task.endDayOffset ?? 0), priority: task.priority, done: task.done, links: mandala.areas.flatMap((area, a) => area.taskIds.flatMap((id, c) => id === task.id ? [a + ":" + c] : [])) };
+    return { base: task, baseMandala: safeMandala(plan.mandala), title: task.title, notes: task.notes ?? "", importance: task.importance ?? "normal", dueDate: task.dueDate ?? "", dueTime: task.dueTime ?? "", categoryId: task.categoryId ?? null, tagIds: task.tagIds ?? [], work: workFromStoredTime(task.minutes, task.bufferMinutes), buffer: task.bufferMinutes === null ? "" : String(task.bufferMinutes), start: task.startTime ?? "", date: task.plannedDate ?? "", timeMode: task.startTime || task.minutes === null ? "clock" : "duration", end: task.endTime ?? "", endDate: task.endDate ?? task.plannedDate ?? "", endDay: String(task.endDayOffset ?? 0), priority: task.priority, done: task.done, links: mandala.areas.flatMap((area, a) => area.taskIds.flatMap((id, c) => id === task.id ? [a + ":" + c] : [])) };
   }
   function openEditor(task: Task) {
     // Timeline entries also carry layout fields; compare drafts with the saved task only.
@@ -412,6 +431,9 @@ function TodoWorkspace() {
     const categoryId = editor?.categoryId === undefined ? task.categoryId ?? null : editor.categoryId;
     const tagIds = editor?.tagIds ?? task.tagIds ?? [];
     if (!validTaxonomyReferences([{ categoryId, tagIds }], plan.categories, plan.tags)) { setEditError("삭제된 분류나 태그가 있어요. 분류·태그에서 다시 선택하거나 연결을 해제해주세요. 입력은 유지했어요."); return; }
+    const importance = editor?.importance ?? task.importance ?? "normal";
+    const dueDate = (editor?.dueDate ?? task.dueDate) || null, dueTime = (editor?.dueTime ?? task.dueTime) || null;
+    if (!validTaskPlanning({ importance, dueDate, dueTime })) { setEditError("마감 날짜와 시각을 확인해주세요. 시각만 입력할 수 없어요. 입력은 초안으로 유지했어요."); return; }
     const title = editTitle.trim();
     const { minutes: duration, bufferMinutes: buffer, error: timeError } = editTime;
     if (!title) { setEditError("수정할 내용을 입력해주세요."); return; }
@@ -430,9 +452,9 @@ function TodoWorkspace() {
     if (occupied) { setEditError("선택한 실행 칸에 다른 할 일이 있어요. 빈 칸을 선택해주세요."); return; }
     const nextMandala = linksChanged ? { ...mandala, areas: mandala.areas.map((area, a) => ({ ...area, taskIds: area.taskIds.map((id, c) => editLinks.includes(`${a}:${c}`) ? task.id : id === task.id ? "" : id) })) } : plan.mandala;
     const destination = submitDestination.current;
-    if (save({ ...plan, mandala: nextMandala, tasks: plan.tasks.map((item) => item.id === task.id ? { ...item, title, notes: editNotes ?? "", categoryId, tagIds, minutes: duration, bufferMinutes: buffer, startTime: editTime.startTime, endTime: editTime.endTime, endDate: editTime.endDate, endDayOffset: editTime.endDayOffset, plannedDate: editDate || null, priority: editPriority, done: editDone } : item) }, "내용을 수정했어요.")) {
+    if (save({ ...plan, mandala: nextMandala, tasks: plan.tasks.map((item) => item.id === task.id ? { ...item, title, notes: editNotes ?? "", importance, dueDate, dueTime, categoryId, tagIds, minutes: duration, bufferMinutes: buffer, startTime: editTime.startTime, endTime: editTime.endTime, endDate: editTime.endDate, endDayOffset: editTime.endDayOffset, plannedDate: editDate || null, priority: editPriority, done: editDone } : item) }, "내용을 수정했어요.")) {
       if (linksChanged) setMandalaDraft(null);
-      workspace.set(current => withoutEditor(current, task.id)); setSelectedIds(new Set());
+      workspace.set(current => withoutEditor(current, task.id));
       if (destination === "alpen") { setAlpenTaskId(task.id); if (editDate) setSelectedDate(editDate); changeView("alpen"); }
     }
     else setEditError("저장하지 못했어요. 브라우저의 저장 공간이나 사이트 저장 권한을 확인해주세요.");
@@ -475,6 +497,7 @@ function TodoWorkspace() {
             {view !== "list" && <DraftFeedback draft={workspace} />}
       {Object.entries(workspace.value.editors).filter(([id]) => !plan.tasks.some(t => t.id === id)).map(([id, draft]) => <section className="oddk-draftRecovery" key={id}><strong>삭제된 할 일의 초안</strong><p>{draft.title}</p><button type="button" onClick={() => { setInput(draft.title); changeView("list"); }}>추가 입력란으로 복사</button><button type="button" onClick={() => workspace.set(current => withoutEditor(current, id))}>이 초안 폐기</button><button type="button" onClick={workspace.download}>초안 백업 받기</button></section>)}
 
+            {selectedIds.size > 0 && <section className="oddk-selectionDock" aria-label="여러 날짜 선택한 할 일"><p role="status">총 {selectedTasks.length}개 선택 · 화면 내 {selection.visible}개 · 숨긴 선택 {selection.hidden}개{selection.missing > 0 && <span> · 삭제된 항목 {selection.missing}개는 처리에서 제외</span>}</p><div className="oddk-bulkActions"><button type="button" disabled={!selectedTasks.length} onClick={completeSelected}><HiOutlineCheck aria-hidden="true" />{allSelectedDone ? "완료 취소 대상 확인" : "완료 대상 확인"}</button><button type="button" disabled={!selectedTasks.length} onClick={deleteSelected}><HiOutlineTrash aria-hidden="true" />삭제 대상 확인</button><button type="button" onClick={() => setSelectedIds(new Set())}><HiOutlineXMark aria-hidden="true" />모든 선택 해제</button>{selection.missing > 0 && <button type="button" onClick={() => setSelectedIds(new Set(selectedTasks.map(task => task.id)))}>삭제된 선택 정리</button>}</div></section>}
             {planningView && range === "day" && <div className="oddk-paneSwitch" role="group" aria-label="하루 보기"><button type="button" aria-pressed={view !== "rhythm"} onClick={() => changeView("list")}><HiOutlineListBullet />목록</button><button type="button" aria-pressed={view === "rhythm"} onClick={() => changeView("rhythm")}><HiOutlineClock />시간표</button></div>}
             <div className={"oddk-contentGrid oddk-singleView" + (planningView && range === "day" ? " oddk-dailyGrid" : "")} data-pane={view === "rhythm" ? "rhythm" : "list"}>
               <section hidden={!planningView} className="oddk-taskArea" aria-labelledby="task-list-title">
@@ -485,19 +508,16 @@ function TodoWorkspace() {
                     <button type="button" aria-pressed={filter === "active"} onClick={() => changeFilter("active")}>진행 중<span>{active.length}</span></button>
                     <button type="button" aria-pressed={filter === "done"} onClick={() => changeFilter("done")}>완료<span>{doneCount}</span></button>
                   </div>
-                  <button className="oddk-selectionToggle" type="button" aria-pressed={selectionMode} onClick={() => { setSelectionMode(!selectionMode); setSelectedIds(new Set()); }}>{selectionMode ? "선택 끝내기" : "선택"}</button>
+                  <button className="oddk-selectionToggle" type="button" aria-pressed={selectionMode} onClick={() => setSelectionMode(!selectionMode)}>{selectionMode ? "선택 끝내기" : "선택"}</button>
                 </div>
 
+                <div className="oddk-sortControl"><label>표시 순서<select value={sort} onChange={event => setSort(event.target.value as TaskSort)}><option value="manual">수동 순서</option><option value="importance">중요도 높은 순</option><option value="deadline">마감 빠른 순</option></select></label><small>{sort === "manual" ? "위·아래 버튼으로 순서 변경 · 숨긴 항목은 제자리" : "표시만 변경 · 저장된 수동 순서는 유지"}</small></div>
                 {selectionMode && <div className="oddk-selectionBar">
-                  <SelectionCheckbox label="현재 목록 전체 선택" checked={allSelected} disabled={visibleTasks.length === 0} mixed={selectedTasks.length > 0 && !allSelected} onChange={toggleSelectAll} />
+                  <SelectionCheckbox label="현재 목록 전체 선택" checked={allSelected} disabled={visibleTasks.length === 0} mixed={selection.visible > 0 && !allSelected} onChange={toggleSelectAll} />
                   <button type="button" disabled={visibleTasks.length === 0} onClick={toggleSelectAll}>전체 선택</button>
-                  <span>{selectedTasks.length}개 선택</span>
+                  <span>화면 내 {selection.visible}개 선택 · 숨긴 선택 {selection.hidden}개</span>
                 </div>}
-                {selectionMode && selectedTasks.length > 0 && <div className="oddk-bulkActions" role="group" aria-label="선택 항목 관리">
-                  <button type="button" onClick={completeSelected}>{allSelectedDone ? <HiOutlineArrowUturnLeft aria-hidden="true" /> : <HiOutlineCheck aria-hidden="true" />}{allSelectedDone ? "완료 취소" : "선택 완료"}</button>
-                  <button type="button" onClick={deleteSelected}><HiOutlineTrash aria-hidden="true" />선택 삭제</button>
-                  <button type="button" onClick={() => setSelectedIds(new Set())}><HiOutlineXMark aria-hidden="true" />선택 해제</button>
-                </div>}
+
 
                 {error && <p className="oddk-error" role="alert">{error}</p>}
 
@@ -506,15 +526,15 @@ function TodoWorkspace() {
                   {(classification.category !== "all" || classification.tags.length > 0 || classification.search) ? <><h3>필터에 맞는 할 일이 없어요</h3><p>다른 분류·태그·검색어를 선택하거나 필터를 초기화해보세요.</p><button type="button" onClick={() => changeClassification(defaultClassification)}>필터 초기화</button></> : <><h3>{filter === "done" ? "작은 완료가 쌓일 자리예요" : filter === "active" && doneCount > 0 ? "모든 할 일을 마쳤어요!" : "아직 비어 있는 하루예요"}</h3>
                   <p>{filter === "done" ? "끝낸 일을 체크하면 여기에 보여요." : filter === "active" && doneCount > 0 ? "필요할 때 다음 할 일을 더해보세요." : "첫 번째 할 일을 가볍게 적어보세요."}</p></>}
                 </div> : <ul className="oddk-taskList">
-                  {visibleTasks.map((task) => { const portion = range === "day" ? taskDaySlice(task, planDate) : null; return <li key={task.id} className={"oddk-task" + (task.done ? " oddk-completed" : "") + (selectionMode && selectedIds.has(task.id) ? " oddk-selected" : "")}>
+                  {visibleTasks.map((task, index) => { const portion = range === "day" ? taskDaySlice(task, planDate) : null; return <li key={task.id} className={"oddk-task" + (task.done ? " oddk-completed" : "") + (selectionMode && selectedIds.has(task.id) ? " oddk-selected" : "")}>
                     <SelectionCheckbox id={"task-" + task.id} checked={selectionMode ? selectedIds.has(task.id) : task.done}
                       round={!selectionMode} label={task.title + (selectionMode ? " 선택" : " 완료")}
                       onChange={() => selectionMode ? toggleSelection(task.id) : toggleDone(task)} />
                     <button type="button" className="oddk-taskContent" aria-label={task.title + " 상세 수정"} onClick={() => openEditor(task)}>
-                      <span className="oddk-taskTitle" title={task.title}>{task.title}</span>
+                      <span className="oddk-taskTitle" title={task.title}><span className="oddk-taskSequence" aria-label={"표시 순서 " + (index + 1)}>{index + 1}.</span>{task.title}</span>
                       <ClassificationBadges task={task} plan={plan} />
                       <span className="oddk-taskDetails">
-                        <span className={"oddk-taskPriority oddk-" + task.priority}>{priorities[task.priority].label}</span>
+                        <TaskPlanningBadges task={task} date={today} time={nowTime} />
                         <span aria-hidden="true" className="oddk-detailDot">·</span>
                         <span className={"oddk-taskTime" + (!hasTime(task) ? " oddk-unset" : "")}
                           title={!hasTime(task) ? "항목을 눌러 시간을 설정해주세요" : "작업 " + (task.minutes - task.bufferMinutes) + "분 / 수행 " + task.minutes + "분, 포함된 여유 " + task.bufferMinutes + "분"}
@@ -526,6 +546,7 @@ function TodoWorkspace() {
                         {portion && portion.segmentMinutes !== task.minutes && <span>이 날짜 {portion.segmentMinutes}분 · {portion.continuesBefore ? "전날부터 이어짐" : "다음 날 계속"}</span>}
                       </span>
                     </button>
+                    {sort === "manual" && <TaskMoveButtons title={task.title} first={index === 0} last={index === visibleTasks.length - 1} onMove={direction => moveTask(task, direction)} />}
                     {!selectionMode && !task.done && today && task.plannedDate && task.plannedDate < today && <button type="button" className="oddk-replanButton" aria-label={task.title + " 다시 계획"} onClick={() => { setReplanDate(koreanToday()); setReplanError(""); setReplanId(task.id); }}><HiOutlineArrowUturnLeft aria-hidden="true" />다시 계획</button>}
                     {task.done && <span className="oddk-doneBadge">완료</span>}
                   </li>; })}
@@ -599,13 +620,14 @@ function TodoWorkspace() {
             onChange={(event) => { setEditTitle(event.target.value); setEditError(""); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} autoFocus /><small id="edit-title-count">{editTitle.length}/120</small></label>
           <label className="oddk-dialogField oddk-editorNotes" htmlFor="edit-notes">상세 메모<AutoTextarea id="edit-notes" aria-label="상세 메모" aria-describedby="edit-notes-count" onLimit={() => setEditError("상세 메모는2000자까지 입력할 수 있어요. 기존 메모는 유지했어요.")} value={editNotes ?? ""} maxLength={2000} placeholder="단계, 준비물, 참고할 내용을 자유롭게 적어보세요." onChange={event => { setEditNotes(event.target.value); setEditError(""); }} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} /><small id="edit-notes-count">{(editNotes ?? "").length}/2000</small></label>
           <TaskClassificationFields plan={plan} categoryId={editor?.categoryId === undefined ? editingTask.categoryId ?? null : editor.categoryId} tagIds={editor?.tagIds ?? editingTask.tagIds ?? []} onChange={patchEditor} />
+          <TaskPlanningFields importance={editor?.importance ?? editingTask.importance ?? "normal"} dueDate={editor?.dueDate ?? editingTask.dueDate ?? ""} dueTime={editor?.dueTime ?? editingTask.dueTime ?? ""} onChange={patchEditor} />
           <div className="oddk-editorMeta">
-            <fieldset className="oddk-editorPriority"><legend>우선순위</legend>
+            <details className="oddk-legacyPriority"><summary>기존 우선순위 설정</summary><fieldset className="oddk-editorPriority"><legend>이전 우선순위 · 별도 보관</legend>
               <div className="oddk-priorityOptions">{(["low", "normal", "high"] as const).map((priority) => (
                 <label key={priority}><input type="radio" name="edit-priority" value={priority} className="oddk-srOnly"
                   checked={editPriority === priority} onChange={() => setEditPriority(priority)} /><span>{priorities[priority].label}</span></label>
               ))}</div>
-            </fieldset>
+            </fieldset></details>
             <label className="oddk-dialogField oddk-editorStatus" htmlFor="edit-status">상태
               <span className="oddk-editorSelect"><select id="edit-status" value={editDone ? "done" : "active"} onChange={(event) => setEditDone(event.target.value === "done")}>
                 <option value="active">진행 중</option><option value="done">완료</option>
@@ -664,6 +686,7 @@ function TodoWorkspace() {
       <dialog ref={replanDialogRef} className="oddk-dialog oddk-replanDialog" aria-labelledby="replan-title" onKeyDown={keepFocusInDialog} onClose={() => { setReplanId(null); setReplanError(""); }} onClick={(event) => { if (event.target === event.currentTarget) setReplanId(null); }}>
         {replanTask && <form className="oddk-dialogForm" onSubmit={submitReplan}><header className="oddk-dialogHeader"><h2 id="replan-title">다시 계획하기</h2><button type="button" aria-label="다시 계획 창 닫기" onClick={() => setReplanId(null)}><HiOutlineXMark /></button></header><strong>{replanTask.title}</strong><p>기존 날짜 {replanTask.plannedDate}</p><label className="oddk-dialogField" htmlFor="replan-date">새 계획 날짜<input id="replan-date" type="date" min="0001-01-01" max="9999-12-31" required value={replanDate} onChange={(event) => { setReplanDate(event.target.value); setReplanError(""); }} /></label><p>시작 시간은 비우고, 할 일의 내용·시간·목표 연결은 그대로 유지해요.</p>{replanError && <p role="alert" className="oddk-dialogError">{replanError}</p>}<div className="oddk-dialogActions"><button type="button" onClick={() => setReplanId(null)}>취소</button><button type="submit" className="oddk-primary">날짜 옮기기</button></div></form>}
       </dialog>
+      {bulkRequest && <BulkActionDialog request={bulkRequest} onCancel={() => setBulkRequest(null)} onConfirm={confirmBulk} />}
       <div className={notice ? "oddk-toast" : "oddk-srOnly"} role="status" aria-live="polite" aria-atomic="true">
         {notice && <><span>{notice.message}</span>{history.value && <button type="button" onClick={undoLatest}>실행 취소</button>}<button type="button" aria-label="알림 닫기" onClick={() => setNotice(null)}><HiOutlineXMark aria-hidden="true" /></button></>}
       </div>

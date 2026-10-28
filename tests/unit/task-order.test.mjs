@@ -5,8 +5,15 @@ import { loadPlan } from "../../supabase/functions/_shared/plan-migration.ts";
 import { validTaskPlanning, deadlineMinute } from "../../supabase/functions/_shared/task-planning.ts";
 import { taskImportance, sortTasks, urgencyLabel, moveVisibleTask, reorderVisibleTasks, selectedTaskSummary } from "../../app/todo/task-order.ts";
 import { makeUndo, applyUndo } from "../../app/todo/plan-history.ts";
+import { selectDay } from "../../app/todo/day-selectors.ts";
 const task = (id, patch = {}) => ({ id, title: id, notes: "", minutes: null, bufferMinutes: null, startTime: null, endTime: null, endDate: null, endDayOffset: null, plannedDate: "2026-10-28", priority: "normal", done: false, ...patch });
 const plan = tasks => ({ schemaVersion: 4, start: "09:00", tasks, reviewsByDate: {} });
+test("ALPEN and time analysis use importance independently of legacy priority", () => {
+  const day = selectDay([task("legacy", { priority: "high", minutes: 60, bufferMinutes: 10 }), task("important", { importance: "high", priority: "low", minutes: 30, bufferMinutes: 5 }), task("done", { importance: "low", minutes: 20, bufferMinutes: 5, done: true })], "2026-10-28");
+  assert.deepEqual(day.byImportance, { high: 30, normal: 60, low: 20 });
+  assert.equal(day.highImportanceCount, 1); assert.equal(day.highPriorityCount, 1);
+  assert.deepEqual(day.byPriority, { high: 60, normal: 20, low: 30 });
+});
 test("importance and optional deadline do not reinterpret legacy priority or change planning dates", () => {
   const before = plan([task("legacy", { priority: "high" })]);
   const loaded = loadPlan(JSON.stringify(before)); assert.equal(loaded.ok, true);
