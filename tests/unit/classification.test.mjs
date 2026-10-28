@@ -6,8 +6,34 @@ import { validCategories, validTags, normalizeTagName } from "../../supabase/fun
 import { saveCategory, saveTag, removeCategory, removeTag, filterClassifiedTasks } from "../../app/todo/classification-actions.ts";
 import { makeUndo, applyUndo, validUndo } from "../../app/todo/plan-history.ts";
 import { validWorkspace, emptyWorkspace } from "../../app/todo/workspace-draft.ts";
+import { validClassificationDraft, emptyClassificationDraft } from "../../app/todo/classification-draft.ts";
+import { saveDraft, decodeDraft, draftKey } from "../../app/todo/draft-store.ts";
+import { selectDay } from "../../app/todo/day-selectors.ts";
+import { availabilitySummary } from "../../app/todo/availability.ts";
 const task = (id, patch = {}) => ({ id, title: id, notes: "", minutes: 60, bufferMinutes: 10, startTime: "09:00", endTime: "10:00", endDate: "2026-10-28", endDayOffset: 0, plannedDate: "2026-10-28", priority: "normal", done: false, ...patch });
 const plan = () => ({ schemaVersion: 4, start: "09:00", tasks: [task("a"), task("b")], reviewsByDate: {}, mandala: { goal: "Preserve", areas: Array.from({ length: 8 }, (_, i) => ({ title: String(i), taskIds: [i === 0 ? "a" : "", ...Array(7).fill("")] })) } });
+test("classification filters and partial manager input survive reload under separate account scopes", () => {
+  const data = new Map(), storage = { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
+  const workspace = { ...emptyWorkspace, input: "아직 등록하지 않음", classification: { category: "category:work", tags: ["exercise"], search: "메모" } };
+  saveDraft(storage, "local", "workspace", workspace, validWorkspace);
+  assert.deepEqual(decodeDraft(storage.getItem(draftKey("local", "workspace")), validWorkspace).data, workspace);
+  assert.equal(storage.getItem(draftKey("other-account", "workspace")), null);
+  const partial = { ...emptyClassificationDraft, name: "미완성 분류" };
+  saveDraft(storage, "local", "classification", partial, validClassificationDraft);
+  assert.deepEqual(decodeDraft(storage.getItem(draftKey("local", "classification")), validClassificationDraft).data, partial);
+  assert.equal(validWorkspace({ ...workspace, classification: { ...workspace.classification, tags: undefined } }), false);
+  assert.equal(validWorkspace({ ...workspace, classification: { ...workspace.classification, tags: ["x", "x"] } }), false);
+  assert.equal(validClassificationDraft({ ...partial, id: "deleted", base: null }), false);
+  assert.equal(validClassificationDraft({ ...partial, color: "red" }), false);
+});
+test("category filtering never makes a hidden overlapping event free", () => {
+  const tasks = [task("a", { categoryId: "work" }), task("b", { categoryId: "private", startTime: "09:30", endTime: "10:30" })];
+  const filtered = filterClassifiedTasks(tasks, { category: "category:work", tags: [], search: "" });
+  assert.deepEqual(filtered.map(t => t.id), ["a"]);
+  const summary = availabilitySummary(selectDay(tasks, "2026-10-28"), { start: "09:00", end: "18:00", fixed: [] });
+  assert.equal(summary.occupiedMinutes, 90); assert.equal(summary.freeMinutes, 450); assert.equal(summary.overlapMinutes, 30);
+  assert.equal(summary.overlaps.find(e => e.task.id === "a").others[0].id, "b");
+});
 test("classification names normalize without losing IDs and duplicate names/colors are rejected", () => {
   let value = saveCategory(plan(), { id: "work", name: "  Work  ", color: "#336699" });
   assert.equal(value.categories[0].name, "Work");
