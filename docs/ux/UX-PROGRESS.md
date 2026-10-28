@@ -311,3 +311,9 @@ UX09-DESIGN.md에 범위/시간계약/ALPEN/인수를 기록했다. task-movemen
 
 
 UX09 첫 브라우저 실측: 로컬3200 초기업무0에서 합성A/B등록, A09~10시/여유10 설정. 포인터 목록A→B로 B/A 순서, 버튼 A위로로 A/B복원. 시간표 손잡이45px(3px/분)→09:15~10:15 변경안, 버튼 기본15분제안과 일치. 승인후목록/시간표09:15·작업50/총60/여유10, undo09:00복원. 직접23:30+하루뒤→10/29 23:30~10/30 00:30 및양일활동밖경고, 취소로원본유지. 스크린샷UX09-time-preview/UX09-midnight-preview.jpg. StrictMode effect cleanup의close이벤트로팝업즉시닫힘을재현, 자체onClose핸들러제거/기존cancel패턴적용후버튼·포인터모두팝업유지재확인. 앱자체이벤트처리결함이며 Next피드백사안아님. A/B두개만일괄삭제로업무0복원·선택모드off, console warn/error0. 삭제undo기록에합성항목이남아있는점은후속QA종료정리대상. 기존사용자목표편집없음. 아직필터드래그/포인터취소/실패·경합·계정왕복/모바일·접근성/배포게이트미완료. UX09진행중.
+
+
+UX09 실제계정 통합시험을10번째runner로추가하고전체10개를실제API에실행했다(exec14262 exit0). 새시험은필터수동순서·숨긴슬롯/자정10/29 23:30→10/30 00:30 JSON왕복, 총60/여유10·목표보존, stale409/invalid400 전체plan/version불변, 다른계정격리, 시간/순서/전체fixture undo복원을확인했다. 전용임시계정2개만사용후 signOut·session삭제·user삭제, cleanupSQL test_users_remaining0, 인증fixture/SQL/생성모듈제거확인. 신규schema/Auth/DB변경없음. skill에따른changelog200/relevantPG공지·공식passwordsignIn문서200 확인. 실제OAuth는사용자확인대기로유지.
+
+
+UX09 checkpoint: Pages 정적빌드·최종typecheck/lint성공, 신규공통이동Deno5/5성공(기존71과합친전체Deno는CI에서재확인). Node전체134성공. UI잔여QA와배포미완료, UX10미착수. codex/ux09-drag에중간저장.

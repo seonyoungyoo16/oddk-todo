@@ -41,3 +41,6 @@ UX07 통합시험은8개다. 서버10은 V1~V5를 읽고 V5 저장 계정의 구
 CI는 새 travel-lookup/index.ts를 Deno로 별도 검사하고, travel.test.mjs/travel-handler.test.mjs의 순수 계약·HTTP모사 시험을 실행한다. Next 타입 검사는 이 Deno 진입점만 정확히 제외하고 공유 모듈·handler·클라이언트는 검사한다. 기존 plan-sync 및 로그인 검증은 유지한다.
 
 UX08은 account-travel.test.mjs를9번째 격리계정 통합시험으로 실행한다. 실제 provider HTTP 시험과 분리한 직접입력 여행 fixture로 V5 자정/시간/메모·기존목표 보존·400/409·계정격리·다른날짜 같은여행의 완료/undo와 전체복구를 검증한다. 모든 테스트 계정·세션과 인증 fixture는 통합시험 후 정리한다.
+
+
+UX09은 account-movement.test.mjs를10번째 격리계정 통합시험으로 실행한다. 필터 내 수동순서/숨긴 슬롯 보존, 날짜 이동·자정 넘김·작업/여유·목표 JSONB 왕복, stale409와 invalid400의 전체 상태 보존, 계정 격리, 시간/순서/전체 fixture undo를 검증한다. 실제 OAuth 인수를 대체하지 않는다. CI에는 task-movement 순수 회귀를 Node 및 Deno 양쪽에 포함한다.
