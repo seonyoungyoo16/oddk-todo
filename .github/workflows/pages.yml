@@ -27,7 +27,10 @@ jobs:
         with:
           deno-version: '2.9.6'
       - run: deno check supabase/functions/plan-sync/account.ts supabase/functions/travel-lookup/index.ts supabase/functions/task-maintenance/index.ts supabase/functions/push-subscriptions/index.ts
-      - run: deno test tests/unit/plan-validation.test.mjs tests/unit/plan-v4.test.mjs tests/unit/plan-v5.test.mjs tests/unit/schedule.test.mjs tests/unit/editor-schedule.test.mjs tests/unit/availability.test.mjs tests/unit/availability-draft.test.mjs tests/unit/classification.test.mjs tests/unit/task-order.test.mjs tests/unit/bulk-actions.test.mjs tests/unit/goal-tree.test.mjs tests/unit/travel.test.mjs tests/unit/travel-handler.test.mjs tests/unit/task-movement.test.mjs tests/unit/repeat-calendar.test.mjs tests/unit/recurrence.test.mjs tests/unit/repeat-editor.test.mjs tests/unit/repeat-window.test.mjs tests/unit/task-maintenance.test.mjs tests/unit/push-subscriptions.test.mjs tests/unit/push-reminder.test.mjs
+      - run: deno check --config supabase/functions/push-worker/deno.json --frozen supabase/functions/push-worker/index.ts supabase/functions/push-receipt/index.ts
+      - run: deno test tests/unit/plan-validation.test.mjs tests/unit/plan-v4.test.mjs tests/unit/plan-v5.test.mjs tests/unit/schedule.test.mjs tests/unit/editor-schedule.test.mjs tests/unit/availability.test.mjs tests/unit/availability-draft.test.mjs tests/unit/classification.test.mjs tests/unit/task-order.test.mjs tests/unit/bulk-actions.test.mjs tests/unit/goal-tree.test.mjs tests/unit/travel.test.mjs tests/unit/travel-handler.test.mjs tests/unit/task-movement.test.mjs tests/unit/repeat-calendar.test.mjs tests/unit/recurrence.test.mjs tests/unit/repeat-editor.test.mjs tests/unit/repeat-window.test.mjs tests/unit/task-maintenance.test.mjs tests/unit/push-subscriptions.test.mjs tests/unit/push-reminder.test.mjs tests/unit/push-worker.test.mjs tests/unit/push-receipt.test.mjs
+      - run: deno test --config supabase/functions/push-worker/deno.json --frozen --allow-env=ECE_KEYLOG,DEBUG,NODE_DEBUG tests/edge/web-push-crypto.test.mjs
+      - run: deno test --config supabase/functions/push-worker/deno.json --frozen --allow-env=ECE_KEYLOG tests/edge/keylog-guard.test.mjs
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'

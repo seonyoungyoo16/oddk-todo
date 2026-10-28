@@ -394,3 +394,11 @@ Node신규4/전체183·공통Deno124/typecheck/lint/Pages정적빌드성공. DB�
 MCP Promise병렬요청은실제DB시각상순차라동시성증거로기각. 보충INSERT충돌이이미대기된행을잠글수있음을검토해선행존재필터보완. 실제Cron2/3으로독립DB세션실측:05:40:00.028702/00.034813UTC시작→00.040761/00.047954각5개claim→06.044187/06.055065종료, 10ID고유/양쪽모두다른6초잠금해제전claim, verifySQLPASS. 테스트Cronself삭제0, metadata표시한합성사용자삭제후큐/전달/구독/사용자0·기존계획3. 보완후DB전체수명주기다시PASS. 실제외부전송/단말권한/푸시없음. 의도한no-policy INFO신규2(합7)/기존passwordWARN1·새WARN/ERROR없음.
 
 UX10계속진행: sender Edge/내부예약호출인증·Cron/암호화fetch/응답분류, 제한된receipt HTTP, SW/기기계정마커/로그아웃차단/알림UI, 최종CI/Pages동일SHA운영검증남음. 실제OAuth/실기기인수는마지막. UX11미착수.
+
+### UX10 전송·수신 확인 서버 배포와 실제 API 인수
+
+push-worker2/receipt1 ACTIVE, migration20261028060414·분 단위 sender 활성. 반환소스16/15개 로컬일치. 단회티켓/45초gate·최대5×10배치·18초예산, 암호화증명만전송/최신계획대조/재시도·만료정리. 초기Deno.env.set미지원boot실패는읽기전용ECE_KEYLOG fail-closed guard로수정,실제GET405/위조401. request86=200/empty·87=200/gone1(가짜FCM주소실제만료,실제단말수신아님).
+
+실제receipt API의시각/owner/revision/installation/deviceproof/ACK·최신제목최소응답·중복·완료/undo/retime/delete/계정재연결/타계정불변시험통과. 서버Date기준시각대조·관리자syntheticlease로물리권한요청없이검증했다. 전체Node197/Deno138/독립복호화·VAPID서명2/unsafeenvguard1/frozen진입점check/type/lint/Pagesbuild성공. 새fixture실제API통합12개exit0(33376),worker/receiptRPC+state42501추가. 정리사용자0/구독·예약·전달0/기존계획3,인증·seed·cleanup·생성store모듈제거. advisor서버전용INFO8/기존WARN1·신규WARN/ERROR없음.
+
+UX10미완료: SW/클라이언트기기·계정마커/알림설정·로그아웃차단/수신클릭·최종CI와Pages동일SHA운영인수. 실제OAuth·실물권한/수신은마지막사용자인수. UX11은아직시작하지않는다.

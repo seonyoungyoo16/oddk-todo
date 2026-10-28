@@ -58,3 +58,21 @@ update public.task_maintenance_state set enabled=false where singleton;
 - 정상 업무 수정은 트리거와 안정 키를 거쳐 예약을 갱신한다. 직접 대기열을 지우거나 상태/receipt_hash를 덮어써 알림을 재전송하지 않는다. 대기열 보존7일과 비활성 기기 이력30일은 사용자 계획 보존과 별개다.
 - claim/receipt/current는 서버 전용이다. 향후 HTTP 어댑터는 전체 plan·구독 주소/키를 응답하지 않고, 토큰/기기 증명/최신 계획을 확인한 최소 필드만 반환해야 한다.
 - 동시성 QA의 임시 Cron 이름은 oddk-qa-push-first/second다. 정상 운영 작업과 혼동하지 않는다. 두 테스트는 self-unschedule됐고 시험 fixture와 대기 항목은 모두 정리했다. sender를 켠 뒤에는 운영 대기열에서 해당 시험을 재실행하지 않는다.
+
+## 전송 worker 활성화 이후
+
+현재 push-worker v2와 push-receipt v1이 배포되어 `oddk-push-worker` Cron이 분마다 실행된다. 위의 미구현 표기는 각 이전 체크포인트 당시 상태다. 프런트 SW/UI·실제 단말 수신 인수는 여전히 남아 있다.
+
+```sql
+select enabled,last_request_id,last_finished_at,last_result from public.push_worker_state;
+select r.id,r.status_code,r.timed_out,r.error_msg,r.content
+from net._http_response r join public.push_worker_state s on s.last_request_id=r.id;
+-- 전송 중지: 기존 계획·기기 키·구독 이력을 삭제하지 않는다.
+-- update public.push_worker_state set enabled=false where singleton;
+```
+
+- net 요청에는 단회 짧은 티켓만 보낸다. Vault private key나 장기 서비스 토큰을 요청에 넣지 않는다. 대기열 본문과 Vault 복호화 값을 진단 로그로 출력하지 않는다.
+- worker 내부 최신 계획·구독 대조 후 전송하더라도 수신 시 변경될 수 있다. receipt는 다시 소유권/기기/revision/현재 계획/기한을 검증한 최소 제목만 반환한다. ACK와 공급자 수락은 별개다.
+- sent는 실제 화면 표시의 증거가 아니다. request87의 gone1은 가짜 FCM endpoint의 만료 정리이며 실물 기기 전달로 보고하지 않는다.
+- 안전한 암호화 설정을 위해 ECE_KEYLOG=1 상태에서는 시작을 거부한다. hosted Edge가 Deno.env.set을 지원하지 않으므로 환경을 코드로 변경하지 않는다. 실패 시 제한된 오류 로그와 고정 버전 소스를 확인한다.
+- 만료/재시도/중복 보호를 우회하려고 receipt_hash나 displayed_at을 초기화하지 않는다. 계정 fixture 검증은 전용 계정만 사용하고 종료 후 연결·세션·사용자를 정리한다.

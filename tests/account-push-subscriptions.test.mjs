@@ -95,10 +95,14 @@ try {
     ["push_delivery_current", { p_id: d.installationId, p_lease: d.installationId }],
     ["push_delivery_finish", { p_id: d.installationId, p_lease: d.installationId, p_outcome: "sent", p_retry_seconds: 30 }],
     ["push_delivery_receipt", { p_id: d.installationId, p_receipt_hash: "a".repeat(64), p_binding_hash: "a".repeat(64), p_action: "check" }],
+    ["push_worker_claim", { p_hash: "a".repeat(64) }], ["push_worker_deliveries", { p_worker: d.installationId }],
+    ["push_worker_current", { p_worker: d.installationId, p_id: d.installationId, p_lease: d.installationId }],
+    ["push_worker_finish", { p_lease: d.installationId, p_result: {} }], ["push_worker_dispatch", {}],
+    ["push_receipt_authorize", { p_id: d.installationId, p_receipt_hash: "a".repeat(64), p_binding_hash: "a".repeat(64), p_installation: d.installationId, p_user: users[0].id, p_revision: 1, p_action: "check" }],
   ];
   for (const client of clients) {
     for (const [name, args] of rpc) assert.equal((await client.rpc(name, args)).error?.code, "42501", name);
-    for (const table of ["push_settings", "push_subscriptions", "push_reminders", "push_deliveries"]) assert.equal((await client.from(table).select("*")).error?.code, "42501", table);
+    for (const table of ["push_settings", "push_subscriptions", "push_reminders", "push_deliveries", "push_worker_state"]) assert.equal((await client.from(table).select("*")).error?.code, "42501", table);
   }
   assert.deepEqual(await Promise.all(clients.map(c => c.from("account_plans").select("plan,version,updated_at").maybeSingle())), beforePlans);
   console.log("PASS: VAPID public-only bootstrap stable across two accounts; device proof/owner transfer/CAS/no-op/disable-before-create; owner-only device lists/remote revoke/stale rejection; concurrent five-device cap/recent-history cap; invalid point/host/owner rejected; private tables/RPC denied; account plans unchanged; no push sent.");

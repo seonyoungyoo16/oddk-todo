@@ -83,3 +83,14 @@
 - 시험 계정/구독/예약/전달0·기존 계획3·QA Cron0 확인, 인증/seed/cleanup/생성 store 모듈 제거. 의도적 서버 전용 RLS no-policy INFO2 증가(합7)·기존 password WARN1이며 새 WARN/ERROR는 없다. 운영 전송이나 브라우저 수신 성공으로 확대 해석하지 않는다.
 
 **남은 UX10:** sender Edge·예약 호출 인증/운영 Cron·외부 암호화 전송/응답 분류, 제한된 수신 확인 HTTP API, 브라우저 SW/계정 전환/UI, 최종 CI/Pages/동일 SHA 운영 인수와 마지막 사용자 실제 권한/수신 인수. UX11은 시작하지 않는다.
+
+## 암호화 전송·수신 확인 HTTP 인수 — 2026-10-28
+
+- push-worker v2 ACTIVE/SHA `3f15ac16ab53fd3dea140e8d57dc67f725d50a615e4317d5b2a8d96ccf7a8198`, push-receipt v1 ACTIVE/SHA `183177512a9760c10e76a88788307303275af78b28a39506cc9cc40129bac061`. get_edge_function의 반환 소스16/15개가 로컬과 전체 일치했다. worker 배포 입력에는 deno.json/lock도 포함했다. migration20261028060414 적용, 서버 전용 gate/내부RPC·receipt 소유권 검증과 분 단위 Cron 활성.
+- 전송은 단회2분 작업 티켓·45초 gate,5개 병렬/최대10배치/18초 작업예산,8초 공급자 timeout/redirect 금지다. 공급자404/410은 구독 만료,408/429/5xx/불확실 실패는 기한 내 제한 재시도, 긴 Retry-After는 조기 재시도하지 않는다. 본문은 암호화된 수신증명7필드만이며 제목·메모·전체계획은 보내지 않는다.
+- web-push3.6.7 암호화 요청을 별도 RFC8291 복호화로 대조하고 VAPID 서명/audience·안정 topic·TTL을 검증했다. ECE_KEYLOG=1이면 의존성 import 전에 기동을 거부한다. 초기 hosted v1의 Deno.env.set 미지원 기동 실패를 실제 로그로 확인하고 읽기 전용 guard로 수정해 v2 GET405/위조티켓401을 실측했다. 플랫폼 환경 변경 우회는 하지 않았다.
+- 실제 dispatch request86은200/available=true·처리0, 다음 request87은 합성 만료 FCM 경로1개를 처리해 gone1/200이었다. 이는 실제 공급자 만료 응답/연결 정리 증거이며 실제 단말 알림 수신 증거는 아니다. 이후 자동 Cron도 활성 상태다.
+- 실제 receipt HTTP fixture: 서버 Date 기준으로 알림 시각 전 거부, 잘못된 계정·기기·revision·증명과 ACK 거부, 최소 최신 제목 응답, 표시 ACK/중복 식별, 완료·되돌리기·시각 변경·삭제·계정 재연결 차단, 다른 계정 계획 전체 불변을 통과했다. 수신용 lease는 격리 계정에 관리자 트랜잭션으로 준비했으며 물리 알림 권한을 요청하지 않았다.
+- 최신 전체 Node197·공통 Deno138·실제 암호화2/안전한 import guard1, frozen 진입점 check/typecheck/lint/Pages 정적빌드 성공. 새 fixture의 실제 API 통합12개도 exit0(session33376), worker/receipt RPC·state의 두 계정 직접 접근42501 포함이다. 정리 후 시험 사용자0/구독·예약·전달0·기존계획3 확인, 인증/seed/cleanup/생성 store 모듈 제거. 서버 전용 no-policy INFO8·기존 password WARN1, 새 WARN/ERROR 없음.
+
+**남은 UX10:** 브라우저 SW·기기 증명/계정 마커·알림 설정/해제·로그아웃 차단·수신/클릭 흐름, 최종 CI/Pages/동일 SHA 운영 검증. 실제 OAuth·물리 단말 권한/수신은 마지막 사용자 인수로 유지한다. UX11 미착수.

@@ -4,6 +4,7 @@
 do $$
 declare fixture record; task jsonb; moment timestamptz:=date_trunc('minute',clock_timestamp())+interval '1 minute'; finish_time timestamptz;
 begin
+  if exists(select 1 from public.push_worker_state where enabled) then raise exception 'Sender must remain disabled during claim-race QA'; end if;
   if (select count(*) from auth.users where raw_app_meta_data->>'oddk_test_run'='push-queue-race')<>1 then raise exception 'Expected one synthetic race fixture'; end if;
   if exists(select 1 from cron.job where jobname in ('oddk-qa-push-first','oddk-qa-push-second')) then raise exception 'Prior race jobs remain'; end if;
   select p.user_id,p.plan into fixture from public.account_plans p join auth.users u on u.id=p.user_id where u.raw_app_meta_data->>'oddk_test_run'='push-queue-race';

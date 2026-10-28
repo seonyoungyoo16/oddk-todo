@@ -75,3 +75,11 @@ UX10은 account-recurrence.test.mjs를11번째 격리계정 통합시험으로 �
 - `push-queue-database.sql`은 공개 VAPID 초기화 후 관리자 연결에서 실행한다. 비로그인용2계정·계획·기기를 트랜잭션 안에서 생성해 예약/취소/undo/수신 증명/lease/backoff/ACK/소유권/재시도4회/만료/cascade를 시험하고 전부 롤백한다. 네트워크와 단말 권한 요청은 없다.
 - 실제 동시 세션 시험은 `push-queue-race-seed.sql`→`push-queue-race-schedule.sql`→특정 Cron 작업 완료 확인→`push-queue-race-verify.sql` 순서다. sender 미활성·운영 대기 항목 없는 격리 조건이 필요하다. 같은 시각의 one-shot Cron2개가 각5개 claim을6초 유지하고, 둘 중 하나라도 다른 쪽의 잠금 해제를 기다려 claim했다면 실패한다. 일반 MCP 병렬 호출은 전송 계층에서 직렬화될 수 있어 그 결과만으로 동시성을 주장하지 않는다.
 - one-shot 작업은 자체 unschedule되며 실패 때는 두 QA job 이름만 관리자 연결로 해제한다. 검증 뒤 app_metadata.oddk_test_run이 push-queue-race인 비로그인 fixture만 삭제하고 예약/전달/구독/시험 사용자/QA Cron0을 확인한다. 실제 sender가 켜진 운영 데이터에 이 fixture를 추가하거나 정상 알림을 대신 claim하지 않는다.
+
+### 전송·수신 확인 시험
+
+- 순수 worker/receipt14개는 Node 및 공통 Deno 목록에 포함한다. Deno 진입점은 `deno check --config supabase/functions/push-worker/deno.json --frozen supabase/functions/push-worker/index.ts supabase/functions/push-receipt/index.ts`로 고정 의존성을 확인한다.
+- `deno test --config supabase/functions/push-worker/deno.json --frozen --allow-env=ECE_KEYLOG,DEBUG,NODE_DEBUG tests/edge/web-push-crypto.test.mjs`는 실제 어댑터의 암호문을 독립 복호화하고 서명을 검증한다. fetch는 모사하므로 실제 외부 전송이 아니다.
+- `deno test --config supabase/functions/push-worker/deno.json --frozen --allow-env=ECE_KEYLOG tests/edge/keylog-guard.test.mjs`는 별도 프로세스에서 위험한 키로그 설정의 import 거부를 확인한다. 환경 변경은 시험에만 있다.
+- live receipt: 새 전용2계정 seed 후 `node tests/receipt-fixture.mjs prepare`. 관리자 연결에서 `receipt-fixture-claim.sql`에 설명된 해당 fixture 사용자 GUC를 설정해 단일 트랜잭션으로 시각·lease를 준비한다. 반환 proof는 로그에 출력하지 않고 무시된 `.sync-test-runtime/receipt-claims.json`에만 보관한다. `node tests/receipt-fixture.mjs verify`는 서버 Date 헤더 기준으로 시각 경계를 판단한다. 실행 중 실패하면 기대값을 느슨하게 하지 말고 현재 plan/revision/lease와 시각부터 확인한다.
+- 종료 후 signOut·marker별 cleanup, 잔여0 확인 후 인증fixture/seed/cleanup/receipt-fixture.json/receipt-claims.json/시험 생성 store 모듈만 정확한 경로로 삭제한다. 실제 사용자 자료와 이전 증거는 보존한다. synthetic lease와 공급자 gone 응답을 물리 알림 수신 성공으로 표시하지 않는다.

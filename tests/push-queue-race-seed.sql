@@ -5,6 +5,7 @@ declare
   qa_user uuid:=gen_random_uuid(); moment timestamptz:=date_trunc('minute',clock_timestamp()); finish_time timestamptz;
   source jsonb; task jsonb; settings_key text; endpoint_value text; answer jsonb;
 begin
+  if exists(select 1 from public.push_worker_state where enabled) then raise exception 'Use an isolated queue with the sender disabled'; end if;
   if exists(select 1 from public.push_deliveries where status in ('pending','sending')) then raise exception 'Use an isolated empty queue'; end if;
   if exists(select 1 from auth.users where raw_app_meta_data->>'oddk_test_run'='push-queue-race') then raise exception 'Clean prior race fixture first'; end if;
   insert into auth.users(id,aud,role,email,raw_app_meta_data,created_at,updated_at)
