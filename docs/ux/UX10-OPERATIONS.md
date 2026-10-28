@@ -63,7 +63,7 @@ update public.task_maintenance_state set enabled=false where singleton;
 
 현재 push-worker v2와 push-receipt v1이 배포되어 `oddk-push-worker` Cron이 분마다 실행된다. 위의 미구현 표기는 각 이전 체크포인트 당시 상태다. 프런트 SW/UI·실제 단말 수신 인수는 여전히 남아 있다.
 
-최신 클라이언트 SW/UI는 로컬 기본 및 종합 브라우저 인수를 마쳤고 Pages 배포 게이트를 기다린다. plan-sync는 로컬 QA origin을 정확히 허용한 v12이며 인증·소유권·CAS는 유지했다. 실제 단말 수신은 여전히 최종 사용자 인수다.
+최신 클라이언트 SW/UI는 로컬·종합 브라우저·CI·Pages 운영 인수를 마쳤다(PR28/c361c3d, deployment7388172986). plan-sync는 로컬 QA origin을 정확히 허용한 v12이며 인증·소유권·CAS는 유지했다. 실제 단말 수신은 여전히 최종 사용자 인수다.
 
 ```sql
 select enabled,last_request_id,last_finished_at,last_result from public.push_worker_state;

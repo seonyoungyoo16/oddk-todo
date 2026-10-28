@@ -422,3 +422,15 @@ tests/push-browser-flow.html 기반 실제2계정/Auth/API/SW/IndexedDB+iframe�
 SW/DB/iframe·privateHTML정리/원래스토리지전체원문복원. 새fixture통합12개최신store+plan-sync12 exit0(49760),시험사용자/구독/예약/전달0·기존계획3·Cron2활성,fixture/seed/cleanup/생성3모듈정리. 전체Node210/type/lint/Pagesbuild성공. 정적standalone manifest·192/512기존아이콘·Apple metadata/ko언어와export검증추가: local/Pages경로·PNG·HTML·SW원문·시험자료미포함PASS. 새WARN/ERROR없음.
 
 아직UX10완료아님: 최신CI·동일SHA Pages배포/운영자산·예약스모크확인후UX11. 물리권한·실물수신·OAuth/실기기인수는사용자요청대로전체작업마지막에모은다.
+
+### UX10 운영 게이트 완료 / UX11 착수
+
+PR28 head1e13b91 CI40705972616 verify122878063576 Node210/Deno138/edge암호화2+guard1/check/type/lint/Pagesbuild/export검증성공. 병합c361c3d6d53e1a6bce72b0cb9cfa491c2bc316df, master40706275653 verify122879150828/deploy122879810333 completed/success. deployment7388172986 SHA일치success. 실제운영todo·manifest·SW/core·PNG192/512 200,JS전체소스·PNG바이트일치/standalone범위·metadata·ko확인. 운영브라우저양쪽SSOenabled·렌더정상·console0, UX10-deployed.jpg. Cron2 enabled/최신HTTP200·timeoutfalse/오류null·처리0/실패0. 시험자료0/기존계획3·실제primaryff·사용자CSS해시/미커밋로고/별도계획보존.
+
+UX10소프트웨어QA·배포게이트완료후c361기반codex/ux11-actual-time시작. 실제OAuth·권한/실물수신·실기기/독립사용성은FINAL-USER-CHECKS에모아마지막에요청한다. 전체목표는아직진행중이며UX11~13을계속한다.
+
+### UX11 공통 실제 기록 모델·전환 규칙
+
+UX11-DESIGN에계획JSON과분리한실적/현재상태·소유권·단일active/계획→실행잠금순서·operation/revision/CAS·작업완료삭제종료·익명IDB/계정scope·수동보정/백업/가져오기/기간집계·시간계약·ALPEN/인수를정리했다. DB/API/UI는아직미구현이며소프트웨어기록설계부터진행한다.
+
+execution.ts는계획제목/날짜/작업·전체snapshot불변,최대64개의정수ms UTC work/break 구간, pause미합산·명시휴식·재개·종료/중복no-op·역행거부,24시간cap/확인필요·미래/중첩/손상거부·종료후수동보정·한국자정집계를구현했다. 신규9개Node/Deno각PASS,전체Node219/type/lint성공. 계정단일active/다른record겹침/실제persist·서버/브라우저/배포는아직아니며UX12에착수하지않는다. 다음블록은실적저장/API·원자적전환과실제2계정/두기기경합증거다.
