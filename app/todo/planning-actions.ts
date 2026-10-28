@@ -6,7 +6,7 @@ export function rescheduleTask(plan: Plan, id: string, date: string, today: stri
   const task = plan.tasks.find((task) => task.id === id);
   if (!task || task.done || !task.plannedDate || task.plannedDate >= today) throw new Error("지난 날짜의 미완료 할 일만 다시 계획할 수 있어요.");
   if (task.plannedDate === date) throw new Error("기존 날짜와 다른 날짜를 선택해주세요.");
-  return { ...plan, tasks: plan.tasks.map((task) => task.id === id ? { ...task, plannedDate: date, startTime: null, ...(Number(plan.schemaVersion) >= 4 ? { endTime: null, endDate: null, endDayOffset: null } : {}) } : task) };
+  return { ...plan, tasks: plan.tasks.map((task) => task.id === id ? { ...task, plannedDate: date, startTime: null, ...(Number(plan.schemaVersion) >= 4 ? { endTime: null, endDate: null, endDayOffset: null } : {}), ...(task.reminderMinutes !== undefined ? { reminderMinutes: null } : {}), ...(task.repeatSeriesId ? { repeatException: true } : {}) } : task) };
 }
 
 export function saveDatedReview(plan: Plan, date: string, text: string, expected: string): Plan {

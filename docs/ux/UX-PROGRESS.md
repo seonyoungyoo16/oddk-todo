@@ -324,3 +324,101 @@ UX09 checkpoint: Pages 정적빌드·최종typecheck/lint성공, 신규공통이
 임시 로컬 QA프레임에서 원본업무0·목표/초안/테마스냅샷을보존하고 A/숨긴다음날/B/10분항목4개로시험. 계획quota실패원본09:00·4개/목표불변·팝업09:15유지→해제재시도09:15저장. 다른기기메모변경StorageEvent모사→오래된승인거부/원격메모유지. 즉시stale잠금과입력유지최신재검토를보완,09:30입력유지/확인활성재시험. 겹침10~11안/B10:30~11:30이름경고. 마지막버튼Tab→닫기/ESC후호출버튼복귀(초기문서포커스문제수정).390px다크10분일정대체버튼→11:50~12시/작업8+여유2=10. 물리터치/실제200%는UX13로명시.
 
 실제목록영역밖드롭무변경, A→B로B/숨긴날짜/A/짧은항목보존, 중요도정렬손잡이0/수동복귀유지. 종료guard원본계획전체JSON일치/tasks0/goalsSame/fixtureUndoRemoved=true, 초안·테마복원/QA탭닫음/public임시HTML삭제/콘솔warn-error0. UX09-ACCEPTANCE.md와스크린샷3개추가. 최종Node134/린트/typecheck/Pagesbuild성공. CI·운영배포는아직미완료, UX10미착수.
+
+
+### UX09 운영 게이트 완료 / UX10 달력 계약 착수
+
+PR27 head26b0e19, CI40626698118/122613213103 Node134·Deno76·Edge2/check/lint/type/Pagesbuild통과. 병합639fd6db359c2eb69b86ae173119b75c69c3ec75, master40626803500 verify122613576875/deploy122613857725 completed/success, deployment7376392960 SHA일치. 운영 새정렬안내/수동선택/업무0/SSO활성·초안입력reload복원후빈입력정리·consolewarn/error0. UX09-deployed.jpg. 실제소스ff/사용자CSS해시·미커밋로고/별도계획보존. UX09완료후codex/ux10-recurrence로전환.
+
+UX10-DESIGN.md에 반복원본/안정발생/이번·이후·전체/예외·완료보존/V6이전, ServiceWorker+서버예약/전달·취소, 사용자단말권한최종인수와ALPEN블록을작성했다. 공식MDN Push/subscribe·Supabase스케줄링문서확인. repeat-calendar.ts는 daily간격/월요일기준weekly요일/monthly없는날건너뛰기·한국달력/366일범위·안정원본+발생일ID계약을구현했다. 신규6개 Node/Deno각통과. V6연결·DB/Edge/푸시/반복UI/전체QA·배포는미완료이며UX11은미착수다.
+
+
+### UX10 V6 공통 규칙·기존 동작 연동, 서버 검증 진행
+
+V6는첫반복/알림설정시opt-in으로정했다. plan/recurrence/repeat-actions/calendar에템플릿·날짜별구간·안정발생키·개별예외·건너뛰기·생성/이번/이후/전체·완료보존·명시한도거부를구현했다. 원래업무ID/goalarchive/rootextension/시간·여유·상대마감/분류·목표연결보존. 기존삭제·일괄삭제/분류·목표삭제/업무분할·시간이동/재계획·undo와연동, 메모등개별수정은undo작성전에예외로표시하고완료체크만으로는예외를만들지않는다. before-v6원문은스냅샷보다먼저저장하며계정별quota실패원본보존시험추가. 읽기·일반저장V5는유지한다.
+
+공통반복신규12+달력6 Node/Deno각18통과, 기존회귀포함Node153/typecheck/lint통과. VM시험하네스에새실제backup export가없던4실패는실제helper를주입하여보완후전부통과. 실제프로덕션동작실패와구분한다. 최근Supabasechangelog200/TLS-CBC·PG공지와공식auth문서를확인했다. 신규스키마SQL/인증설정변경없음. 기존권한·CORS/getUser인증을유지하고plan-sync v11 ACTIVE, sha35a2a230e2c11b35d038c068b1dffe660e0fa7b4438b7ebaf6005cc21b5cb6bf, 파일11개로V1~6검증및6저장후구형쓰기원자거부를배포했다. 현재격리2계정통합runner11개가실행중이며결과확인전이다. Pages운영은UX09/639fd6d유지. 반복UI/정기발생/서버알림·권한인수/최종CI·배포는미완료,UX11미착수.
+
+
+UX10 서버11 실제계정runner11개 exec89515 exit0. 새recurrence시험에서 발생ID/자정/총·여유/목표/알림분 JSONB왕복, 저장6에V1~5쓰기426 각각/invalid400/stale409 전체plan/version불변, 날짜이동예외/건너뛰기/이후변경·완료보존/전체중단/종합undo(형식6유지·원래업무/목표복원)/다른계정격리통과. 실제계정2개 signOut후session/user정리, cleanup0, fixture/SQL/생성모듈제거. 원격getEdge v11/ACTIVE/11개소스입력일치/sha35a2..재확인, 무인증401/허용preflight204/다른Origin403/GET405실측. 인증·CORS동작유지. 반복UI·정기생성/푸시는아직구현전이므로UX10은진행중이다.
+
+
+UX10 공통계약 checkpoint: 전체Node153, CI와동일명시공통Deno94, plan-sync Deno check, 최종typecheck/lint/Pages정적빌드통과. 새V6데이터는전용시험계정에서만사용했고cleanup0을확인했다. 현재로컬UI에는아직반복필드가없으며서버예약/ServiceWorker/구독/전달도미구현이다. 다음은기존수정초안에반복·알림설정연결, 범위별적용미리보기/원격변경거부, 하루발생준비, 서버예약·푸시및Q24/Q25브라우저QA다. UX10완료·프런트배포나UX11착수로표시하지않는다.
+
+
+### UX10 반복 수정 UI·부분 초안·범위 인수 / 브라우저 발생 준비
+
+repeat-editor-model/fields와workspace에repeat/reminder초안을연결했다. 기존수정내용·목표·시간과같이검증하고반복생성/변경/중단/분리는미리보기에서추가·수정·삭제·완료보존개수를확인후재승인한다. 개인일정알림0도보존하며날짜/시각해제시의존알림을해제한다. 미완성간격·요일·종료일은초안으로저장하고잘못된규칙은적용하지않는다. 원격변경/변조/관계없는계획편집은거부한다. 새모델시험6개와workspace직렬화/불변미리보기/실패/완료·예외/범위/알림0/날짜해제보호통과.
+
+실제127.0.0.1:3200 QA: 10/28~30·매일·09~10시·여유10·알림0, 승인전1/V5→추가2확인→quota실패원본/입력유지→해제재승인V6/3개/개별ID·시간보존. 매주/빈간격/종료일draft root새로고침복원·빈값거부. 확인중다른항목추가StorageEvent모사→재확인버튼→새미리보기/재승인외부항목유지. 28완료·30개별제목수정·29이후변경→완료28/개별30유지·29만갱신/구간분리. 29이번만건너뛰기삭제1/skip기록/undo복원. 전체중단미완료2삭제/완료1보존/undo세발생복원.390px다크문서375=scroll375/수정창341·확인헤더포커스·저장접근.
+
+발견결함: 페이지save의공통개별수정분류가범위변경·undo에도적용돼예외가생기던문제를수정했다. 검증된repeat proposal과undo는재분류하지않고변경없음저장은기존undo를보존한다. 새fixture로동일범위재설정·undo후예외없음재검증했다. Next문제아닌자체정책연결결함이다. QA원본스냅샷복원V5/tasks0/계획전체JSON동일·목표/초안/테마보존, 도구탭닫고임시HTML삭제,console0.
+
+RepeatMaintenance/prepareRepeatWindow는오늘31일+선택한날짜/주만누락추가, scope·최신snapshot대조/비동기작업취소/쓰기실패입력유지·재시도이다. 신규3개로날짜변경증분/미래범위/완료·이동·skip보존/상한/잘못된범위의원자적거부를확인했다. 독립localhost:3200 QA단일발생→31개(10/28~11/27), quota중2027/02/01선택→기존31raw동일/재시도안내, 해제재시도선택날짜1개추가32, 새탭/reload후32/raw동일·console0. 별도origin의원래raw(null)복원후QA탭·HTML정리. 기본origin기존데이터와분리했다.
+
+현재전체Node162/공통Deno103/typecheck/lint성공. UX10-ACCEPTANCE에증거4개/검증범위와남은서버정기생성·푸시/권한/실물/배포게이트를명시했다. 서버11·PagesUX09는유지. UX10완료나UX11착수로표시하지않는다.
+
+UX10 UI checkpoint 최종Pages정적빌드도성공했다. 임시QA HTML2개·인증fixture없음을확인하고브랜치에저장한다. 다음필수범위는서버정기반복생성/CAS·Web Push구독/예약/전달/취소·권한상태UI와그실제API/모사/최종인수다.
+
+
+### UX10 서버 반복 발생 준비 배포·실제 DB/예약 경로 검증
+
+task-maintenance v1 ACTIVE/88e9304aa46f1291b60a380e696a7620b51d9303c10b3ecf6e2f18107f55c9b7, 원격14소스 일치. migration20261028044251/20261028044335, pg_cron1.6.4/pg_net0.20.4 설치·분 단위 Cron1 활성. DB 단회32바이트 티켓(해시·2분 만료)/45초 lease, 5계정 keyset/끝에서초기화, 한국 날짜31일 공통함수, lease+version CAS로 다른기기/구형데이터 보호. 브라우저Origin403·GET405·위조401 실측.
+
+Node신규8/전체170, CI공통Deno111/Edge3check/typecheck/lint/Pages정적빌드성공. 실제DB DO트랜잭션: 티켓재사용/만료lease/disable/잘못된lease/V5/staleCAS거부·유효CAS버전+1, 임시7+fixture1의5+3+0배치/커서wrap 후전체rollback. 격리2계정: 발생2(완료/이동예외)+미생성skip/목표/알림→DB수동dispatch request1에서정확32개/fullplan/version+1, 다른V5동일. 실제Cron04:48 request2 빈배치초기화,04:49 request3 unchanged1/prepare0, 모두HTTP200·timeoutfalse/errornull. verify-noop의plan/version/updated_at전체동일. auth두계정의관리RPC전체/상태42501·anon/auth net스키마406확인. OAuth/기기권한조작없음. signOut·cleanup후시험사용자0/기존계획수3·인증/seed/cleanup파일삭제. 사용자CSS해시동일.
+
+권한제약을실측: pg_net객체는supabase_admin소유/PUBLIC기본권한이라postgres REVOKE성공응답만으로ACL이바뀌지않는다. 공식KB확인후실패를기록하고재설치/관리역할우회안함. DataAPI public/graphql_public만노출, net406·앱관리RPC/state브라우저거부가실제경계다. 직접DB접속역할은대기열열람가능하므로서버장기키/Vault복호화키를보내지않고단회짧은작업티켓만전송. 신규WARN/ERROR없고의도적RLSno-policy INFO신규1(합3)/기존passwordWARN1. UX10-DESIGN/ACCEPTANCE/OPERATIONS·재현시험절차기록.
+
+아직UX10미완료: 푸시구독API/ServiceWorker/서버예약·전달·취소·재시도/권한상태UI 및 최종CI·Pages동일SHA운영인수. 프런트는UX09/plan-sync11·travel2그대로다. 다음은WebPush구독·전달이며UX11시작하지않는다. 실제OAuth/실기기권한/전달인수는최종사용자목록에남긴다.
+
+
+### UX10 기기 구독·관리 API 배포와 실제 소유권/경합 검증
+
+push-subscriptions v2 ACTIVE/4c5e78d570487e1c2fe6659c687ac4dfb791d61ea83e9cce0956cf665c60fa92, 원격3소스전체일치. migration20261028050003/20261028050412, server-only settings/subscriptions 및 config/status/register/disable/devices/revoke. getUser실인증·사용자ID입력거부·기기증명해시/전역revision·동시개수제한·계정소유목록/원격해제·해제주소/키삭제. VAPID최초서버생성/Vault비밀1·public만응답, 두계정동시초기화와재실행에도같은키/유효참조. 실제비밀값조회·출력안함. 기존서버/프런트운영그대로.
+
+신규공통/HTTP9개 Node/Deno통과, 전체Node179/CI공통Deno120/typecheck/lint/Pages정적빌드성공. 발견차이: Deno가off-curve P256점을import단계에서허용했음. 플랫폼ECDH연산으로검증보강후양쪽회귀와실제HTTP400확인. WebCrypto생성VAPID가web-push3.6.7의aes128gcm암호화요청생성과호환(105bytes/네트워크0)됨도로컬확인, 라이브러리전송·실제푸시가구현됐다는뜻은아님. 평가용lock은무시된runtime에보존하고앱의미사용의존성으로추가하지않음.
+
+별도계정독립API인수: 미등록해제tombstone/늦은등록409·동일설정no-op·잘못된증명거부·증명보유계정전환/이전계정stale거부·다른설치동일endpoint거부·동시revision200/409·내목록안전필드/타계정목록없음/원격해제거부·내해제/재해제no-op/이전revision차단·활성4에서2기기동시200/429·해제후새연결성공·최근20개상한429. 임의호스트/잘못된곡선점/owner필드400. 양계정push관리RPC/두테이블42501 및plan/version/updated_at전체불변. 합성endpoint/키만사용·공급자전송/브라우저권한요청없음.
+
+그뒤새fixture에서통합runner12개전체실제API통과(exec49631 exit0). 기존CAS반복fixture는명시생성8일종료로제한해주기확장이동시시험을바꾸지않게함. 별도무기한서버준비/경합인수는유지하며Cron미중지. 독립SQL시험의첫변수명충돌실패수정후내부임시2계정/20기록생성·31일자기기록만정리/타계정·최근기록보존·원격해제소유권/키NULL/stale거부·전체rollback통과. 시험모든계정signOut·세션/사용자cleanup후사용자0/구독0/기존계획3/VAPID비밀1·Cron활성/오류0, 인증/seed/cleanup/생성store모듈정리. 사용자CSS해시동일. 새advisor는의도한RLSno-policy INFO2(합5), 기존passwordWARN1·신규WARN/ERROR없음. 실제스모크GET405/무인증401/운영originpreflight204.
+
+아직UX10미완료: 브라우저알림UI/ServiceWorker/계정전환수신차단, 서버알림예약·최신계획대조·전달·취소·만료/재시도·중복방지, 최종CI/Pages/동일SHA운영인수. 실제OAuth/실기기권한·전달은마지막사용자인수로남김. 다음은서버알림대기열/전달과클라이언트연결이며UX11미착수.
+
+
+### UX10 예약 대기열/취소/lease/수신 확인 기반 배포·DB 인수
+
+migration20261028052818/20261028053138/20261028053923 적용. push_reminders/deliveries·계획/기기트리거·내부RPC9개, 원격최신함수본문=로컬9개. 안정event해시(epoch시각), KST투영/전체시간내여유/시작+2·예약+5·종료중최소expiry, 완료/삭제/시간변경취소·undo동일event재활성화. 레코드에제목/메모없음. 기기소유/revision·35초lease·batch최대5/SKIPLOCKED·backoff5~60초/4회·구독gone정리·표시ACK/재연결중복방어·운영이력7일정리. 최신plan검증공통함수추가, 실제HTTP수신어댑터/전송은아직없음.
+
+Node신규4/전체183·공통Deno124/typecheck/lint/Pages정적빌드성공. DB임시2계정 전체rollback: 날짜/정수소수/시간대노중복·제목변경최신·lease/증명·완료삭제취소/undo이전토큰차단·retry대기/ACK·계정전환/예전gone이새소유자보호·재연결이미표시한예약제외·4회/expiry/cascade. 변수/컬럼명충돌SQL1건수정후통과. 실제API통합12개도새RPC/두테이블추가42501포함통과(exec89061 exit0), 인증/seed/cleanup/생성store모듈정리.
+
+MCP Promise병렬요청은실제DB시각상순차라동시성증거로기각. 보충INSERT충돌이이미대기된행을잠글수있음을검토해선행존재필터보완. 실제Cron2/3으로독립DB세션실측:05:40:00.028702/00.034813UTC시작→00.040761/00.047954각5개claim→06.044187/06.055065종료, 10ID고유/양쪽모두다른6초잠금해제전claim, verifySQLPASS. 테스트Cronself삭제0, metadata표시한합성사용자삭제후큐/전달/구독/사용자0·기존계획3. 보완후DB전체수명주기다시PASS. 실제외부전송/단말권한/푸시없음. 의도한no-policy INFO신규2(합7)/기존passwordWARN1·새WARN/ERROR없음.
+
+UX10계속진행: sender Edge/내부예약호출인증·Cron/암호화fetch/응답분류, 제한된receipt HTTP, SW/기기계정마커/로그아웃차단/알림UI, 최종CI/Pages동일SHA운영검증남음. 실제OAuth/실기기인수는마지막. UX11미착수.
+
+### UX10 전송·수신 확인 서버 배포와 실제 API 인수
+
+push-worker2/receipt1 ACTIVE, migration20261028060414·분 단위 sender 활성. 반환소스16/15개 로컬일치. 단회티켓/45초gate·최대5×10배치·18초예산, 암호화증명만전송/최신계획대조/재시도·만료정리. 초기Deno.env.set미지원boot실패는읽기전용ECE_KEYLOG fail-closed guard로수정,실제GET405/위조401. request86=200/empty·87=200/gone1(가짜FCM주소실제만료,실제단말수신아님).
+
+실제receipt API의시각/owner/revision/installation/deviceproof/ACK·최신제목최소응답·중복·완료/undo/retime/delete/계정재연결/타계정불변시험통과. 서버Date기준시각대조·관리자syntheticlease로물리권한요청없이검증했다. 전체Node197/Deno138/독립복호화·VAPID서명2/unsafeenvguard1/frozen진입점check/type/lint/Pagesbuild성공. 새fixture실제API통합12개exit0(33376),worker/receiptRPC+state42501추가. 정리사용자0/구독·예약·전달0/기존계획3,인증·seed·cleanup·생성store모듈제거. advisor서버전용INFO8/기존WARN1·신규WARN/ERROR없음.
+
+UX10미완료: SW/클라이언트기기·계정마커/알림설정·로그아웃차단/수신클릭·최종CI와Pages동일SHA운영인수. 실제OAuth·실물권한/수신은마지막사용자인수. UX11은아직시작하지않는다.
+
+### UX10 SW·알림 설정 연결 / 클라이언트 기본 인수
+
+정적SW/core와scope별IndexedDB proof/epoch/표시이력·최신receipt·표시후commit/ACK·계정변경/실패닫기·내부날짜클릭을연결했다. 내정보에알림켜기/끄기/상태/내기기원격해제 UI, 버튼에서만권한요청, 서버revision확인후bind. 로그아웃은차단선행·원격정리·SDKsignOut이며로컬실패/정리중계정변경을보호한다. 기존초안유지날짜시간표이동도구현했으나최종브라우저인수는남음.
+
+신규core6/client6/store경합1 포함전체Node210/type/lint/Pagesbuild성공. 실제격리SW저장commit/abort/동시bind1·지연거부·reloadproof/차단복원후worker/DB정리. 실제전용이메일계정프로필상태/자동권한·등록없음/로그아웃SSO복귀·390×480다크/키보드순환확인,원래스토리지전체바이트복원·임시HTML제거. 초기QA CORS누락을정확한127:3200추가로수정,plan-sync12 ACTIVE/sha4a5491f9ee3a1c73d8d56eddc9cbad4d2676a55ab463f9823fc818823a50835c·원격11소스일치·preflight204/evil403/무인증401·실제로그인재시험성공. Node자체시험수정은비동기privacy후속timer를실제대기하는하네스보완이며계정불변검증유지.
+
+클라이언트연결후새fixture실제API12개exit0(53041,v12origin수정전v11),이후v12는UI/CORS검증. 사용자0/구독·예약·전달0/기존계획3·인증/seed/cleanup/생성3모듈정리. 서버commitd786403 CI40644144497 verify122668936215 Node197/Deno138/edge3/type/lint/build성공·PRdeployskipped확인. 새클라이언트CI·운영배포는아직아님.
+
+다음필수: 브라우저권한·구독모사켜기/끄기/실패·계정전환/날짜클릭·초안보존,최종CI/Pages동일SHA운영인수후UX11. 실제OAuth/실기기권한·수신은마지막사용자인수에남긴다.
+
+### UX10 최종 브라우저 QA 통과 / CI·운영 배포 대기
+
+tests/push-browser-flow.html 기반 실제2계정/Auth/API/SW/IndexedDB+iframe권한/PushManager모사. 최초off·거부미등록·A켜기/끄기·오프라인선행차단·기기목록펼쳐해제·로그아웃·B꺼짐/명시적이전·register응답지연중로그아웃후재연결없음·A초안/11월1일날짜이동전체PASS. QA하네스는React갱신완료피드백/활성·표시기다림으로보완했으며인수조건유지. 실제부모권한/공급자구독변경없음. UX10-browser-flow.jpg.
+
+발견제품결함: 알림URLeffect가SSR임시익명workspace에서계정초안을덮음. drafthydrated+실제Auth/현재/컴포넌트scope일치후적용하도록수정,고정된최종소스전체재시험에서날짜/rhythm/입력초안원문보존. scope정렬의오래된callback조건부epoch와ensure기대사용자검사도보강했고순수회귀통과.
+
+SW/DB/iframe·privateHTML정리/원래스토리지전체원문복원. 새fixture통합12개최신store+plan-sync12 exit0(49760),시험사용자/구독/예약/전달0·기존계획3·Cron2활성,fixture/seed/cleanup/생성3모듈정리. 전체Node210/type/lint/Pagesbuild성공. 정적standalone manifest·192/512기존아이콘·Apple metadata/ko언어와export검증추가: local/Pages경로·PNG·HTML·SW원문·시험자료미포함PASS. 새WARN/ERROR없음.
+
+아직UX10완료아님: 최신CI·동일SHA Pages배포/운영자산·예약스모크확인후UX11. 물리권한·실물수신·OAuth/실기기인수는사용자요청대로전체작업마지막에모은다.

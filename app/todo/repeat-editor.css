@@ -1,0 +1,15 @@
+.oddk-repeatFields { border: 1px solid var(--oddk-border, #dce2ee); border-radius: 8px; padding: 12px; margin: 12px 0; }
+.oddk-repeatFields summary { cursor: pointer; font-weight: 600; }
+.oddk-repeatFields label { display: grid; gap: 6px; margin-top: 12px; font-size: 13px; }
+.oddk-repeatFields select, .oddk-repeatFields input:not([type=checkbox]) { min-height: 40px; width: 100%; font: inherit; color: inherit; background: var(--oddk-surface, white); border: 1px solid var(--oddk-border, #dce2ee); border-radius: 6px; padding: 8px; }
+.oddk-repeatFields p, .oddk-repeatConfirm p { font-size: 12px; line-height: 1.65; margin: 8px 0; }
+.oddk-repeatFields small { display: block; font-size: 11px; line-height: 1.6; color: var(--oddk-muted, #74829a); }
+.oddk-repeatGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.oddk-repeatGrid > p, .oddk-repeatGrid > fieldset { grid-column: 1 / -1; }
+.oddk-repeatGrid fieldset { margin-top: 12px; }
+.oddk-repeatDays { display: flex; flex-wrap: wrap; gap: 10px; }
+.oddk-repeatDays label { display: flex; gap: 4px; align-items: center; }
+.oddk-repeatConfirm { border: 1px solid var(--oddk-border, #dce2ee); padding: 12px; border-radius: 8px; margin-top: 12px; }
+.oddk-repeatConfirm h3 { font-size: 14px; }
+.oddk-repeatConfirm button { border: 1px solid var(--oddk-border, #dce2ee); border-radius: 6px; padding: 8px; font: inherit; }
+@media(max-width:480px) { .oddk-repeatGrid { grid-template-columns: 1fr; } }

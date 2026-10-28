@@ -1,7 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 import { parsePlanRequest } from "./request.ts";
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
-const origins = new Set(["https://seonyoungyoo16.github.io", "http://localhost:3000"]);
+const origins = new Set(["https://seonyoungyoo16.github.io", "http://localhost:3000", "http://127.0.0.1:3200"]);
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   const headers = { "Content-Type": "application/json", "Cache-Control": "no-store", "Vary": "Origin", ...(origin && origins.has(origin) ? { "Access-Control-Allow-Origin": origin } : {}), "Access-Control-Allow-Headers": "authorization, content-type, apikey", "Access-Control-Allow-Methods": "POST, OPTIONS" };
@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
       // This predicate and the version predicate are evaluated in one UPDATE.
       // Older clients must never remove fields added by a newer schema.
       const incomingSchema = "schemaVersion" in body.plan ? body.plan.schemaVersion : 1;
-      const allowed = ["plan->>schemaVersion.is.null", ...[2, 3, 4, 5].filter(v => v <= incomingSchema).map(v => "plan->>schemaVersion.eq." + v)].join(",");
+      const allowed = ["plan->>schemaVersion.is.null", ...[2, 3, 4, 5, 6].filter(v => v <= incomingSchema).map(v => "plan->>schemaVersion.eq." + v)].join(",");
       update = update.or(allowed);
       const { data, error } = await update.select("plan,version,updated_at").maybeSingle();
       if (error) throw error;

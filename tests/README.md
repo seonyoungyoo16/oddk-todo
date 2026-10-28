@@ -44,3 +44,52 @@ UX08은 account-travel.test.mjs를9번째 격리계정 통합시험으로 실행
 
 
 UX09은 account-movement.test.mjs를10번째 격리계정 통합시험으로 실행한다. 필터 내 수동순서/숨긴 슬롯 보존, 날짜 이동·자정 넘김·작업/여유·목표 JSONB 왕복, stale409와 invalid400의 전체 상태 보존, 계정 격리, 시간/순서/전체 fixture undo를 검증한다. 실제 OAuth 인수를 대체하지 않는다. CI에는 task-movement 순수 회귀를 Node 및 Deno 양쪽에 포함한다.
+
+
+UX10은 account-recurrence.test.mjs를11번째 격리계정 통합시험으로 추가한다. plan-sync11은 V1~V6 읽기/쓰기 검증과 저장된 V6의 구버전 쓰기426을 원자적 CAS 조건으로 보호한다. 새 시험은 발생ID·자정·시간/여유·목표·리마인더 JSONB 왕복, V1~5의426 및400/409 원본불변, 날짜이동예외·건너뛰기·이후수정·완료보존·전체중단·종합undo·계정격리를 실제API로 확인한다. 반복/리마인더 첫 사용 전후 원문 백업과 실패 보호는 실제 브라우저 store 코드를 VM에서 실행하는 회귀에도 포함한다. 푸시 구독·실제 단말 전달·반복 UI 인수는 이 데이터 시험과 별도다.
+
+### UX10 앱을 열지 않은 서버 반복 준비
+
+`task-maintenance.test.mjs`는 Node/Deno 공통 시험이다. 실제 배포 검증은 CI에서 관리자 비밀을 사용하지 않도록 별도로 실행한다.
+
+1. `prepare-account-fixture.mjs`로 전용 계정2개를 준비하고 무시된 seed SQL을 신뢰할 수 있는 DB 관리 연결로 실행한다.
+2. `node tests/maintenance-fixture.mjs prepare`는 일반 시험 계정 권한으로 과거 발생2개·완료·이동 예외·미생성 건너뛰기·알림분·목표를 저장한다. 앱/클라이언트 발생 준비를 실행하지 않는다.
+3. 기존 사용자의 활성 V6 반복 계정이 없는 전용 시험 조건을 먼저 확인한다. `oddk.maintenance_fixture_user`에 방금 fixture UUID를 설정한 뒤 `maintenance-database.sql`을 관리자 연결로 실행한다. 티켓·lease·CAS·V6 보호와 임시7계정의5+3+0 커서 순회를 검증한다. 모든 시험 변경은 하나의 트랜잭션에서 롤백된다. 조건이 다르면 운영 데이터에 맞춰 시험을 완화하지 말고 격리 환경을 사용한다.
+4. 예약 작업이 활성화된 상태에서 Cron 실행과 해당 pg_net 응답을 확인한다. 수동 dispatch로 전송 경로도 확인할 수 있지만 Cron 자동 실행 증거와 구분한다. 요청 대기열의 body/headers나 티켓 원문을 출력하지 않는다.
+5. `node tests/maintenance-fixture.mjs verify`로 공통 함수의 기대 계획 전체와 실제32개 발생·버전+1·다른V5 계정 불변을 대조한다. 다음 실제 순회 후 `verify-noop`으로 버전/updated_at까지 변화 없음과 모든 관리 RPC/상태·net 스키마의 API 접근 거부를 재검증한다.
+6. 두 계정 signOut과 해당 marker의 cleanup SQL 실행 후 잔여0을 확인하고 인증/seed/cleanup 파일을 정확한 경로로 제거한다. 실제 사용자 계정이나 로컬 계획을 시험에 쓰지 않는다.
+
+실제 OAuth·기기 알림 권한·푸시 전달은 이 서버 발생 시험이 검증하는 범위가 아니다.
+
+### UX10 Web Push 구독·관리 서버 시험
+
+- `push-subscriptions.test.mjs`는 순수 계약/HTTP 모사9개로 Node/Deno 양쪽에서 실행한다. 권한 요청이나 네트워크 전송은 없다. `npm test`/CI에 포함한다.
+- `account-push-subscriptions.test.mjs`는 일반 권한의 전용 시험 계정2개로 실제 API를 확인하는12번째 통합 runner다. 합성 FCM 경로와 시험 키만 사용하며 푸시를 보내지 않는다. 공개 설정/Vault 초기화의 안정성, deviceToken 증명·계정 소유권 전환·revision·내 기기 목록/원격 해제·동시5개 제한/최근20개 제한·직접 테이블/RPC 거부와 계획 불변을 검증한다.
+- 기기 이력 상한을 시험하므로 각 실행은 새 fixture 계정을 사용한다. 종료 시 합성 연결을 모두 끄고 signOut한다. 관리자 cleanup SQL로 해당 marker 사용자/세션을 제거한 뒤 구독0·시험 사용자0을 확인한다. 계정 생성/정리 절차는 기존 prepare-account-fixture를 따른다. 실제 OAuth 계정을 대신 쓰지 않는다.
+- `push-database.sql`은 공개 VAPID 초기화 뒤 관리자 연결에서 실행하는 별도 SQL 시험이다. 비로그인용 임시2사용자·비활성20기록을 트랜잭션 안에서 생성해30일 정리 범위, 원격 해제 소유권·키 삭제·stale 차단을 검증하고 전부 롤백한다. 외부 fixture UUID 입력이나 실제 사용자 자료가 필요 없다.
+- 동기화/CAS 반복 fixture는 명시적으로 생성한8일 범위에 종료일을 둬 실제 Cron이 시험 도중 범위를 연장하지 않게 한다. 무기한 반복의 앱 종료 중31일 준비·불변/no-op·경합은 별도 maintenance 시험으로 확인한다. Cron을 꺼서 경합을 숨기거나 시험의409 기대를 느슨하게 하지 않는다. 통합 전체 실행과 서버 주기 작업의 증거를 각각 기록한다.
+
+### UX10 예약 대기열
+
+- `push-reminder.test.mjs`는 Node/Deno 공통4개이며 CI에 포함한다. SQL/JS의 한국 시간·알림분·만료 계약과 최신 계획 검증을 확인한다.
+- `push-queue-database.sql`은 공개 VAPID 초기화 후 관리자 연결에서 실행한다. 비로그인용2계정·계획·기기를 트랜잭션 안에서 생성해 예약/취소/undo/수신 증명/lease/backoff/ACK/소유권/재시도4회/만료/cascade를 시험하고 전부 롤백한다. 네트워크와 단말 권한 요청은 없다.
+- 실제 동시 세션 시험은 `push-queue-race-seed.sql`→`push-queue-race-schedule.sql`→특정 Cron 작업 완료 확인→`push-queue-race-verify.sql` 순서다. sender 미활성·운영 대기 항목 없는 격리 조건이 필요하다. 같은 시각의 one-shot Cron2개가 각5개 claim을6초 유지하고, 둘 중 하나라도 다른 쪽의 잠금 해제를 기다려 claim했다면 실패한다. 일반 MCP 병렬 호출은 전송 계층에서 직렬화될 수 있어 그 결과만으로 동시성을 주장하지 않는다.
+- one-shot 작업은 자체 unschedule되며 실패 때는 두 QA job 이름만 관리자 연결로 해제한다. 검증 뒤 app_metadata.oddk_test_run이 push-queue-race인 비로그인 fixture만 삭제하고 예약/전달/구독/시험 사용자/QA Cron0을 확인한다. 실제 sender가 켜진 운영 데이터에 이 fixture를 추가하거나 정상 알림을 대신 claim하지 않는다.
+
+### 전송·수신 확인 시험
+
+- 순수 worker/receipt14개는 Node 및 공통 Deno 목록에 포함한다. Deno 진입점은 `deno check --config supabase/functions/push-worker/deno.json --frozen supabase/functions/push-worker/index.ts supabase/functions/push-receipt/index.ts`로 고정 의존성을 확인한다.
+- `deno test --config supabase/functions/push-worker/deno.json --frozen --allow-env=ECE_KEYLOG,DEBUG,NODE_DEBUG tests/edge/web-push-crypto.test.mjs`는 실제 어댑터의 암호문을 독립 복호화하고 서명을 검증한다. fetch는 모사하므로 실제 외부 전송이 아니다.
+- `deno test --config supabase/functions/push-worker/deno.json --frozen --allow-env=ECE_KEYLOG tests/edge/keylog-guard.test.mjs`는 별도 프로세스에서 위험한 키로그 설정의 import 거부를 확인한다. 환경 변경은 시험에만 있다.
+- live receipt: 새 전용2계정 seed 후 `node tests/receipt-fixture.mjs prepare`. 관리자 연결에서 `receipt-fixture-claim.sql`에 설명된 해당 fixture 사용자 GUC를 설정해 단일 트랜잭션으로 시각·lease를 준비한다. 반환 proof는 로그에 출력하지 않고 무시된 `.sync-test-runtime/receipt-claims.json`에만 보관한다. `node tests/receipt-fixture.mjs verify`는 서버 Date 헤더 기준으로 시각 경계를 판단한다. 실행 중 실패하면 기대값을 느슨하게 하지 말고 현재 plan/revision/lease와 시각부터 확인한다.
+- 종료 후 signOut·marker별 cleanup, 잔여0 확인 후 인증fixture/seed/cleanup/receipt-fixture.json/receipt-claims.json/시험 생성 store 모듈만 정확한 경로로 삭제한다. 실제 사용자 자료와 이전 증거는 보존한다. synthetic lease와 공급자 gone 응답을 물리 알림 수신 성공으로 표시하지 않는다.
+
+### 브라우저 연결·수신 정책
+
+- `push-browser.test.mjs`는 실제 정적 core를 VM에 로드해 수신·표시·ACK·계정 경합을 시험한다. `push-client.test.mjs`는 실제 TS 클라이언트를 브라우저 API/HTTP 모사와 함께 실행하고 실제 서버 request parser로 요청을 대조한다. 자동 권한 요청·잘못된 scope·지연 재연결·로그아웃 후 재표시를 회귀 검사한다. 둘 다 `npm test`에 포함되며 물리 알림 전달 증거는 아니다.
+- 실제 SW 저장 시험은 별도 scope에서만 state/bind/block을 메시지로 호출한다. 같은 epoch의 동시 bind는1건만 성공하고 stale transaction이 원본을 유지해야 한다. 새로고침 후 proof/차단을 대조하고 Worker unregister·해당 scope DB 삭제·QA marker 제거까지 확인한다. 기기 권한/구독은 요청하지 않는다.
+- 실제 프로필은 별도 이메일 fixture 계정으로 시험한다. 기존 로그인 상태가 있으면 중단하고, 원래 oddk 키/값을 보존한 뒤 시험 내용만 사용한다. 초기 조회의 권한/Worker/구독 불변, 프로필·기기 상태·로그아웃과 작은 화면/키보드 접근을 확인한다. 종료 시 전체 원문을 복원하고 임시 페이지/fixture 세션·사용자를 정리한다. 스크린샷에는 시험 이메일/ID를 남기지 않는다.
+- 통합 account-store는 supabase-client/push-client/sync-store 실제3모듈을 변환한다. Node 환경의 Service Worker 미지원 경로를 사용하며 로그아웃을 검증한다. 브라우저 수신 경합은 별도 core/실제 IndexedDB 증거와 구분한다.
+
+- `push-browser-flow.html`은 fixture 주입 전 템플릿이며 직접 열면 시험을 거부한다. 신뢰한 로컬 준비 과정에서 `/*FIXTURE*/null`만 무시된 전용 계정2개 배열로 바꿔 임시 public 페이지를 만들고 실제 앱 iframe에서 실행한다. 기존 로그인/Worker가 있으면 중단하고 원래 oddk 저장소를 보존한다. Notification/PushManager만 iframe에서 모사하며 실제 API·Worker·DB·로그아웃/계정 전환·지연 응답·날짜 이동/초안 보존을 시험한다. 갱신 피드백과 활성·표시 상태를 기다린다. 종료 후 원문 복원·Worker/DB 제거를 확인하고 임시 public 파일/계정·세션을 정리한다. fixture를 주입한 임시 페이지를 남긴 채 빌드하거나 커밋하지 않는다. 원본 템플릿은 비밀값 없이 저장한다.
+- Pages build 후 `node tests/verify-push-export.mjs`는 standalone manifest의 local/Pages 상대경로·PNG 크기·HTML manifest/Apple 링크/언어·정적 SW 원문 일치와 QA/fixture 계정의 export 미포함을 검사한다. CI의 artifact 업로드 전 게이트이며 실제 기기 설치·푸시 전달 인수를 대체하지 않는다.
