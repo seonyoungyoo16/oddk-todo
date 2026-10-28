@@ -1,3 +1,4 @@
+import { taskTitleKey } from "./task-identity.ts";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan.ts";
 import { unlinkGoalTasks } from "../../supabase/functions/_shared/goal-tree.ts";
@@ -20,9 +21,9 @@ export function deletePlanTasks(plan: Plan, ids: Set<string>): Plan {
 export function splitTask(plan: Plan, id: string, entries: Array<{ id: string; title: string }>, summaryOnly: boolean): Plan {
   const parent = plan.tasks.find(task => task.id === id);
   if (!parent || entries.length < 2 || entries.length > 32 || typeof summaryOnly !== "boolean") throw new Error("나눌 원본과2~32개의 새 실행 업무를 확인해주세요.");
-  const titles = new Set(plan.tasks.filter(task => !task.done && !task.summaryOnly && (task.id !== id || !summaryOnly)).map(task => task.title.trim().toLocaleLowerCase()));
+  const titles = new Set(plan.tasks.filter(task => !task.done && !task.summaryOnly && (task.id !== id || !summaryOnly)).map(taskTitleKey));
   const children: Task[] = entries.map(entry => {
-    const title = entry.title.trim(), key = title.toLocaleLowerCase();
+    const title = entry.title.trim(), key = taskTitleKey({ title, plannedDate: parent.plannedDate, startTime: null });
     if (!title || title.length > 120 || titles.has(key)) throw new Error("새 실행 업무는 비어 있지 않은120자 이내 이름으로, 진행 중인 업무와 중복되지 않게 입력해주세요.");
     titles.add(key);
     return { id: entry.id, title, notes: "", plannedDate: parent.plannedDate, categoryId: parent.categoryId ?? null, tagIds: [...(parent.tagIds ?? [])], importance: "normal", dueDate: null, dueTime: null, priority: "normal", done: false, parentTaskId: id, minutes: null, bufferMinutes: null, startTime: null, endTime: null, endDate: null, endDayOffset: null };

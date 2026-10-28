@@ -31,5 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "supabase/functions/plan-sync/account.ts"]
+  "exclude": ["node_modules", "supabase/functions/plan-sync/account.ts", "supabase/functions/travel-lookup/index.ts"]
 }

@@ -4,18 +4,23 @@ import { addCalendarDays, isClock, isPlanDate, clockMinute } from "../../supabas
 import { routeKey, validRouteEstimate, validTravelPlace } from "../../supabase/functions/_shared/travel-query.ts";
 import type { RouteEstimate, TravelMode, TravelPlace } from "../../supabase/functions/_shared/travel-query.ts";
 import { sameValue } from "./json-equality.ts";
-export type TravelStop = { id: string; query: string; place: TravelPlace | null; stay: string; manualTravel: string };
+import { taskTitleKey } from "./task-identity.ts";
+export type TravelStop = { id: string; query: string; place: TravelPlace | null; stay: string; manualTravel: string; manualLegKey?: string };
 export type TravelDraft = { id: string; date: string; departure: string; mode: TravelMode; buffer: string; stops: TravelStop[]; result: RouteEstimate | null };
 export type TravelPreview = { draft: TravelDraft; tasks: Task[]; work: number; buffer: number; endDate: string; endTime: string };
 const object = (v: unknown): v is Record<string, unknown> => Boolean(v && typeof v === "object" && !Array.isArray(v));
 export function validTravelDraft(v: unknown): v is TravelDraft {
-  return object(v) && typeof v.id === "string" && /^[a-zA-Z0-9-]{1,40}$/.test(v.id) && ["date", "departure", "buffer"].every(k => typeof v[k] === "string" && v[k].length <= 120) && ["car", "foot", "bike"].includes(String(v.mode)) && (v.result === null || validRouteEstimate(v.result)) && Array.isArray(v.stops) && v.stops.length >= 2 && v.stops.length <= 6 && new Set(v.stops.map(stop => object(stop) ? stop.id : null)).size === v.stops.length && v.stops.every(stop => object(stop) && typeof stop.id === "string" && /^[a-zA-Z0-9-]{1,40}$/.test(stop.id) && ["query", "stay", "manualTravel"].every(k => typeof stop[k] === "string" && stop[k].length <= 120) && (stop.place === null || validTravelPlace(stop.place)));
+  return object(v) && typeof v.id === "string" && /^[a-zA-Z0-9-]{1,40}$/.test(v.id) && ["date", "departure", "buffer"].every(k => typeof v[k] === "string" && v[k].length <= 120) && typeof v.mode === "string" && ["car", "foot", "bike"].includes(v.mode) && (v.result === null || validRouteEstimate(v.result)) && Array.isArray(v.stops) && v.stops.length >= 2 && v.stops.length <= 6 && new Set(v.stops.map(stop => object(stop) ? stop.id : null)).size === v.stops.length && v.stops.every(stop => object(stop) && typeof stop.id === "string" && /^[a-zA-Z0-9-]{1,40}$/.test(stop.id) && ["query", "stay", "manualTravel"].every(k => typeof stop[k] === "string" && stop[k].length <= 120) && (stop.manualLegKey === undefined || typeof stop.manualLegKey === "string" && stop.manualLegKey.length <= 1000) && (stop.place === null || validTravelPlace(stop.place)));
 }
 function integer(text: string, label: string, minimum: number, maximum: number): number {
   if (!/^\d+$/.test(text.trim())) throw new Error(`${label}을 정수로 입력해주세요.`);
   const number = Number(text);
   if (!Number.isSafeInteger(number) || number < minimum || number > maximum) throw new Error(`${label}은 ${minimum}~${maximum}분이에요.`);
   return number;
+}
+export function manualTravelLegKey(draft: TravelDraft, index: number): string {
+  const point = (stop: TravelStop) => stop.place ? [stop.id, stop.place.lon, stop.place.lat] : [stop.id, stop.query.trim()];
+  return JSON.stringify({ mode: draft.mode, from: point(draft.stops[index - 1]), to: point(draft.stops[index]) });
 }
 const clock = (minute: number) => `${String(Math.floor(minute % 1440 / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
 export function createTravelPreview(draft: TravelDraft): TravelPreview {
@@ -36,6 +41,7 @@ export function createTravelPreview(draft: TravelDraft): TravelPreview {
   }
   for (let i = 1; i < draft.stops.length; i++) {
     const stop = draft.stops[i], manual = stop.manualTravel.trim() !== "";
+    if (manual && stop.manualLegKey !== undefined && stop.manualLegKey !== manualTravelLegKey(draft, i)) throw new Error("방문 순서·장소·이동 수단이 바뀌었어요. 구간별 직접 입력 시간을 다시 확인해주세요.");
     const travel = manual ? integer(stop.manualTravel, "직접 정한 이동 시간", 1, 239) : result ? Math.max(1, Math.ceil(result.legs[i - 1].seconds / 60)) : null;
     if (travel === null) throw new Error("이동 시간을 조회하거나 구간별 이동 시간을 직접 입력해주세요.");
     const from = places[i - 1], to = places[i];
@@ -48,6 +54,8 @@ export function createTravelPreview(draft: TravelDraft): TravelPreview {
 export function applyTravelPreview(plan: Plan, preview: TravelPreview, currentDraft: TravelDraft): Plan {
   if (!sameValue(currentDraft, preview.draft) || !sameValue(createTravelPreview(currentDraft), preview)) throw new Error("미리보기 이후 입력이 바뀌었어요. 다시 미리 본 뒤 반영해주세요.");
   if (preview.tasks.some(task => plan.tasks.some(existing => existing.id === task.id))) throw new Error("이미 반영한 여행 계획이에요. 기존 일정을 수정하거나 실행 취소 후 다시 반영해주세요.");
+  const active = new Set(plan.tasks.filter(task => !task.done && !task.summaryOnly).map(taskTitleKey));
+  if (preview.tasks.some(task => active.has(taskTitleKey(task)))) throw new Error("같은 내용의 일정이 같은 날짜·시각에 있어요. 기존 일정을 확인하거나 여행 출발 시간을 바꿔주세요.");
   const next = { ...plan, tasks: [...plan.tasks, ...preview.tasks] };
   if (!validPlan(next)) throw new Error("일정 한도와 시간을 확인해주세요. 기존 계획은 유지했어요.");
   return next;

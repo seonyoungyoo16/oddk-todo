@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseTravelQuery, parsePhoton, parseOsrm, routeKey } from "../../supabase/functions/_shared/travel-query.ts";
-import { createTravelPreview, applyTravelPreview, validTravelDraft } from "../../app/todo/travel-core.ts";
+import { createTravelPreview, applyTravelPreview, validTravelDraft, manualTravelLegKey } from "../../app/todo/travel-core.ts";
+import { travelPreviewWarnings } from "../../app/todo/travel-warnings.ts";
+import { applyBulkAction, previewBulkAction } from "../../app/todo/bulk-actions.ts";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
 import { makeUndo, applyUndo } from "../../app/todo/plan-history.ts";
 const places = [{ id: "N:1", name: "Museum", label: "Museum, Berlin", lon: 13.4, lat: 52.5 }, { id: "N:2", name: "Gate", label: "Gate, Berlin", lon: 13.39, lat: 52.51 }];
@@ -57,4 +59,40 @@ test("preview changes and forged tasks cannot apply, invalid times and calendar 
   assert.equal(crossing.tasks[0].endDayOffset, 1); assert.equal(crossing.tasks[1].plannedDate, "2026-10-29");
   assert.equal(validTravelDraft({ ...input, stops: [input.stops[0], input.stops[0]] }), false);
   assert.equal(before.tasks.length, 0);
+});
+test("changing route conditions preserves manual values but requires explicit reconfirmation", () => {
+  const input = draft(); input.stops[1].manualTravel = "30"; input.stops[1].manualLegKey = manualTravelLegKey(input, 1);
+  input.result.legs[0].seconds = 900;
+  assert.equal(createTravelPreview(input).tasks[0].minutes, 40);
+  input.mode = "bike";
+  assert.throws(() => createTravelPreview(input), /바뀌/);
+  assert.equal(input.stops[1].manualTravel, "30");
+  input.stops[1].manualLegKey = manualTravelLegKey(input, 1);
+  assert.equal(createTravelPreview(input).tasks[0].minutes, 40);
+  assert.equal(validTravelDraft({ ...input, mode: ["car"] }), false);
+});
+test("travel preview warns about all existing tasks and fixed time while excluding completed and summary tasks", () => {
+  const preview = createTravelPreview(draft());
+  const existing = { ...preview.tasks[0], id: "existing", title: "Hidden category task" };
+  const before = { ...plan(), tasks: [existing, { ...existing, id: "done", title: "Done", done: true }, { ...existing, id: "summary", title: "Summary", summaryOnly: true }], availabilityByDate: { "2026-10-28": { start: "09:00", end: "18:00", fixed: [{ id: "break", title: "Break", start: "09:05", end: "09:15" }] } } };
+  const warnings = travelPreviewWarnings(before, preview.tasks);
+  assert.ok(warnings.some(text => text.includes("Hidden category task")));
+  assert.ok(warnings.some(text => text.includes("고정·휴식 Break")));
+  assert.ok(!warnings.some(text => /Done|Summary/.test(text)));
+  const outside = createTravelPreview({ ...draft(), departure: "08:00" });
+  assert.ok(travelPreviewWarnings(before, outside.tasks).some(text => text.includes("활동 시간 밖")));
+  assert.equal(before.tasks.length, 3);
+});
+test("the same itinerary on another date or departure permits completion undo without admitting exact duplicates", () => {
+  const input = draft(), first = applyTravelPreview(plan(), createTravelPreview(input), input);
+  const tomorrow = { ...input, id: "another-day", date: "2026-10-29" };
+  const both = applyTravelPreview(first, createTravelPreview(tomorrow), tomorrow);
+  const completed = applyBulkAction(both, previewBulkAction(both, [both.tasks[0].id], [], "done"));
+  assert.deepEqual(applyUndo(completed, makeUndo(both, completed, "Complete travel")), both);
+  assert.equal(applyBulkAction(completed, previewBulkAction(completed, [completed.tasks[0].id], [], "undone")).tasks[0].done, false);
+  const later = { ...input, id: "later-trip", departure: "13:00" };
+  assert.equal(applyTravelPreview(both, createTravelPreview(later), later).tasks.length, 6);
+  const duplicate = { ...input, id: "duplicate-trip" };
+  assert.throws(() => applyTravelPreview(first, createTravelPreview(duplicate), duplicate), /같은 내용/);
+  assert.equal(first.tasks.length, 2);
 });

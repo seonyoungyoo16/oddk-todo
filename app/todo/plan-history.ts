@@ -1,3 +1,4 @@
+import { taskTitleKey } from "./task-identity.ts";
 import { sameValue } from "./json-equality.ts";
 import { validPlan, validTaskSnapshot } from "../../supabase/functions/_shared/plan.ts";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan.ts";
@@ -37,7 +38,7 @@ export function applyUndo(current: Plan, undo: PlanUndo): Plan {
   const currentRefs = new Set(current.mandala?.areas.flatMap(a => a.taskIds) ?? []);
   if (next.mandala?.areas.some(a => a.taskIds.some(id => id && !nextIds.has(id) && (currentIds.has(id) || !currentRefs.has(id))))) throw new Error("목표 연결이 이후에 바뀌었어요. 연결된 할 일을 보호하기 위해 실행 취소를 멈췄어요.");
   if (![4, 5].includes(Number(next.schemaVersion)) || !validPlan(next)) throw new Error("복원할 계획의 형식을 확인해주세요. 새 목표 연결과 업무 관계는 유지했어요.");
-  const activeTitles = next.tasks.filter(t => !t.done && !t.summaryOnly).map(t => t.title.trim().toLocaleLowerCase());
+  const activeTitles = next.tasks.filter(t => !t.done && !t.summaryOnly).map(taskTitleKey);
   if (new Set(activeTitles).size !== activeTitles.length) throw new Error("같은 내용의 미완료 업무가 있어 복원할 수 없어요.");
   return next;
 }
