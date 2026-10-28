@@ -1,5 +1,5 @@
 import { sameValue } from "./json-equality.ts";
-import { validPlan } from "../../supabase/functions/_shared/plan.ts";
+import { validPlan, validTaskSnapshot } from "../../supabase/functions/_shared/plan.ts";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan.ts";
 import { taskToV4 } from "../../supabase/functions/_shared/plan-migration.ts";
 export type TaskChange = { id: string; before: Task | null; after: Task | null; index: number };
@@ -41,7 +41,7 @@ export function validUndo(value: unknown): value is PlanUndo | null {
   if (value === null) return true;
   if (!value || typeof value !== "object") return false;
   const v = value as PlanUndo;
-  const task = (t: unknown, id: string) => t === null || Boolean(t && typeof t === "object" && "id" in t && t.id === id && validPlan({ schemaVersion: 3, start: "09:00", tasks: [t], reviewsByDate: {} }));
+  const task = (t: unknown, id: string) => t === null || Boolean(t && typeof t === "object" && "id" in t && t.id === id && validTaskSnapshot(t, 3));
   if (v.version !== 1 || typeof v.label !== "string" || v.label.length > 200 || !Array.isArray(v.tasks) || v.tasks.length > 5000 ||
     !v.tasks.every(t => t && typeof t.id === "string" && Number.isInteger(t.index) && t.index >= -1 && t.index < 5000 && (t.before === null ? t.index === -1 : t.index >= 0) && (t.before !== null || t.after !== null) && task(t.before, t.id) && task(t.after, t.id)) || new Set(v.tasks.map(t => t.id)).size !== v.tasks.length ||
     !Array.isArray(v.fields) || v.fields.length > 100 || !v.fields.every(f => f && typeof f.key === "string" && typeof f.beforePresent === "boolean" && typeof f.afterPresent === "boolean" && !["__proto__", "constructor", "prototype", "tasks", "schemaVersion"].includes(f.key)) || new Set(v.fields.map(f => f.key)).size !== v.fields.length) return false;

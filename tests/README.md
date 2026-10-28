@@ -27,3 +27,5 @@ Pages 정적 빌드: PowerShell에서 `$env:GITHUB_PAGES='true'` 설정 → `npm
 UX02 이후 통합시험은4개다. account-store의 이전 대상은V3이며 account-v3는 메모 왕복과V1/V2쓰기426·2001자400·CAS409의원본보존을확인한다. 일반 단위시험은 초안 격리·손상/실패 보존, 메모 이전, 변경 충돌을 보호하는 실행 취소도 포함한다.
 
 UX04 통합시험은5개다. account-store는 V1~V3를V4로 이전하며 account-v3는 기존 메모/undo 회귀를 V4에서 유지한다. account-v4는 명시적 종료·활동/고정휴식 왕복, 불일치400, V3쓰기426, 자정·CAS 보존을 검사한다. Node단위 외 Deno에서도 V4/시간계산/입력 파서를 실행한다. 실제 OAuth와 실제 단말 알림 권한은 별도 인수 항목이다.
+
+UX05 통합시험은6개다. account-classification은 V4 선택 분류·태그의 실제 JSONB 왕복, 없는 참조/중복/색상/상한400 원본 보존, 이름 변경, 삭제·실행 취소 참조 복원과 stale CAS409를 검사한다. UI의 필터는 계정별 로컬 초안이며 동기화되는 정의/Task 연결과 구분한다. Node86개와 CI의 명시 파일 목록 Deno34개를 실행한다. Windows에서는 Deno에 wildcard 대신 명시 경로를 전달한다.
