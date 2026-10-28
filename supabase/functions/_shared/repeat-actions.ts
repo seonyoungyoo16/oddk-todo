@@ -62,7 +62,7 @@ export function materializeRecurrences(plan: Plan, range: RepeatRange, seriesIds
           continue;
         }
         if (tasks.length >= 5000) throw new Error("반복 발생을 추가하면 업무5000개 한도를 넘어요. 기간을 줄이거나 지난 계획을 정리해주세요.");
-        if (active.has(titleKey(next))) throw new Error("같은 날짜와 시각에 같은 할 일이 있어요. 기존 일정과 반복을 확인해주세요.");
+        if (active.has(titleKey(next))) throw new Error(`같은 날짜와 시각에 같은 할 일이 있어요. ${date} ${next.startTime ?? "시각 미설정"} · ${next.title} 일정을 확인해주세요.`);
         active.add(titleKey(next)); tasks.push(next); byId.set(next.id, next);
         for (const group of series.goalGroupIds) added.set(group, [...(added.get(group) ?? []), next.id]);
       }
