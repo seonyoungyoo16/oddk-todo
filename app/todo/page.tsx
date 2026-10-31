@@ -336,6 +336,14 @@ function TodoWorkspace({ scope }: { scope: string }) {
     requestBulk("delete");
   }
 
+  function deleteEditedTask() {
+    if (!editingTask || editorConflict) return;
+    try {
+      const id = editingTask.id;
+      setBulkRequest(previewBulkAction(plan, [id], [id], "delete"));
+    } catch (error) { setEditError((error as Error).message); }
+  }
+
   function completeSelected() {
     requestBulk(allSelectedDone ? "undone" : "done");
   }
@@ -654,6 +662,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
           {editorConflict && <section className="oddk-draftConflict" role="alert"><strong>저장된 할 일이 바뀌었어요. 초안은 그대로 있어요.</strong><p>저장본: {editingTask?.title} / 내 초안: {editTitle}</p><p>저장된 메모: {editingTask?.notes || "없음"}<br />내 메모: {editNotes || "없음"}</p><button type="button" onClick={() => { workspace.download(); if (editingTask) workspace.set(current => ({ ...current, editors: { ...current.editors, [editingTask.id]: editorFrom(editingTask) } })); }}>초안 백업 후 저장본 사용</button><button type="button" onClick={() => { workspace.download(); if (editingTask && editingId) workspace.set(current => ({ ...current, editors: { ...current.editors, [editingId]: { ...current.editors[editingId], base: editingTask, baseMandala: safeMandala(plan.mandala), baseGoalTree: plan.goalTree } } })); }}>백업 후 내 초안으로 계속 편집</button></section>}
           {editError && <p role="alert" className="oddk-dialogError">{editError}</p>}
           <div className="oddk-dialogActions">
+            <button type="button" className="oddk-dialogDelete" disabled={editorConflict} onClick={deleteEditedTask}>삭제</button>
             <button type="button" className="oddk-dialogCancel" onClick={discardEditor}>취소</button>
             <button type="submit" className="oddk-primary">저장</button>
           </div>
