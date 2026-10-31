@@ -5,11 +5,11 @@
 .oddk-dialog { color-scheme: inherit; }
 .oddk-window { width: 100%; min-height: 100dvh; margin: 0; background: var(--oddk-surface); }
 .oddk-windowBody { display: grid; grid-template-columns: 188px minmax(0, 1fr); min-height: 100dvh; }
-.oddk-sidebar { display: flex; flex-direction: column; gap: 34px; padding: 32px 18px 22px; border-right: 1px solid var(--oddk-border); background: var(--oddk-sidebar); }
+.oddk-sidebar { position: sticky; top: 0; align-self: start; height: 100dvh; overflow-y: auto; display: flex; flex-direction: column; gap: 34px; padding: 32px 18px 22px; border-right: 1px solid var(--oddk-border); background: var(--oddk-sidebar); }
 .oddk-syncTrigger { display: flex; align-items: center; gap: 9px; padding: 10px 8px; margin-top: auto; text-align: left; color: #7d8da6; font-size: 12px; }
 .oddk-syncTrigger > svg { width: 18px; height: 18px; flex-shrink: 0; }
 .oddk-syncTrigger small { display: block; font-size: 10px; margin-top: 3px; color: #9aa7ba; }
-.oddk-accountFooter { margin-top: auto; display: grid; gap: 8px; }
+.oddk-accountFooter { margin-top: auto; flex-shrink: 0; display: grid; gap: 8px; }
 .oddk-accountLogin, .oddk-accountButton { display: flex; align-items: center; gap: 9px; width: 100%; padding: 9px 8px; text-align: left; font-size: 12px; color: var(--oddk-heading); border-radius: 5px; }
 .oddk-accountLogin { border: 1px solid var(--oddk-border); }
 .oddk-accountLogin:disabled { color: var(--oddk-muted); cursor: not-allowed; }
@@ -68,9 +68,9 @@
 .oddk-syncConflict summary { cursor: pointer; font-size: 12px; margin: 12px 0; }
 .oddk-syncConflict pre { max-height: 180px; overflow: auto; font-size: 11px; background: var(--oddk-soft); padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .oddk-syncFeedback { margin-top: 18px; font-size: 12px; color: #8e9bad; line-height: 1.7; }
-.oddk-brand { display: inline-flex; align-self: flex-start; margin: 0 14px; }
+.oddk-brand { display: inline-flex; align-self: flex-start; flex-shrink: 0; margin: 0 14px; }
 .oddk-logo { width: 88px; height: auto; }
-.oddk-navigation { display: grid; gap: 8px; }
+.oddk-navigation { display: grid; min-height: 0; overflow-y: auto; gap: 8px; }
 .oddk-navigation button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 10px 12px; border: 0; border-radius: 8px; background: transparent; color: #7e899c; text-align: left; font-size: 13px; font-weight: 400; }
 .oddk-navigation button > svg { width: 17px; height: 17px; flex-shrink: 0; }
 .oddk-navigation button > small { margin-left: auto; font-size: 11px; font-variant-numeric: tabular-nums; }
@@ -358,7 +358,7 @@
   .oddk-page { padding: 0; }
   .oddk-window { border-radius: 0; }
   .oddk-windowBody { display: block; }
-  .oddk-sidebar { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 14px; border-right: 0; border-bottom: 1px solid var(--oddk-border); }
+  .oddk-sidebar { position: static; align-self: stretch; height: auto; overflow: visible; display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 14px; border-right: 0; border-bottom: 1px solid var(--oddk-border); }
   .oddk-brand { margin: 0; flex-shrink: 0; }
   .oddk-logo { width: 64px; }
   .oddk-navigation { display: flex; gap: 3px; width: 100%; overflow-x: auto; margin-left: 0; }
