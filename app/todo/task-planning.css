@@ -22,12 +22,18 @@
 .oddk-selectionDock{margin:12px 0;border:1px solid var(--oddk-border);border-radius:var(--oddk-radius-card);padding:var(--oddk-space-3);background:var(--oddk-soft)}
 .oddk-selectionDock>p{font-size:var(--oddk-font-label);margin:0 0 8px}
 .oddk-selectionDock .oddk-bulkActions{margin:0;flex-wrap:wrap}
-.oddk-bulkDialog{width:min(520px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:auto}
-.oddk-bulkDialog .oddk-dialogForm{padding:var(--oddk-space-6)}
+.oddk-bulkDialog{width:min(600px,calc(100% - 32px));max-height:calc(100dvh - 48px);overflow:hidden;border-radius:var(--oddk-radius-dialog);background:var(--oddk-editor-surface,var(--oddk-surface));box-shadow:0 24px 80px #17223926}
+.oddk-bulkDialog::backdrop{background:#27334780}
+.oddk-bulkDialog .oddk-dialogForm{display:flex;flex-direction:column;max-height:calc(100dvh - 50px);padding:0}
+.oddk-bulkDialog .oddk-dialogHeader{flex-shrink:0;margin:0;padding:24px 32px}
+.oddk-bulkDialog .oddk-dialogHeader h2{font-size:var(--oddk-font-section);font-weight:600;line-height:1.4;letter-spacing:-.02em}
+.oddk-bulkBody{min-height:0;overflow-y:auto;padding:0 32px 24px}
+.oddk-bulkDialog .oddk-dialogActions{flex-shrink:0;gap:var(--oddk-space-3);margin:0;padding:16px 24px 16px 32px;border-top:1px solid var(--oddk-border)}
+.oddk-bulkDialog .oddk-dialogActions>button{height:var(--oddk-control-height);min-width:94px;padding:0 20px;font-size:var(--oddk-font-section);font-weight:600}
 .oddk-bulkDialog p{font-size:var(--oddk-font-label);line-height:var(--oddk-line-body);margin:12px 0}
-.oddk-bulkTargets{list-style:none;margin:12px 0;padding:0;max-height:40dvh;overflow:auto}
+.oddk-bulkTargets{list-style:none;margin:12px 0;padding:0}
 .oddk-bulkTargets li{display:grid;gap:var(--oddk-space-1);border-bottom:1px solid var(--oddk-border);padding:8px 0;overflow-wrap:anywhere}
 .oddk-bulkTargets li:last-child{border-bottom:0}
 .oddk-bulkTargets span{font-size:var(--oddk-font-small);color:var(--oddk-muted,#7e899c)}
 .oddk-legacyPriority{margin:8px 0;font-size:var(--oddk-font-small)}
-@media(max-width:480px){.oddk-deadlineFields{display:grid;grid-template-columns:minmax(0,1fr)}.oddk-deadlineFields label{width:100%;min-width:0}.oddk-bulkDialog .oddk-dialogForm{padding:var(--oddk-space-4)}.oddk-sortControl{align-items:start}.oddk-taskMove button{width:28px}}
+@media(max-width:480px){.oddk-deadlineFields{display:grid;grid-template-columns:minmax(0,1fr)}.oddk-deadlineFields label{width:100%;min-width:0}.oddk-bulkDialog{width:calc(100% - 24px);max-height:calc(100dvh - 24px)}.oddk-bulkDialog .oddk-dialogForm{max-height:calc(100dvh - 26px)}.oddk-bulkDialog .oddk-dialogHeader{padding:20px 16px}.oddk-bulkBody{padding:0 16px 20px}.oddk-bulkDialog .oddk-dialogActions{padding:16px}.oddk-bulkDialog .oddk-dialogActions>button{min-width:76px;padding-inline:16px;font-size:var(--oddk-font-body)}.oddk-sortControl{align-items:start}.oddk-taskMove button{width:28px}}
