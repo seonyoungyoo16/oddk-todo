@@ -6,7 +6,7 @@ const signal = () => new AbortController().signal;
 test("semantic requests use a local generative model, strict schema and separate untrusted user text", () => {
   const source = '운동하고 장 보고 메일 보내기';
   const body = taskSplitRequest(source);
-  assert.equal(body.model, 'qwen3:4b'); assert.equal(body.think, false); assert.equal(body.stream, false);
+  assert.equal(body.model, 'qwen3:4b-instruct-2507-q4_K_M'); assert.equal(body.think, false); assert.equal(body.stream, false);
   assert.deepEqual(body.messages[1], { role: 'user', content: source });
   assert.equal(body.format.properties.titles.maxItems, 32);
   for (const text of ['', '  ', 'x'.repeat(2001)]) assert.throws(() => taskSplitRequest(text));
