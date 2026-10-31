@@ -7,12 +7,16 @@
 .oddk-syncTrigger > svg { width: 18px; height: 18px; flex-shrink: 0; }
 .oddk-syncTrigger small { display: block; font-size: var(--oddk-font-small); margin-top: 4px; color: var(--oddk-muted); }
 .oddk-accountFooter { margin-top: auto; flex-shrink: 0; display: grid; gap: var(--oddk-space-2); }
+.oddk-accountFooter[data-connected="true"] { gap: 0; padding-top: 12px; border-top: 1px solid var(--oddk-border); }
 .oddk-accountLogin, .oddk-accountButton { display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 8px; text-align: center; font-size: var(--oddk-font-small); color: var(--oddk-heading); border-radius: var(--oddk-radius-control); min-height: var(--oddk-control-height); }
 .oddk-accountLogin { border: 1px solid var(--oddk-border); }
 .oddk-accountLogin:disabled { color: var(--oddk-muted); cursor: not-allowed; }
+.oddk-accountFooter .oddk-accountButton { display: grid; grid-template-columns: 18px minmax(0, 1fr); justify-content: start; gap: 10px; min-height: 36px; padding: 6px 8px; text-align: left; font-size: 13px; font-weight: 500; line-height: 20px; }
 .oddk-accountButton span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .oddk-accountLogin svg, .oddk-accountButton svg { width: 18px; height: 18px; flex-shrink: 0; }
-.oddk-accountFooter .oddk-syncTrigger { margin: 0; padding-top: 0; font-size: var(--oddk-font-small); }
+.oddk-accountFooter .oddk-syncTrigger { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-items: center; gap: 10px; margin: 0; min-height: 28px; padding: 4px 8px; text-align: left; font-size: var(--oddk-font-small); line-height: 20px; }
+.oddk-accountFooter .oddk-syncTrigger > svg { width: 14px; height: 14px; justify-self: center; }
+.oddk-accountFooter :is(.oddk-accountButton, .oddk-syncTrigger):hover { background: var(--oddk-highlight); border-radius: var(--oddk-radius-control); }
 .oddk-accountFooter small { font-size: var(--oddk-font-small); color: var(--oddk-muted); overflow-wrap: anywhere; }
 .oddk-profileName { display: flex; align-items: center; gap: var(--oddk-space-3); font-size: 18px; margin: 8px 0 24px; }
 .oddk-profileName svg { width: 27px; height: 27px; }
