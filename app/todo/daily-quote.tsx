@@ -9,7 +9,7 @@ export function DailyQuote({ date, hidden = false }: { date: string; hidden?: bo
   return (
     <aside className="oddk-dailyQuote" aria-labelledby="daily-quote-title">
       <div className="oddk-dailyQuoteHeading">
-        <h2 id="daily-quote-title">오늘의 한 문장</h2>
+        <h2 id="daily-quote-title">오늘의 개발 명언</h2>
         <time dateTime={date}>{Number(date.slice(5, 7))}월 {Number(date.slice(8))}일</time>
       </div>
       <figure>
