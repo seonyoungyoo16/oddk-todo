@@ -81,14 +81,7 @@
 .oddk-personalSpace strong, .oddk-personalSpace div > span { display: block; }
 .oddk-personalSpace strong { font-size: 12px; font-weight: 550; color: #46536c; }
 .oddk-personalSpace div > span { margin-top: 3px; font-size: 10px; color: #9aa3b4; }
-.oddk-workspace { position: relative; min-width: 0; padding: 64px 48px 40px; }
-.oddk-themeToggle { position: absolute; top: 20px; right: 26px; display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 8px; color: #8e9bb1; background: transparent; }
-.oddk-themeToggle > svg { width: 18px; height: 18px; }
-.oddk-themeToggle:hover { background: var(--oddk-soft); color: #6e96dc; }
-.oddk-intro { margin-bottom: 36px; }
 .oddk-eyebrow { color: #4f83e6; font-size: 10px; line-height: 1.5; letter-spacing: .12em; font-weight: 600; }
-.oddk-intro h1 { margin-top: 8px; font-size: 26px; font-weight: 650; line-height: 1.4; letter-spacing: -.035em; color: var(--oddk-heading); }
-.oddk-intro p { margin-top: 10px; font-size: 13px; line-height: 1.75; color: #929bad; }
 .oddk-contentGrid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
 .oddk-taskArea { min-width: 0; }
 .oddk-listTabs { display: flex; gap: 20px; align-items: center; border-bottom: 1px solid var(--oddk-border); }
@@ -348,16 +341,13 @@
   .oddk-navigation button { gap: 8px; padding: 10px 9px; font-size: 12px; }
   .oddk-personalSpace { padding: 0; gap: 7px; }
   .oddk-personalSpace div > span { font-size: 9px; }
-  .oddk-workspace { padding: 56px 30px 32px; }
   .oddk-contentGrid { grid-template-columns: minmax(0, 1fr) 252px; gap: 22px; }
   .oddk-rhythm { padding-left: 20px; }
-  .oddk-intro h1 { font-size: 23px; }
   .oddk-taskTitle { font-size: 14px; }
 }
 @media (max-width: 760px) {
   .oddk-page { padding: 0; }
   .oddk-windowBody { grid-template-columns: 160px minmax(0, 1fr); }
-  .oddk-workspace { padding: 56px 24px 28px; }
   .oddk-contentGrid { grid-template-columns: minmax(0, 1fr); gap: 30px; }
   .oddk-rhythm { border-left: 0; border-top: 1px solid var(--oddk-border); padding: 24px 0 0; }
   .oddk-rhythmBlocks { grid-template-columns: minmax(0, 1fr); }
@@ -376,10 +366,6 @@
   .oddk-listTabs { gap: 14px; }
   .oddk-listTabs button { font-size: 12px; gap: 5px; }
   .oddk-navigation button > svg, .oddk-navigation button > small, .oddk-personalSpace { display: none; }
-  .oddk-workspace { padding: 50px 20px 28px; }
-  .oddk-intro { margin-bottom: 26px; }
-  .oddk-intro h1 { font-size: 21px; }
-  .oddk-intro p { font-size: 12px; }
   .oddk-task { padding: 16px 0; }
   .oddk-rhythmBlocks { grid-template-columns: minmax(0, 1fr); }
   .oddk-dialogForm { padding: 20px; }
