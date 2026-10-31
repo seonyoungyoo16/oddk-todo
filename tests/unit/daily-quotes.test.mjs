@@ -39,3 +39,14 @@ test("every quote has Korean text, a precise source and an explicit translation 
     assert.equal(typeof quote.translated, "boolean");
   }
 });
+
+test("the collection contains only sourced software-development quotes", () => {
+  const generalAuthors = ["노자", "공자", "윤동주", "헬렌 켈러", "제임스 앨런", "마르쿠스 아우렐리우스"];
+  for (const quote of DAILY_QUOTES) {
+    assert.equal(quote.topic, "development");
+    assert.equal(quote.translated, true);
+    assert.ok(!generalAuthors.includes(quote.author));
+    assert.ok(!quote.sourceUrl.includes("ctext.org"));
+    assert.ok(!quote.sourceUrl.includes("gutenberg.org"));
+  }
+});

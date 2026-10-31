@@ -6,58 +6,65 @@ export type DailyQuote = Readonly<{
   passage: string;
   sourceUrl: string;
   translated: boolean;
+  topic: "development";
 }>;
 
-// Korean renderings are our own, not excerpts from a modern Korean edition.
-// Source locations and editorial rules are recorded in docs/DAILY-QUOTES.md.
+// Short Korean renderings of verified software-development source passages.
+// Do not mix general inspiration into this development-only collection.
 const sources = {
-  laozi: { author: "노자", work: "도덕경", sourceUrl: "https://ctext.org/dao-de-jing/zh", translated: true },
-  emerson: { author: "랠프 월도 에머슨", work: "자기 신뢰", sourceUrl: "https://www.gutenberg.org/files/16643/16643-h/16643-h.htm", translated: true },
-  confucius: { author: "공자", work: "논어", sourceUrl: "https://ctext.org/analects", translated: true },
-  thoreau: { author: "헨리 데이비드 소로", work: "월든", sourceUrl: "https://www.gutenberg.org/files/205/205-h/205-h.htm", translated: true },
-  marcus: { author: "마르쿠스 아우렐리우스", work: "명상록", sourceUrl: "https://classics.mit.edu/Antoninus/meditations.html", translated: true },
-  allen: { author: "제임스 앨런", work: "사람은 생각하는 대로 된다", sourceUrl: "https://www.gutenberg.org/files/4507/4507-h/4507-h.htm", translated: true },
-  epictetus: { author: "에픽테토스", work: "엥케이리디온", sourceUrl: "https://www.gutenberg.org/cache/epub/45109/pg45109-images.html", translated: true },
-  keller: { author: "헬렌 켈러", work: "낙관주의", sourceUrl: "https://www.gutenberg.org/files/31622/31622-h/31622-h.htm", translated: true },
-  yoon: { author: "윤동주", work: "쉽게 씌어진 시", sourceUrl: "https://ko.wikisource.org/wiki/쉽게_씌어진_시", translated: false },
+  peters: { author: "팀 피터스", work: "The Zen of Python", sourceUrl: "https://peps.python.org/pep-0020/" },
+  pike: { author: "롭 파이크", work: "Go Proverbs", sourceUrl: "https://go-proverbs.github.io/" },
+  pragmatic: { author: "데이비드 토머스 · 앤드루 헌트", work: "실용주의 프로그래머", sourceUrl: "https://pragprog.com/tips/" },
+  dijkstra: { author: "에츠허르 다익스트라", work: "EWD498", sourceUrl: "https://www.cs.utexas.edu/~EWD/transcriptions/EWD04xx/EWD498.html" },
+  metz: { author: "샌디 메츠", work: "The Wrong Abstraction", sourceUrl: "https://sandimetz.com/blog/2016/1/20/the-wrong-abstraction" },
+  perlis: { author: "앨런 펄리스", work: "Epigrams in Programming", sourceUrl: "https://www.cs.yale.edu/homes/perlis-alan/quotes.html" },
+  hoare: { author: "토니 호어", work: "The Emperor’s Old Clothes", sourceUrl: "https://noncombatant.org/hoare-emperors-old-clothes-turing-award/" },
+  raymond: { author: "에릭 S. 레이먼드", work: "유닉스 프로그래밍의 기술", sourceUrl: "https://www.catb.org/esr/writings/taoup/html/ch01s06.html" },
+  martin: { author: "로버트 C. 마틴", work: "Software Craftsmanship Is About…", sourceUrl: "https://blog.cleancoder.com/uncle-bob/2011/01/17/software-craftsmanship-is-about.html" },
+  turing: { author: "앨런 튜링", work: "계산 기계와 지능", sourceUrl: "https://www.cs.sfu.ca/~vaughan/teaching/889/papers/turing1950.html" },
+  hamilton: { author: "마거릿 해밀턴", work: "MIT News 아폴로 소프트웨어 회고", sourceUrl: "https://news.mit.edu/2016/scene-at-mit-margaret-hamilton-apollo-code-0817" },
+  spolsky: { author: "조엘 스폴스키", work: "Things You Should Never Do, Part I", sourceUrl: "https://www.joelonsoftware.com/2000/04/06/things-you-should-never-do-part-i/" },
+  stroustrup: { author: "비야네 스트로스트루프", work: "Bjarne Stroustrup Quotes", sourceUrl: "https://www.stroustrup.com/quotes.html" },
+  knuth: { author: "도널드 크누스", work: "Structured Programming with go to Statements", sourceUrl: "https://gwern.net/doc/cs/algorithm/1974-knuth.pdf#page=8" },
+  sicp: { author: "해럴드 애벌슨 · 제럴드 제이 서스먼 · 줄리 서스먼", work: "프로그램의 구조와 해석", sourceUrl: "https://web.mit.edu/6.001/6.037/sicp.pdf#page=22" },
 } as const;
 
-function entry(id: string, text: string, source: keyof typeof sources, passage: string, sourceUrl?: string): DailyQuote {
-  return { id, text, ...sources[source], passage, ...(sourceUrl ? { sourceUrl } : {}) };
+function entry(id: string, text: string, source: keyof typeof sources, passage: string, override?: { work: string; sourceUrl: string }): DailyQuote {
+  return { id, text, ...sources[source], passage, ...override, translated: true, topic: "development" };
 }
 
 // Interleave authors so consecutive days, including the cycle boundary, differ.
 export const DAILY_QUOTES: readonly DailyQuote[] = [
-  entry("laozi-step", "천 리의 길도 발밑의 한 걸음에서 시작된다.", "laozi", "64장"),
-  entry("emerson-trust", "자신을 믿어라. 모든 마음은 그 믿음에 울린다.", "emerson", "자기 신뢰"),
-  entry("confucius-practice", "배우고 때때로 익히면, 또한 기쁘지 않은가.", "confucius", "학이 1장", "https://ctext.org/analects/xue-er"),
-  entry("thoreau-dream", "꿈꾸는 방향으로 자신 있게 나아가고, 상상한 삶을 살기 위해 힘써라.", "thoreau", "결론"),
-  entry("marcus-obstacle", "길을 가로막는 것에서도, 앞으로 나아갈 도움을 찾을 수 있다.", "marcus", "5권 20절", "https://classics.mit.edu/Antoninus/meditations.5.five.html"),
-  entry("allen-vision", "마음속에 그린 모습과 이상을 소중히 간직하라.", "allen", "Visions and Ideals"),
-  entry("epictetus-control", "우리 뜻대로 할 수 있는 일과, 그럴 수 없는 일을 구별하라.", "epictetus", "1장"),
-  entry("keller-hope", "낙관은 성취로 이끄는 믿음이다. 희망 없이는 아무것도 이룰 수 없다.", "keller", "제3부"),
-  entry("laozi-small", "어려운 일은 쉬울 때 풀고, 큰일은 작은 데서 시작하라.", "laozi", "63장"),
-  entry("emerson-peace", "내게 평온을 가져다줄 수 있는 사람은 나 자신이다.", "emerson", "자기 신뢰"),
-  entry("confucius-reflect", "배우기만 하고 생각하지 않으면 막막하고, 생각만 하고 배우지 않으면 위태롭다.", "confucius", "위정 15장", "https://ctext.org/analects/wei-zheng"),
-  entry("thoreau-pace", "남과 보조가 맞지 않더라도, 자신에게 들리는 박자에 맞춰 걸어가라.", "thoreau", "결론"),
-  entry("marcus-be", "좋은 사람이 어떠해야 하는지 말하는 데 그치지 말고, 그런 사람이 되어라.", "marcus", "10권 16절", "https://classics.mit.edu/Antoninus/meditations.10.ten.html"),
-  entry("allen-purpose", "생각이 목적과 이어질 때, 의미 있는 성취가 시작된다.", "allen", "Thought and Purpose"),
-  entry("epictetus-judgment", "우리를 흔드는 것은 사건 자체보다, 그 사건을 바라보는 판단이다.", "epictetus", "5장"),
-  entry("yoon-lamp", "등불을 밝혀 어둠을 조금 내몰고", "yoon", "시의 한 구절"),
-  entry("laozi-self", "남을 이기는 데는 힘이 필요하지만, 자신을 이기는 사람이 강하다.", "laozi", "33장"),
-  entry("emerson-work", "자신의 일을 하라. 그 일을 통해 스스로를 더 단단하게 만들 수 있다.", "emerson", "자기 신뢰"),
-  entry("confucius-learn", "세 사람이 함께 길을 가면, 그 안에 반드시 내가 배울 스승이 있다.", "confucius", "술이 22장", "https://ctext.org/analects/shu-er"),
-  entry("thoreau-awake", "우리가 깨어 있는 날에야 비로소 새벽이 밝아온다.", "thoreau", "결론"),
-  entry("marcus-return", "모든 일을 뜻대로 하지 못했다고 낙담하지 말라. 다시 돌아와 시작하면 된다.", "marcus", "5권 9절", "https://classics.mit.edu/Antoninus/meditations.5.five.html"),
-  entry("allen-calm", "마음의 평정은 지혜가 지닌 아름다운 보석 가운데 하나다.", "allen", "Serenity"),
-  entry("epictetus-consider", "무슨 일이든 앞서 필요한 것과 뒤따를 결과를 살핀 다음 시작하라.", "epictetus", "29장"),
-  entry("laozi-finish", "마무리할 때도 처음처럼 신중하라.", "laozi", "64장"),
-  entry("emerson-original", "자기 자신으로 서라. 남을 흉내 내지 말라.", "emerson", "자기 신뢰"),
-  entry("confucius-correct", "잘못하고도 고치지 않는 것, 그것이 잘못이다.", "confucius", "위령공 30장", "https://ctext.org/analects/wei-ling-gong/zh"),
-  entry("thoreau-truth", "사랑보다, 돈보다, 명성보다, 나에게 진실을 달라.", "thoreau", "결론"),
-  entry("marcus-within", "안으로 눈을 돌려라. 좋은 것의 샘은 네 안에 있다.", "marcus", "7권 59절", "https://classics.mit.edu/Antoninus/meditations.7.seven.html"),
-  entry("allen-strength", "자기 절제는 힘이고, 바른 생각은 다스림이며, 평정은 능력이다.", "allen", "Serenity"),
-  entry("epictetus-accept", "모든 일이 내 뜻대로 되기를 바라기보다, 일어나는 일을 받아들이는 법을 배워라.", "epictetus", "8장"),
+  entry("peters-readable", "가독성은 중요하다.", "peters", "가독성에 관한 원칙"),
+  entry("pike-clear", "기교보다 명확함이 낫다.", "pike", "명확함에 관한 잠언"),
+  entry("pragmatic-craft", "자신의 기술에 애정을 가져라.", "pragmatic", "팁 1"),
+  entry("dijkstra-tools", "우리가 쓰는 도구는 사고 습관과 사고 능력에 깊은 영향을 준다.", "dijkstra", "도구와 사고에 관한 단락"),
+  entry("metz-abstraction", "중복은 잘못된 추상화보다 훨씬 저렴하다.", "metz", "글의 핵심 명제"),
+  entry("perlis-remove", "복잡함을 무시하는 사람도, 견디는 사람도 있다. 뛰어난 사람은 그것을 없앤다.", "perlis", "경구 58"),
+  entry("peters-explicit", "명시적인 것이 암시적인 것보다 낫다.", "peters", "명시성에 관한 원칙"),
+  entry("hoare-reliability", "신뢰성을 얻으려면 단순함을 끝까지 추구해야 한다.", "hoare", "신뢰성의 대가에 관한 단락"),
+  entry("pragmatic-think", "자신이 하는 일을 생각하라.", "pragmatic", "팁 2"),
+  entry("raymond-modular", "명확한 인터페이스로 연결되는 단순한 부품을 만들어라.", "raymond", "모듈성의 규칙"),
+  entry("martin-fast", "빠르게 가는 유일한 방법은 제대로 가는 것이다.", "martin", "일정을 지키는 방법에 관한 항목"),
+  entry("pike-copy", "작은 복제는 작은 의존성보다 낫다.", "pike", "복제와 의존성에 관한 잠언"),
+  entry("turing-ahead", "멀리 내다볼 수는 없어도, 눈앞에 해야 할 일이 많다는 것은 알 수 있다.", "turing", "논문의 마지막 문장"),
+  entry("pragmatic-reuse", "재사용하기 쉽게 만들어라.", "pragmatic", "팁 16"),
+  entry("peters-simple", "단순한 것이 복잡한 것보다 낫다.", "peters", "단순성에 관한 원칙"),
+  entry("hamilton-pioneer", "우리에게는 개척자가 되는 것 외에 다른 선택이 없었다.", "hamilton", "아폴로 개발 경험을 회고한 발언"),
+  entry("spolsky-read", "코드는 쓰는 것보다 읽는 것이 더 어렵다.", "spolsky", "기존 코드 재작성에 관한 글"),
+  entry("stroustrup-future", "미래를 위해 만들어라. 그 안에서 살아가야 하니까.", "stroustrup", "미래를 위한 교육과 개발에 관한 발언"),
+  entry("perlis-simplicity", "단순함은 복잡함에 앞서 오지 않는다. 복잡함을 거친 뒤에 온다.", "perlis", "경구 31"),
+  entry("pike-error-value", "오류도 값이다.", "pike", "오류에 관한 잠언"),
+  entry("pragmatic-windows", "깨진 창문을 방치하지 말라.", "pragmatic", "팁 5"),
+  entry("dijkstra-testing", "테스트로 버그가 있음을 보여줄 수는 있지만, 없음을 증명할 수는 없다.", "dijkstra", "프로그램 테스트에 관한 단락", { work: "EWD273", sourceUrl: "https://www.cs.utexas.edu/~EWD/transcriptions/EWD02xx/EWD273.html" }),
+  entry("peters-errors", "오류를 조용히 넘기지 말라.", "peters", "오류 처리에 관한 원칙"),
+  entry("raymond-repair", "실패해야 한다면, 가능한 한 빨리 분명하게 실패하라.", "raymond", "복구의 규칙"),
+  entry("pragmatic-dry", "같은 것을 반복하지 말라.", "pragmatic", "팁 15, DRY"),
+  entry("hoare-design", "결함이 없다는 것이 분명할 만큼 단순하게 설계하라.", "hoare", "소프트웨어 설계의 두 가지 방법 중 첫째"),
+  entry("knuth-optimization", "성급한 최적화는 모든 악의 근원이다.", "knuth", "1974년 논문 268쪽, 효율성에 관한 단락"),
+  entry("sicp-readers", "프로그램은 사람이 읽도록 써야 하며, 컴퓨터의 실행은 부차적인 목적이다.", "sicp", "초판 서문"),
+  entry("peters-ambiguity", "모호하다면, 추측하려는 유혹을 거부하라.", "peters", "모호함에 관한 원칙"),
+  entry("pike-handle", "오류를 확인하는 데 그치지 말고, 제대로 처리하라.", "pike", "오류 처리에 관한 잠언"),
 ];
 
 /** The caller supplies the actual Seoul day, never the selected planning date. */
