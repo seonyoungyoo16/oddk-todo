@@ -1,32 +1,33 @@
 .oddk-taskPlanning{border:0;border-top:1px solid var(--oddk-border);padding:16px 0;margin:0;min-width:0}
-.oddk-taskPlanning>legend{font-size:13px;font-weight:600;padding-right:8px}
-.oddk-taskPlanning>small{display:block;color:var(--oddk-muted,#7e899c);line-height:1.6;font-size:12px;margin-top:10px}
-.oddk-taskPlanning .oddk-priorityOptions input{width:14px;height:14px;accent-color:#3974df;position:absolute;opacity:0}
-.oddk-taskPlanning .oddk-priorityOptions label:focus-within{outline:2px solid #3974df;outline-offset:3px}
-.oddk-deadlineFields{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-top:14px;min-width:0}
-.oddk-deadlineFields label{display:grid;gap:6px;font-size:13px;min-width:150px;flex:1}
-.oddk-deadlineFields input,.oddk-sortControl select{font:inherit;color:inherit;background:var(--oddk-surface);border:1px solid var(--oddk-border);border-radius:6px;min-height:40px;padding:8px;min-width:0;max-width:100%}
-.oddk-deadlineFields button{padding:8px;min-height:40px;font-size:12px;border:1px solid var(--oddk-border);border-radius:6px}
+.oddk-taskPlanning>legend{font-size:var(--oddk-font-label);font-weight:600;padding-right:8px}
+.oddk-taskPlanning>small{display:block;color:var(--oddk-muted,#7e899c);line-height:1.6;font-size:var(--oddk-font-small);margin-top:8px}
+.oddk-taskPlanning .oddk-priorityOptions input{width:14px;height:14px;accent-color:var(--oddk-brand);position:absolute;opacity:0}
+.oddk-taskPlanning .oddk-priorityOptions label:focus-within{outline:2px solid var(--oddk-focus);outline-offset:3px}
+.oddk-deadlineFields{display:flex;flex-wrap:wrap;align-items:end;gap:var(--oddk-space-3);margin-top:12px;min-width:0}
+.oddk-deadlineFields label{display:grid;gap:8px;font-size:var(--oddk-font-label);min-width:150px;flex:1}
+.oddk-deadlineFields input,.oddk-sortControl select{font:inherit;color:inherit;background:var(--oddk-surface);border:1px solid var(--oddk-border);border-radius:var(--oddk-radius-control);min-height:var(--oddk-control-height);padding:var(--oddk-space-2);min-width:0;max-width:100%}
+.oddk-deadlineFields button{padding:var(--oddk-space-2);min-height:var(--oddk-control-height);font-size:var(--oddk-font-small);border:1px solid var(--oddk-border);border-radius:var(--oddk-radius-control)}
 .oddk-deadlineFields input:disabled,.oddk-deadlineFields button:disabled{opacity:.5;cursor:not-allowed}
-.oddk-sortControl{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;font-size:13px}
-.oddk-sortControl label{display:flex;gap:8px;align-items:center}
+.oddk-sortControl{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:12px 0;font-size:var(--oddk-font-label)}
+.oddk-sortControl label{display:flex;gap:var(--oddk-space-2);align-items:center}
 .oddk-sortControl small{color:var(--oddk-muted,#7e899c)}
-.oddk-taskSequence{font-size:12px;font-weight:400;color:var(--oddk-muted,#7e899c);margin-right:7px}
-.oddk-importanceBadge{border:1px solid var(--oddk-border);border-radius:4px;padding:2px 5px;white-space:nowrap}
-.oddk-importanceBadge.oddk-high{font-weight:650;color:var(--oddk-heading);border-style:double;border-width:3px}
+.oddk-taskSequence{font-size:var(--oddk-font-small);font-weight:400;color:var(--oddk-muted,#7e899c);margin-right:8px}
+.oddk-importanceBadge{border:1px solid var(--oddk-border);border-radius:var(--oddk-radius-card);padding:2px 4px;white-space:nowrap}
+.oddk-importanceBadge.oddk-high{font-weight:600;color:var(--oddk-heading);border-style:double;border-width:3px}
 .oddk-deadlineBadge{display:inline-flex;flex-wrap:wrap;gap:2px;line-height:1.6}
-.oddk-deadlineBadge strong{font-weight:650;color:var(--oddk-heading)}
-.oddk-taskMove{display:flex;flex-direction:column;gap:4px;flex-shrink:0}
-.oddk-taskMove button{display:inline-flex;align-items:center;justify-content:center;width:32px;height:30px;border:1px solid var(--oddk-border);border-radius:4px;color:inherit}
+.oddk-deadlineBadge strong{font-weight:600;color:var(--oddk-heading)}
+.oddk-taskMove{display:flex;flex-direction:column;gap:var(--oddk-space-1);flex-shrink:0}
+.oddk-taskMove button{display:inline-flex;align-items:center;justify-content:center;width:32px;height:30px;border:1px solid var(--oddk-border);border-radius:var(--oddk-radius-control);color:inherit}
 .oddk-taskMove button:disabled{opacity:.3;cursor:not-allowed}
-.oddk-selectionDock{margin:14px 0;border:1px solid var(--oddk-border);border-radius:8px;padding:12px;background:var(--oddk-soft)}
-.oddk-selectionDock>p{font-size:13px;margin:0 0 8px}
+.oddk-selectionDock{margin:12px 0;border:1px solid var(--oddk-border);border-radius:var(--oddk-radius-card);padding:var(--oddk-space-3);background:var(--oddk-soft)}
+.oddk-selectionDock>p{font-size:var(--oddk-font-label);margin:0 0 8px}
 .oddk-selectionDock .oddk-bulkActions{margin:0;flex-wrap:wrap}
 .oddk-bulkDialog{width:min(520px,calc(100% - 24px));max-height:calc(100dvh - 24px);overflow:auto}
-.oddk-bulkDialog .oddk-dialogForm{padding:24px}
-.oddk-bulkDialog p{font-size:13px;line-height:1.7;margin:12px 0}
+.oddk-bulkDialog .oddk-dialogForm{padding:var(--oddk-space-6)}
+.oddk-bulkDialog p{font-size:var(--oddk-font-label);line-height:var(--oddk-line-body);margin:12px 0}
 .oddk-bulkTargets{list-style:none;margin:12px 0;padding:0;max-height:40dvh;overflow:auto}
-.oddk-bulkTargets li{display:grid;gap:4px;border-bottom:1px solid var(--oddk-border);padding:10px 0;overflow-wrap:anywhere}
-.oddk-bulkTargets span{font-size:12px;color:var(--oddk-muted,#7e899c)}
-.oddk-legacyPriority{margin:10px 0;font-size:12px}
-@media(max-width:480px){.oddk-deadlineFields{display:grid;grid-template-columns:minmax(0,1fr)}.oddk-deadlineFields label{width:100%;min-width:0}.oddk-bulkDialog .oddk-dialogForm{padding:16px}.oddk-sortControl{align-items:start}.oddk-taskMove button{width:28px}}
+.oddk-bulkTargets li{display:grid;gap:var(--oddk-space-1);border-bottom:1px solid var(--oddk-border);padding:8px 0;overflow-wrap:anywhere}
+.oddk-bulkTargets li:last-child{border-bottom:0}
+.oddk-bulkTargets span{font-size:var(--oddk-font-small);color:var(--oddk-muted,#7e899c)}
+.oddk-legacyPriority{margin:8px 0;font-size:var(--oddk-font-small)}
+@media(max-width:480px){.oddk-deadlineFields{display:grid;grid-template-columns:minmax(0,1fr)}.oddk-deadlineFields label{width:100%;min-width:0}.oddk-bulkDialog .oddk-dialogForm{padding:var(--oddk-space-4)}.oddk-sortControl{align-items:start}.oddk-taskMove button{width:28px}}

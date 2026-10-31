@@ -51,7 +51,7 @@ export function useExecution(scope: string, date: string, planSnapshot: string, 
       } else result = await executionApi(scope, request) as ExecutionState;
       await checkExecutionScope(scope);
       if (!alive.current) return false;
-      setState(result); setPending(null); setMessage("시간 기록을 저장했어요.");
+      setState(result); setPending(null); setMessage(request.command.type === "stop" ? "수행 기록을 저장했어요." : "시간 기록을 저장했어요.");
       try { await refresh(); } catch { setError("조작은 저장했지만 이력을 갱신하지 못했어요. 다시 확인해주세요."); }
       return true;
     } catch (e) {

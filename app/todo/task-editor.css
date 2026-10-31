@@ -1,16 +1,16 @@
 .oddk-taskEditor {
-  --edit-surface: #fff;
-  --edit-field: #fff;
-  --edit-heading: #1c2b48;
-  --edit-muted: #7b879e;
-  --edit-border: #dce2ee;
-  --edit-accent: #2460ff;
-  --edit-soft: #ecf3ff;
+  --edit-surface: var(--oddk-editor-surface);
+  --edit-field: var(--oddk-editor-field);
+  --edit-heading: var(--oddk-editor-heading);
+  --edit-muted: var(--oddk-editor-muted);
+  --edit-border: var(--oddk-editor-border);
+  --edit-accent: var(--oddk-editor-accent);
+  --edit-soft: var(--oddk-editor-soft);
   width: min(600px, calc(100% - 32px));
   max-height: calc(100dvh - 48px);
   overflow: hidden;
   border: 1px solid #e4e7ef;
-  border-radius: 12px;
+  border-radius: var(--oddk-radius-dialog);
   background: var(--edit-surface);
   color: var(--edit-heading);
   box-shadow: 0 24px 80px #17223926;
@@ -27,19 +27,19 @@
 .oddk-taskEditor .oddk-dialogHeader {
   flex-shrink: 0;
   margin: 0;
-  padding: 28px 30px;
+  padding: 24px 32px;
 }
 .oddk-taskEditor .oddk-dialogHeader h2 {
   color: var(--edit-heading);
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 36px;
-  letter-spacing: -0.035em;
+  font-size: var(--oddk-font-section);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -.02em;
 }
 .oddk-taskEditor .oddk-dialogHeader button {
-  width: 32px;
-  height: 32px;
-  padding: 5px;
+  width: var(--oddk-control-height);
+  height: var(--oddk-control-height);
+  padding: 4px;
   color: var(--edit-muted);
 }
 .oddk-taskEditor .oddk-dialogHeader button:hover {
@@ -47,58 +47,58 @@
 }
 .oddk-dialogBody {
   min-height: 0;
-  padding: 0 30px;
+  padding: 0 32px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
 }
 .oddk-taskEditor .oddk-dialogField {
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   color: var(--edit-heading);
-  font-size: 16px;
+  font-size: var(--oddk-font-section);
   font-weight: 500;
   line-height: 24px;
 }
 .oddk-taskEditor .oddk-dialogField input,
 .oddk-taskEditor .oddk-dialogField select {
-  height: 50px;
+  height: var(--oddk-control-height);
   max-width: none;
   padding: 0 16px;
   border: 1px solid var(--edit-border);
-  border-radius: 8px;
+  border-radius: var(--oddk-radius-control);
   background: var(--edit-field);
   color: var(--edit-heading);
-  font-size: 17px;
+  font-size: var(--oddk-font-body);
   line-height: 24px;
 }
 .oddk-taskEditor .oddk-editorTitle {
-  margin-bottom: 26px;
+  margin-bottom: 24px;
 }
 .oddk-editorMeta {
   display: grid;
   grid-template-columns: 1.3fr 1fr;
-  padding-bottom: 26px;
+  padding-bottom: 24px;
   border-bottom: 1px solid var(--edit-border);
 }
 .oddk-editorPriority {
   min-width: 0;
   margin: 0;
-  padding: 0 26px 0 0;
+  padding: 0 24px 0 0;
   border: 0;
 }
 .oddk-editorPriority legend {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   padding: 0;
   color: var(--edit-heading);
-  font-size: 16px;
+  font-size: var(--oddk-font-section);
   font-weight: 500;
   line-height: 24px;
 }
 .oddk-priorityOptions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 .oddk-priorityOptions label {
   position: relative;
@@ -106,17 +106,17 @@
 }
 .oddk-priorityOptions label > span {
   display: grid;
-  height: 48px;
+  height: var(--oddk-control-height);
   place-items: center;
   border: 1px solid var(--edit-border);
-  border-radius: 8px;
+  border-radius: var(--oddk-radius-control);
   background: var(--edit-field);
-  color: #68758d;
-  font-size: 16px;
+  color: var(--oddk-muted);
+  font-size: var(--oddk-font-section);
   line-height: 24px;
 }
 .oddk-priorityOptions input:checked + span {
-  border-color: #5d89ff;
+  border-color: var(--oddk-brand);
   background: var(--edit-soft);
   color: var(--edit-accent);
   font-weight: 600;
@@ -128,7 +128,7 @@
 }
 .oddk-taskEditor .oddk-editorStatus {
   min-width: 0;
-  padding-left: 26px;
+  padding-left: 24px;
   border-left: 1px solid var(--edit-border);
 }
 .oddk-editorSelect {
@@ -138,7 +138,7 @@
 .oddk-taskEditor .oddk-editorSelect select {
   appearance: none;
   width: 100%;
-  height: 48px;
+  height: var(--oddk-control-height);
   padding-right: 40px;
 }
 .oddk-editorSelect > svg {
@@ -154,18 +154,18 @@
 .oddk-taskEditor .oddk-dialogTimes {
   position: relative;
   margin: 0;
-  padding: 20px 0 26px;
+  padding: 20px 0 24px;
   border-bottom: 1px solid var(--edit-border);
 }
 .oddk-editorDisclosure > summary {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--oddk-space-3);
   min-height: 30px;
   list-style: none;
   color: var(--edit-heading);
   font-size: 18px;
-  font-weight: 650;
+  font-weight: 600;
   line-height: 28px;
   cursor: pointer;
 }
@@ -180,14 +180,14 @@
 .oddk-editorDisclosure > summary:focus-visible {
   outline: 2px solid var(--edit-accent);
   outline-offset: 4px;
-  border-radius: 4px;
+  border-radius: var(--oddk-radius-card);
 }
 .oddk-editorOptional {
   padding: 2px 13px;
   border-radius: 999px;
   background: var(--edit-soft);
   color: var(--edit-accent);
-  font-size: 14px;
+  font-size: var(--oddk-font-body);
   font-weight: 500;
   line-height: 24px;
 }
@@ -196,10 +196,10 @@
   width: 30px;
   height: 30px;
   margin: 0 0 0 auto;
-  padding: 5px;
+  padding: 4px;
   place-items: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--oddk-radius-control);
   background: transparent;
   color: var(--edit-muted);
   text-decoration: none;
@@ -215,11 +215,11 @@
 .oddk-editorTimeGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 26px;
-  margin-top: 18px;
+  gap: 24px;
+  margin-top: 16px;
 }
 .oddk-editorTimeGrid .oddk-dialogField {
-  gap: 8px;
+  gap: var(--oddk-space-2);
   min-width: 0;
 }
 .oddk-editorNumber {
@@ -244,7 +244,7 @@
   width: 46px;
   place-items: center;
   border-left: 1px solid var(--edit-border);
-  color: #758099;
+  color: var(--oddk-muted);
   font-weight: 400;
   pointer-events: none;
 }
@@ -253,12 +253,12 @@
   align-items: center;
   gap: 13px;
   min-height: 48px;
-  margin-top: 14px;
-  padding: 12px 18px;
-  border-radius: 9px;
+  margin-top: 12px;
+  padding: 12px 16px;
+  border-radius: var(--oddk-radius-card);
   background: var(--edit-soft);
   color: var(--edit-accent);
-  font-size: 16px;
+  font-size: var(--oddk-font-section);
   font-weight: 500;
   line-height: 24px;
 }
@@ -272,9 +272,9 @@
   font-weight: 400;
 }
 .oddk-dialogTimes .oddk-timeGuideError {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
   color: #b14747;
-  font-size: 13px;
+  font-size: var(--oddk-font-label);
 }
 .oddk-taskEditor .oddk-startField {
   width: min(242px, 100%);
@@ -283,7 +283,7 @@
 .oddk-taskEditor .oddk-startField input {
   width: 100%;
   max-width: none;
-  font-size: 16px;
+  font-size: var(--oddk-font-section);
 }
 .oddk-taskEditor .oddk-startField input:disabled {
   background: var(--edit-surface);
@@ -291,14 +291,14 @@
 }
 .oddk-taskEditor .oddk-dialogLinks {
   margin: 0;
-  padding: 18px 0 12px;
+  padding: 16px 0 12px;
   border: 0;
 }
 .oddk-dialogLinks > summary {
   align-items: flex-start;
 }
 .oddk-dialogLinks > summary > svg {
-  margin-top: 5px;
+  margin-top: 4px;
 }
 .oddk-dialogLinks > summary > span {
   display: flex;
@@ -306,25 +306,25 @@
 }
 .oddk-dialogLinks > summary small {
   display: block;
-  margin-top: 3px;
+  margin-top: 4px;
   color: var(--edit-muted);
-  font-size: 14px;
+  font-size: var(--oddk-font-body);
   font-weight: 400;
   line-height: 22px;
 }
 .oddk-dialogLinkContent {
-  padding: 18px 0 12px;
+  padding: 16px 0 12px;
 }
 .oddk-taskEditor .oddk-linkSelectors select {
   height: 44px;
   border-color: var(--edit-border);
-  border-radius: 8px;
+  border-radius: var(--oddk-radius-card);
   background: var(--edit-field);
   color: var(--edit-heading);
-  font-size: 13px;
+  font-size: var(--oddk-font-label);
 }
 .oddk-taskEditor .oddk-linkSelectors label {
-  font-size: 13px;
+  font-size: var(--oddk-font-label);
 }
 .oddk-taskEditor .oddk-linkedGoals > span {
   background: var(--edit-soft);
@@ -336,24 +336,24 @@
 }
 .oddk-taskEditor .oddk-dialogError {
   flex-shrink: 0;
-  margin: 12px 30px;
-  font-size: 13px;
+  margin: 12px 32px;
+  font-size: var(--oddk-font-label);
   line-height: 1.6;
 }
 .oddk-taskEditor .oddk-dialogActions {
   flex-shrink: 0;
-  gap: 12px;
+  gap: var(--oddk-space-3);
   margin: 0;
-  padding: 16px 24px 18px 30px;
+  padding: 16px 24px 16px 32px;
   border-top: 1px solid var(--edit-border);
   background: var(--edit-surface);
 }
 .oddk-taskEditor .oddk-dialogActions > button {
-  height: 48px;
+  height: var(--oddk-control-height);
   min-width: 94px;
   padding: 0 20px;
-  border-radius: 8px;
-  font-size: 16px;
+  border-radius: var(--oddk-radius-control);
+  font-size: var(--oddk-font-section);
   font-weight: 600;
 }
 .oddk-taskEditor .oddk-dialogActions > .oddk-dialogDelete {
@@ -376,25 +376,16 @@
   color: var(--edit-heading);
 }
 .oddk-taskEditor .oddk-dialogActions > .oddk-primary {
-  border: 1px solid #245dff;
-  background: #2460ff;
+  border: 1px solid var(--oddk-brand);
+  background: var(--oddk-brand);
   color: white;
 }
 .oddk-taskEditor .oddk-dialogActions > .oddk-primary:hover {
-  background: #154ce9;
+  background: var(--oddk-brand-hover);
 }
 .oddk-taskEditor :is(input, select, button):focus-visible {
-  outline: 2px solid #7099ff;
+  outline: 2px solid var(--oddk-focus);
   outline-offset: 3px;
-}
-.oddk-page[data-theme="dark"] .oddk-taskEditor {
-  --edit-surface: #172131;
-  --edit-field: #1d293b;
-  --edit-heading: #dbe5f5;
-  --edit-muted: #a2b3ce;
-  --edit-border: #3b4c66;
-  --edit-accent: #94b8ff;
-  --edit-soft: #233958;
 }
 .oddk-page[data-theme="dark"] .oddk-priorityOptions label > span {
   color: #afbed5;
@@ -430,21 +421,21 @@
     max-height: calc(100dvh - 26px);
   }
   .oddk-taskEditor .oddk-dialogHeader {
-    padding: 20px;
+    padding: var(--oddk-space-5);
   }
   .oddk-taskEditor .oddk-dialogHeader h2 {
-    font-size: 23px;
-    line-height: 32px;
+    font-size: var(--oddk-font-section);
+    line-height: 1.4;
   }
   .oddk-dialogBody {
     padding: 0 20px;
   }
   .oddk-taskEditor .oddk-editorTitle {
-    margin-bottom: 22px;
+    margin-bottom: 24px;
   }
   .oddk-editorMeta {
     grid-template-columns: 1fr;
-    padding-bottom: 22px;
+    padding-bottom: 24px;
   }
   .oddk-editorPriority {
     padding-right: 0;
@@ -458,26 +449,26 @@
     padding: 20px 0 24px;
   }
   .oddk-editorTimeGrid {
-    gap: 16px;
+    gap: var(--oddk-space-4);
   }
   .oddk-taskEditor .oddk-dialogField {
-    font-size: 14px;
+    font-size: var(--oddk-font-body);
   }
   .oddk-editorPriority legend {
-    font-size: 14px;
+    font-size: var(--oddk-font-body);
   }
   .oddk-editorTimeTotal {
-    gap: 9px;
+    gap: 8px;
     padding-inline: 12px;
-    font-size: 12px;
+    font-size: var(--oddk-font-small);
   }
   .oddk-taskEditor .oddk-dialogActions {
-    padding: 14px 20px;
+    padding: 12px 20px;
   }
   .oddk-taskEditor .oddk-dialogActions > button {
     min-width: 78px;
-    padding-inline: 15px;
-    font-size: 14px;
+    padding-inline: 16px;
+    font-size: var(--oddk-font-body);
   }
   .oddk-taskEditor .oddk-dialogActions > .oddk-dialogDelete {
     min-width: 0;
@@ -485,16 +476,44 @@
   }
 }
 
-.oddk-taskEditor .oddk-editorTitle textarea,.oddk-taskEditor .oddk-editorNotes textarea { width:100%; min-height:50px; max-height:320px; padding:12px 16px; border:1px solid var(--edit-border); border-radius:8px; background:var(--edit-field); color:var(--edit-heading); font-size:17px; line-height:26px; resize:none; overflow-y:auto; }
-.oddk-taskEditor .oddk-editorNotes { margin-top:18px; }
-.oddk-taskEditor .oddk-editorNotes textarea { min-height:100px; font-size:15px; }
-.oddk-taskEditor .oddk-editorNotes small { color:var(--edit-muted); font-size:12px; }
+.oddk-taskEditor .oddk-editorTitle textarea,.oddk-taskEditor .oddk-editorNotes textarea { width:100%; min-height:50px; max-height:320px; padding:12px 16px; border:1px solid var(--edit-border); border-radius:var(--oddk-radius-card); background:var(--edit-field); color:var(--edit-heading); font-size:var(--oddk-font-body); line-height:26px; resize:none; overflow-y:auto; }
+.oddk-taskEditor .oddk-editorNotes { margin-top:16px; }
+.oddk-taskEditor .oddk-editorNotes textarea { min-height:100px; font-size:var(--oddk-font-body); }
+.oddk-taskEditor .oddk-editorNotes small { color:var(--edit-muted); font-size:var(--oddk-font-small); }
 
-.oddk-taskEditor textarea:focus-visible { outline:2px solid #6389e9; outline-offset:2px; border-color:#6389e9; }
-.oddk-scheduleFields { display: grid; gap: 16px; }
-.oddk-timeMode { display: flex; gap: 6px; }
-.oddk-timeMode button { border: 1px solid var(--oddk-border); border-radius: 5px; padding: 8px 12px; font-size: 13px; }
-.oddk-timeMode [aria-pressed="true"] { background: var(--oddk-highlight); border-color: #84a6e4; }
-.oddk-scheduleFields .oddk-dialogField > input, .oddk-scheduleFields .oddk-dialogField > select { min-height: 42px; padding: 8px 10px; border: 1px solid var(--oddk-border); background: var(--oddk-surface); color: inherit; border-radius: 5px; width: 100%; }
-.oddk-scheduleFields .oddk-timeGuide { margin: 0; color: #71809a; font-size: 12px; }
+.oddk-taskEditor textarea:focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; border-color:var(--oddk-brand); }
+.oddk-scheduleFields { display: grid; gap: var(--oddk-space-4); }
+.oddk-timeMode { display: flex; gap: 8px; }
+.oddk-timeMode button { border: 1px solid var(--oddk-border); border-radius: var(--oddk-radius-control); padding: 8px 12px; font-size: var(--oddk-font-label); }
+.oddk-taskEditor .oddk-tagOptions { margin: 0 0 24px; }
+.oddk-taskEditor .oddk-tagOptions > legend { margin-bottom: 8px; color: var(--edit-heading); font-size: var(--oddk-font-section); font-weight: 500; }
+.oddk-editorTags { margin-bottom: 24px; min-width: 0; }
+.oddk-taskEditor .oddk-editorTags .oddk-tagOptions { margin-bottom: 8px; }
+.oddk-taskEditor .oddk-editorTags .oddk-tagOptions > button { border-color: transparent; background: transparent; color: var(--edit-muted); font-size: var(--oddk-font-small); font-weight: 400; }
+.oddk-taskEditor .oddk-editorTags .oddk-tagOptions > button[aria-pressed="true"] { border-color: transparent; background: var(--oddk-soft); color: var(--edit-heading); font-weight: 400; }
+.oddk-inlineTagEntry { display: flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; }
+.oddk-inlineTagEntry > span { color: var(--edit-muted); font-size: var(--oddk-font-body); }
+.oddk-inlineTagEntry input { min-width: 0; width: 100%; min-height: var(--oddk-control-height); border: 0; border-bottom: 1px solid var(--edit-border); border-radius: 0; padding: 4px 0; outline: none; background: transparent; color: var(--edit-heading); font: inherit; font-size: var(--oddk-font-label); }
+.oddk-page .oddk-inlineTagEntry > button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: var(--oddk-control-height); padding: 4px 8px; border: 0; border-radius: var(--oddk-radius-control); background: transparent; color: var(--edit-muted); font-size: var(--oddk-font-small); font-weight: 400; }
+.oddk-inlineTagEntry > button:not(:disabled):hover { color: var(--edit-heading); }
+.oddk-inlineTagEntry > button:disabled { opacity: .45; cursor: not-allowed; }
+.oddk-inlineTagHint, .oddk-inlineTagError { margin: 8px 0 0; font-size: var(--oddk-font-small); line-height: 1.6; }
+.oddk-inlineTagHint { color: var(--edit-muted); }
+.oddk-inlineTagError { color: #aa4848; }
+.oddk-page[data-theme="dark"] .oddk-inlineTagError { color: #f1b5b0; }
+.oddk-taskEditor .oddk-editorImportance { margin: 0 0 24px; padding: 0; border: 0; }
+.oddk-taskEditor .oddk-editorImportance > legend { margin-bottom: 8px; font-size: var(--oddk-font-section); font-weight: 500; }
+.oddk-taskEditor .oddk-simpleTime { margin: 24px 0 12px; padding-top: 20px; border-top: 1px solid var(--edit-border); }
+.oddk-simpleTime > h3 { margin: 0 0 16px; font-size: var(--oddk-font-section); font-weight: 500; }
+.oddk-simpleTime > h3 small { margin-left: 8px; color: var(--edit-muted); font-size: var(--oddk-font-section); font-weight: 400; }
+.oddk-taskStartFields { margin-top:16px; }
+.oddk-taskStartFields input,.oddk-taskStartFields output { display:block; width:100%; min-height:var(--oddk-control-height); padding:8px 8px; border:1px solid var(--edit-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:inherit; font:inherit; }
+.oddk-taskStartFields output { background:var(--oddk-soft); }
+.oddk-taskStartFields input:disabled { opacity:.5; cursor:not-allowed; }
+.oddk-taskStartHint { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:var(--oddk-space-2); }
+.oddk-taskStartHint small { font-size:var(--oddk-font-small); color:var(--edit-muted); }
+.oddk-taskStartHint button { min-height:var(--oddk-control-height); font-size:var(--oddk-font-small); text-decoration:underline; text-underline-offset:3px; }
+.oddk-timeMode [aria-pressed="true"] { background: var(--oddk-highlight); border-color: var(--oddk-brand); }
+.oddk-scheduleFields .oddk-dialogField > input, .oddk-scheduleFields .oddk-dialogField > select { min-height: var(--oddk-control-height); padding: 8px 8px; border: 1px solid var(--oddk-border); background: var(--oddk-surface); color: inherit; border-radius: var(--oddk-radius-control); width: 100%; }
+.oddk-scheduleFields .oddk-timeGuide { margin: 0; color: var(--oddk-muted); font-size: var(--oddk-font-small); }
 @media (max-width: 480px) { .oddk-scheduleFields .oddk-editorTimeGrid { grid-template-columns: minmax(0, 1fr); } }

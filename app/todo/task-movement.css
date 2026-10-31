@@ -1,15 +1,36 @@
-.oddk-dragHandle { flex: 0 0 30px; width: 30px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--oddk-line, #dce2ee); border-radius: 6px; background: transparent; color: inherit; cursor: grab; touch-action: none; }
+.oddk-dragHandle { flex: 0 0 30px; width: 30px; min-height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--oddk-line, var(--oddk-border)); border-radius: var(--oddk-radius-control); background: transparent; color: inherit; cursor: grab; touch-action: none; }
 .oddk-dragHandle[data-dragging=true] { cursor: grabbing; outline: 2px solid #577ef5; }
-.oddk-dragHandle:focus-visible { outline: 2px solid #577ef5; outline-offset: 2px; }
+.oddk-dragHandle:focus-visible { outline: 2px solid var(--oddk-focus); outline-offset: 2px; }
 .oddk-timeSlotGroup { position: absolute; }
 .oddk-timeSlotGrip { position: absolute; right: 3px; top: 3px; z-index: 2; }
 .oddk-timeSlotGrip .oddk-dragHandle { background: var(--oddk-surface, #fff); color: #233a67; }
-.oddk-timeMoveControls { display: grid; gap: 8px; margin-top: 12px; }
-.oddk-timeMoveControls > div { display: flex; align-items: center; gap: 8px; padding: 6px; border: 1px solid #dce2ee; border-radius: 6px; }
+.oddk-timeMoveControls { display: grid; gap: var(--oddk-space-2); margin-top: 12px; }
+.oddk-timeMoveControls > div { display: flex; align-items: center; gap: var(--oddk-space-2); padding: 8px; border: 1px solid var(--oddk-border); border-radius: var(--oddk-radius-control); }
 .oddk-timeMoveControls span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.oddk-timeMoveControls button:not(.oddk-dragHandle) { padding: 6px 8px; border: 1px solid #dce2ee; border-radius: 6px; font: inherit; }
-.oddk-timeMoveFields { display: grid; gap: 12px; }
-.oddk-timeMoveFields label { display: grid; gap: 6px; }
-.oddk-timeMoveFields input { padding: 10px; border: 1px solid #dce2ee; border-radius: 6px; font: inherit; color: inherit; background: transparent; }
-.oddk-timeMoveFields nav { display: flex; flex-wrap: wrap; gap: 8px; }
-.oddk-timeMoveFields nav button { padding: 8px; border: 1px solid #dce2ee; border-radius: 6px; }
+.oddk-timeMoveControls button:not(.oddk-dragHandle) { padding: 8px 8px; border: 1px solid var(--oddk-border); border-radius: var(--oddk-radius-control); font: inherit; }
+.oddk-timeMoveFields { display: grid; gap: var(--oddk-space-3); }
+.oddk-timeMoveFields label { display: grid; gap: 8px; }
+.oddk-timeMoveFields input { padding: 8px; border: 1px solid var(--oddk-border); border-radius: var(--oddk-radius-control); font: inherit; color: inherit; background: transparent; }
+.oddk-timeMoveFields nav { display: flex; flex-wrap: wrap; gap: var(--oddk-space-2); }
+.oddk-timeMoveFields nav button { padding: var(--oddk-space-2); border: 1px solid var(--oddk-border); border-radius: var(--oddk-radius-control); }
+.oddk-timeMoveDialog { width:min(440px,calc(100vw - 32px)); color:var(--oddk-heading); }
+.oddk-timeMoveDialog .oddk-dialogHeader { margin-bottom:20px; }
+.oddk-timeMoveDialog .oddk-dialogHeader h2 { font-size:var(--oddk-font-section); letter-spacing:-.02em; }
+.oddk-timeMoveDialog .oddk-dialogHeader button { display:flex; align-items:center; justify-content:center; width:var(--oddk-control-height); height:var(--oddk-control-height); }
+.oddk-timeMoveDialog .oddk-dialogHeader button svg { width:20px; height:20px; }
+.oddk-timeMoveTask { display:grid; gap:4px; margin-bottom:20px; }
+.oddk-timeMoveTask strong { font-size:var(--oddk-font-body); font-weight:600; white-space:pre-wrap; overflow-wrap:anywhere; }
+.oddk-timeMoveTask > span { color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+.oddk-timeMoveBefore { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--oddk-border); color:var(--oddk-muted); font-size:var(--oddk-font-label); }
+.oddk-timeMoveDialog .oddk-timeMoveFields { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
+.oddk-timeMoveDialog .oddk-timeMoveFields label,.oddk-timeMoveEnd { min-width:0; display:grid; gap:var(--oddk-space-2); font-size:var(--oddk-font-label); }
+.oddk-timeMoveDialog .oddk-timeMoveFields input,.oddk-timeMoveEnd output { box-sizing:border-box; width:100%; min-width:0; min-height:var(--oddk-control-height); padding:8px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); font-size:var(--oddk-font-section); line-height:24px; background:var(--oddk-surface); color:var(--oddk-heading); }
+.oddk-timeMoveEnd output { display:flex; align-items:center; background:var(--oddk-soft); font-size:var(--oddk-font-body); }
+.oddk-timeMoveDialog .oddk-timeMoveDuration { margin:12px 0 0; color:var(--oddk-muted); font-size:var(--oddk-font-small); line-height:var(--oddk-line-body); }
+.oddk-timeMoveDuration span { display:block; }
+.oddk-timeMoveWarning { margin-top:20px; padding:12px 12px; background:var(--oddk-soft); border-radius:var(--oddk-radius-control); font-size:var(--oddk-font-label); }
+.oddk-timeMoveWarning strong { display:flex; align-items:center; gap:8px; font-weight:500; }
+.oddk-timeMoveWarning svg { width:17px; height:17px; flex-shrink:0; }
+.oddk-timeMoveWarning ul { margin:8px 0 0; padding-left:19px; color:var(--oddk-muted); line-height:var(--oddk-line-body); }
+.oddk-timeMoveDialog .oddk-dialogActions { margin-top:24px; padding-top:0; border:0; }
+@media(max-width:380px) { .oddk-timeMoveDialog .oddk-dialogForm { padding:var(--oddk-space-5); } .oddk-timeMoveDialog .oddk-timeMoveFields { grid-template-columns:minmax(0,1fr); } }

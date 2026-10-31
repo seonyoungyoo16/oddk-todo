@@ -6,6 +6,7 @@ import { loadPlan } from "../../supabase/functions/_shared/plan-migration.ts";
 import { previewReplan } from "../../supabase/functions/_shared/replan.ts";
 const date = "2026-10-29", options = { date, baseMinute: 600, pinnedIds: [] };
 const plan = loadPlan(JSON.stringify({ schemaVersion: 2, reviewsByDate: {}, start: "09:00", tasks: [{ id: "one", title: "Synthetic one", done: false, priority: "normal", minutes: 30, bufferMinutes: 5, startTime: null, plannedDate: date }] })).plan;
+plan.availabilityByDate = { [date]: { start: "09:00", end: "18:00", fixed: [] } };
 const request = () => ({ action: "replan", plan: previewReplan(plan, options).after, version: 3, executionRevision: 2, options });
 const context = () => ({ plan, planVersion: 3, revision: 2, current: null, now: "2026-10-29T00:30:00.000Z" });
 const rejects = (status, run) => assert.throws(run, error => error instanceof ReplanRequestError && error.status === status);

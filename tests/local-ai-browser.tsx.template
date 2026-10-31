@@ -1,0 +1,77 @@
+"use client";
+import { useRef, useState } from "react";
+const wait = async (test: () => boolean, message: string) => { const until = Date.now() + 95000; while (Date.now() < until) { if (test()) return; await new Promise(resolve => setTimeout(resolve, 100)); } throw Error(message); };
+export default function LocalAIQA() {
+  const frame = useRef<HTMLIFrameElement>(null);
+  const [active, setActive] = useState(false), [running, setRunning] = useState(false), [events, setEvents] = useState<string[]>([]);
+  const say = (text: string) => setEvents(current => [...current, text]);
+  const doc = () => frame.current?.contentDocument as Document;
+  const read = () => JSON.parse(localStorage.getItem("oddk.todo.v1")!);
+  const button = (name: string) => [...doc().querySelectorAll<HTMLButtonElement>("button")].find(button => (button.textContent?.trim() === name || button.getAttribute("aria-label") === name) && button.getClientRects().length > 0);
+  const click = async (name: string) => { await wait(() => Boolean(button(name) && !button(name)!.disabled), name); button(name)!.click(); };
+  const input = (field: HTMLTextAreaElement, value: string) => { Object.getOwnPropertyDescriptor(doc().defaultView!.HTMLTextAreaElement.prototype, "value")!.set!.call(field, value); field.dispatchEvent(new Event("input", { bubbles: true })); };
+  async function run() {
+    setRunning(true);
+    try {
+      if (location.hostname !== "localhost" || location.port !== "3201" || localStorage.getItem("oddk.todo.v1") || localStorage.getItem("oddk.ai-qa.original") || Object.keys(localStorage).some(key => key.includes("auth-token"))) throw Error("Use empty isolated localhost:3201");
+      localStorage.setItem("oddk.ai-qa.original", JSON.stringify(Object.entries(localStorage)));
+      localStorage.setItem("oddk.todo.v1", JSON.stringify({ schemaVersion: 5, start: "09:00", tasks: [], reviewsByDate: {}, goalTree: { goal: "Keep goal", groups: [] } }));
+      setActive(true); await wait(() => Boolean(doc()?.getElementById("todo-input") && !doc().querySelector<HTMLTextAreaElement>("#todo-input")!.disabled), "Hydrated input");
+      if ([...doc().querySelectorAll("button")].some(button => button.textContent?.includes("AI로 나누기"))) throw Error("Separate AI button remains");
+      input(doc().getElementById("todo-input") as HTMLTextAreaElement, "물 마시"); await new Promise(resolve => setTimeout(resolve, 100));
+      const composed = doc().getElementById("todo-input") as HTMLTextAreaElement;
+      Object.getOwnPropertyDescriptor(doc().defaultView!.HTMLTextAreaElement.prototype, "value")!.set!.call(composed, "물 마시기");
+      composed.form!.requestSubmit();
+      input(composed, "물 마시기");
+      await wait(() => read().tasks.length === 1, "Single task Enter save");
+      if (doc().querySelector("dialog[open]") || read().tasks[0].title !== "물 마시기") throw Error("Single task requires confirmation or changed title");
+      await wait(() => !doc().querySelector<HTMLTextAreaElement>("#todo-input")!.disabled, "Ready after single save");
+      say("PASS late composition commit uses submitted visible text, saves full title without false source-change error");
+      const source = "운동하고 장 보고 메일 보내기";
+      input(doc().getElementById("todo-input") as HTMLTextAreaElement, source); await new Promise(resolve => setTimeout(resolve, 100));
+      await click("할 일 추가");
+      await wait(() => Boolean(doc().querySelector("dialog[open] #task-split-title")), "Actual Qwen preview");
+      const fields = [...doc().querySelectorAll<HTMLTextAreaElement>(".oddk-splitCandidates textarea")];
+      if (fields.length !== 3 || !fields[0].value.includes("운동") || !fields[1].value.includes("장") || !fields[2].value.includes("메일")) throw Error("Semantic split unexpected");
+      if (read().tasks.length !== 1 || (doc().getElementById("todo-input") as HTMLTextAreaElement).value !== source) throw Error("Preview mutated source or plan");
+      say("PASS browser → real local Qwen → three semantic tasks; preview does not save and source remains");
+      input(fields[1], "주간 장보기"); await click("할 일 3 제외"); await click("2개 추가");
+      await wait(() => read().tasks.length === 3 && !doc().querySelector("dialog[open]"), "Confirmed batch");
+      const saved = read();
+      if (saved.tasks[2].title !== "주간 장보기" || new Set(saved.tasks.map((task: { id: string }) => task.id)).size !== 3 || saved.goalTree.goal !== "Keep goal") throw Error("Batch edit/save mismatch");
+      if ((doc().getElementById("todo-input") as HTMLTextAreaElement).value !== "") throw Error("Successful source not cleared");
+      say("PASS edit/exclude then add atomically; distinct IDs, goal preserved, source clears only after save");
+      frame.current!.src = "/todo/?ai-qa=reload";
+      await wait(() => doc()?.URL.includes("ai-qa=reload") && Boolean(button("주간 장보기 선택")), "Reload tasks");
+      if (JSON.stringify(read().tasks) !== JSON.stringify(saved.tasks)) throw Error("Persistence mismatch");
+      input(doc().getElementById("todo-input") as HTMLTextAreaElement, "물 마시기"); await new Promise(resolve => setTimeout(resolve, 100)); await click("할 일 추가");
+      await wait(() => Boolean(doc().querySelector(".oddk-aiSplitError")), "Single duplicate error");
+      if (read().tasks.length !== 3 || doc().querySelector("dialog[open]")) throw Error("Single duplicate saved or opened review");
+      const duplicateSource = "운동하고 스트레칭하기";
+      input(doc().getElementById("todo-input") as HTMLTextAreaElement, duplicateSource); await new Promise(resolve => setTimeout(resolve, 100)); await click("할 일 추가");
+      await wait(() => Boolean(doc().querySelector("dialog[open] #task-split-title")), "Duplicate batch preview"); await click("2개 추가");
+      await wait(() => Boolean(doc().querySelector(".oddk-splitReview [role=alert]")), "Duplicate batch rejected");
+      if (read().tasks.length !== 3) throw Error("Duplicate batch partially appended"); await click("취소");
+      if ((doc().getElementById("todo-input") as HTMLTextAreaElement).value !== duplicateSource) throw Error("Cancel lost original");
+      say("PASS reload persists tasks; single and batch duplicate saves rejected; cancel retains source");
+      input(doc().getElementById("todo-input") as HTMLTextAreaElement, "산책하기"); await new Promise(resolve => setTimeout(resolve, 100));
+      await click("할 일 추가"); input(doc().getElementById("todo-input") as HTMLTextAreaElement, "다른 화면에서 바뀐 내용");
+      await wait(() => Boolean(doc().querySelector(".oddk-aiSplitError")), "Real source conflict");
+      if (read().tasks.length !== 3 || !doc().querySelector(".oddk-aiSplitError")!.textContent?.includes("다른 화면")) throw Error("True conflict not protected");
+      say("PASS real source change blocks stale AI result and keeps new input");
+      const colored = read(); colored.tasks[0].done = true; colored.tasks[1].importance = "high";
+      colored.goalTree = { goal: "Colors", groups: [{ id: "colors", title: "Status colors", taskIds: [colored.tasks[0].id, colored.tasks[1].id] }] };
+      localStorage.setItem("oddk.todo.v1", JSON.stringify(colored)); frame.current!.src = "/todo/?ai-qa=colors";
+      await wait(() => doc()?.URL.includes("ai-qa=colors") && Boolean(doc().querySelector('[data-importance="high"]')), "High importance badge");
+      if (doc().defaultView!.getComputedStyle(doc().querySelector('[data-importance="high"]')!).color !== "rgb(180, 35, 24)") throw Error("High importance not red");
+      await click("목표설정"); await wait(() => Boolean(doc().querySelector('.oddk-mandalaCell[data-done="true"]')), "Goal status cells");
+      const completed = doc().querySelector('.oddk-mandalaCell[data-done="true"]')!, active = doc().querySelector('.oddk-mandalaCell[data-done="false"]')!;
+      if (doc().defaultView!.getComputedStyle(completed).backgroundColor !== "rgb(234, 247, 238)" || doc().defaultView!.getComputedStyle(active).backgroundColor !== "rgb(255, 240, 239)") throw Error("Goal status colors mismatch");
+      say("PASS high importance is red; goal cells match green completed and red active states");
+
+    } catch (error) { say("FAIL " + (error instanceof Error ? error.message : String(error))); }
+    finally { setRunning(false); }
+  }
+  async function restore() { setActive(false); await new Promise(resolve => setTimeout(resolve, 150)); const raw = localStorage.getItem("oddk.ai-qa.original"); if (!raw) return; localStorage.clear(); for (const [key, value] of JSON.parse(raw)) localStorage.setItem(key, value); say("CLEANED original storage restored"); }
+  return <main style={{ padding: 16 }}><h1>Local Qwen semantic task regression</h1><button disabled={running || active} onClick={() => void run()}>Run real AI QA</button><button disabled={running} onClick={() => void restore()}>Restore storage</button><ol>{events.map((event, index) => <li key={index}>{event}</li>)}</ol>{active && <iframe ref={frame} src="/todo/?ai-qa=initial" title="AI application" style={{ width: "100%", height: 850 }} />}</main>;
+}

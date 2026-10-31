@@ -1,0 +1,19 @@
+.oddk-page .oddk-planningAlert { display:flex; align-items:center; flex-wrap:wrap; gap:8px; padding:8px 12px; margin:0 0 16px; border:1px solid #b47b2d; border-radius:var(--oddk-radius-control,6px); font-size:var(--oddk-font-label,14px); }
+.oddk-planningAlertText { flex:1; min-width:0; display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+.oddk-planningAlertText button,.oddk-planningInspector header button,.oddk-page .oddk-planningIssuesButton { min-height:36px; color:var(--oddk-accent-text,#3974df); text-decoration:underline; text-underline-offset:3px; font-size:var(--oddk-font-small,12px); }
+.oddk-page .oddk-planningAlertClose { flex-shrink:0; width:var(--oddk-control-height,44px); height:var(--oddk-control-height,44px); margin-left:auto; padding:8px; border-radius:var(--oddk-radius-control,6px); }
+.oddk-planningAlertClose svg { width:20px; height:20px; }
+.oddk-planningAlertClose:hover { background:var(--oddk-soft); }
+.oddk-planningInspector { margin:0 0 20px; padding:16px; border:1px solid #b47b2d; border-radius:var(--oddk-radius-card,8px); }
+.oddk-planningInspector header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:14px; }
+.oddk-planningInspector ul { display:grid; gap:8px; margin:8px 0 0; padding:0; list-style:none; }
+.oddk-planningInspector li { display:flex; align-items:center; flex-wrap:wrap; gap:4px 12px; font-size:12px; }
+.oddk-page .oddk-planningInspector li button { gap:8px; min-height:36px; text-align:left; overflow-wrap:anywhere; }
+.oddk-planningInspector li > span { color:var(--oddk-muted,#657083); }
+.oddk-page .oddk-task.oddk-planningProblem { box-shadow:inset 0 0 0 2px #b47b2d; }
+.oddk-planningIssueBadge { display:block; padding:3px 6px; border-radius:4px; background:#fff1d6; color:#80480c; font-size:12px; line-height:1.6; white-space:normal; overflow-wrap:anywhere; }
+.oddk-page .oddk-timeSlotGroup[data-planning-highlighted="true"] > .oddk-timeSlot { box-shadow:inset 0 0 0 3px #a96613; }
+.oddk-timetableIssueBadge { position:absolute; right:3px; top:3px; display:grid; place-items:center; width:16px; height:16px; border-radius:50%; background:#80480c; color:#fff; font-size:11px; font-weight:600; pointer-events:none; }
+.oddk-page[data-theme="dark"] .oddk-planningIssueBadge { background:#4c371c; color:#ffe0a3; }
+.oddk-page[data-theme="dark"] .oddk-task.oddk-planningProblem { box-shadow:inset 0 0 0 2px #e4ad5d; }
+.oddk-page[data-theme="dark"] .oddk-timeSlotGroup[data-planning-highlighted="true"] > .oddk-timeSlot { box-shadow:inset 0 0 0 3px #e4ad5d; }

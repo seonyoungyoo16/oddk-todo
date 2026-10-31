@@ -1,0 +1,41 @@
+.oddk-page .oddk-executionHistoryLink { min-height:var(--oddk-control-height,36px); padding:8px 0; border:0; background:transparent; color:var(--oddk-accent-text,#3974df); font-size:var(--oddk-font-small,12px); text-decoration:underline; text-underline-offset:3px; }
+.oddk-executionSaved { margin:4px 0 0; color:var(--oddk-muted,#718096); font-size:var(--oddk-font-small,12px); }
+.oddk-executionHistoryDate { margin:0 0 var(--oddk-space-4,16px); color:var(--oddk-muted,#718096); font-size:var(--oddk-font-small,12px); }
+.oddk-finishedExecutions { display:grid; gap:var(--oddk-space-4,16px); margin:0; padding:0; list-style:none; }
+.oddk-finishedExecutions li { display:grid; gap:var(--oddk-space-1,4px); padding-bottom:var(--oddk-space-4,16px); border-bottom:1px solid var(--oddk-border); }
+.oddk-finishedExecutions li:last-child { border:0; padding-bottom:0; }
+.oddk-finishedExecutions strong { font-size:var(--oddk-font-body,14px); font-weight:500; white-space:pre-wrap; overflow-wrap:anywhere; }
+.oddk-finishedExecutions span,.oddk-finishedExecutions p { margin:0; color:var(--oddk-muted,#718096); font-size:var(--oddk-font-small,12px); font-variant-numeric:tabular-nums; }
+.oddk-finishedExecutions b { color:var(--oddk-heading); font-weight:500; }
+.oddk-executionHistoryEmpty { color:var(--oddk-muted,#718096); font-size:var(--oddk-font-body,14px); }
+.oddk-navigationGroup { min-width:0; }
+.oddk-page .oddk-navigationGroup > button { display:grid; grid-template-columns:20px minmax(0,1fr) 12px; gap:var(--oddk-icon-gap); text-align:left; }
+.oddk-navigationGroup > button > svg { width:var(--oddk-icon-size); height:var(--oddk-icon-size); }
+.oddk-navigationGroup > button > .oddk-navigationChevron { width:12px; height:12px; transition:transform .15s; }
+.oddk-navigationGroup > button[aria-expanded="false"] > .oddk-navigationChevron { transform:rotate(-90deg); }
+.oddk-navigationGroup > div { margin-left:calc(var(--oddk-icon-size) + var(--oddk-icon-gap)); }
+.oddk-page .oddk-navigationGroup > div > button { justify-content:flex-start; }
+.oddk-historyPage { min-width:0; }
+.oddk-historyToolbar { display:flex; align-items:end; gap:var(--oddk-space-2); flex-wrap:wrap; }
+.oddk-historyToolbar label { display:grid; gap:var(--oddk-space-2); font-size:var(--oddk-font-label); }
+.oddk-historyToolbar input,.oddk-historyToolbar button,.oddk-historyMore { min-height:var(--oddk-control-height); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); font:inherit; }
+.oddk-historyScope,.oddk-historyEmpty { color:var(--oddk-muted); font-size:var(--oddk-font-body); margin:var(--oddk-space-5) 0; }
+.oddk-historyTable { width:100%; border-collapse:collapse; text-align:left; font-size:var(--oddk-font-body); }
+.oddk-historyTable th { background:var(--oddk-soft); font-weight:500; }
+.oddk-historyTable th,.oddk-historyTable td { padding:var(--oddk-space-4); border-bottom:1px solid var(--oddk-border); vertical-align:top; }
+.oddk-historyTable td:first-child { max-width:260px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.oddk-historyTable td:not(:first-child) { font-variant-numeric:tabular-nums; }
+.oddk-historyMore { margin-top:var(--oddk-space-4); }
+@media(max-width:760px) {
+  .oddk-historyTable thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .oddk-historyTable,.oddk-historyTable tbody { display:block; }
+  .oddk-historyTable tr { display:grid; grid-template-columns:1fr 1fr; gap:var(--oddk-space-3); padding:var(--oddk-space-4) 0; border-bottom:1px solid var(--oddk-border); }
+  .oddk-historyTable td { display:grid; gap:var(--oddk-space-1); padding:0; border:0; min-width:0; }
+  .oddk-historyTable td:first-child { grid-column:1/-1; max-width:none; }
+  .oddk-historyTable td::before { content:attr(data-label); color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+}
+@media(max-width:520px) {
+  .oddk-navigationGroup { flex-shrink:0; }
+  .oddk-page .oddk-navigationGroup > button { display:flex; }
+  .oddk-navigationGroup > div { margin-left:0; }
+}

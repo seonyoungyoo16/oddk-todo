@@ -1,0 +1,38 @@
+/* The timer belongs to the workspace, outside view-specific hidden sections. */
+.oddk-page:has(.oddk-executionDock) { padding-bottom:calc(var(--execution-dock-height, 140px) + var(--oddk-space-4)); }
+.oddk-page .oddk-execution.oddk-executionDock {
+  position:fixed;
+  z-index:45;
+  left:var(--oddk-sidebar-width);
+  right:0;
+  bottom:0;
+  margin:0;
+  padding:var(--oddk-space-4) var(--oddk-space-6) calc(var(--oddk-space-4) + env(safe-area-inset-bottom, 0px));
+  border:0;
+  border-top:1px solid var(--oddk-border);
+  border-radius:0;
+  background:var(--oddk-surface);
+  color:var(--oddk-heading);
+  box-shadow:0 -4px 20px #17223910;
+  font-size:var(--oddk-font-small);
+}
+.oddk-executionDock .oddk-recordCurrent { display:flex; flex-wrap:wrap; align-items:center; gap:var(--oddk-space-4); }
+.oddk-executionDock .oddk-recordCurrent > div:first-child { flex:1 1 200px; min-width:0; }
+.oddk-executionDock .oddk-recordCurrent strong { color:var(--oddk-accent-text); font-weight:500; }
+.oddk-executionDock .oddk-recordCurrent p { margin:4px 0; font-size:var(--oddk-font-body); font-weight:500; white-space:normal; overflow-wrap:anywhere; }
+.oddk-executionDock .oddk-recordCurrent > div > span { color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+.oddk-executionClock { flex:0 0 auto; color:var(--oddk-heading); font-size:var(--oddk-font-title); font-weight:600; line-height:1.4; font-variant-numeric:tabular-nums; }
+.oddk-executionWorkClock { display:grid; gap:var(--oddk-space-1); flex:0 0 auto; }
+.oddk-executionWorkClock > span { color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+.oddk-executionDock .oddk-recordActions { flex:0 1 auto; margin:0; gap:var(--oddk-space-2); }
+.oddk-page .oddk-executionDock button { min-height:var(--oddk-control-height); border-radius:var(--oddk-radius-control); font-size:var(--oddk-font-label); padding:8px 12px; }
+.oddk-executionDock .oddk-recordCurrent > .oddk-recordActions button:last-child { color:var(--oddk-danger-text); }
+.oddk-executionDock > .oddk-error { margin:8px 0 0; }
+@media (max-width:760px) {
+  .oddk-page .oddk-execution.oddk-executionDock { padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+  .oddk-executionDock .oddk-recordCurrent { gap:12px; }
+  .oddk-executionDock .oddk-recordCurrent > div:first-child { flex-basis:calc(100% - 140px); }
+  .oddk-executionDock .oddk-recordActions { flex:1 1 100%; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .oddk-page .oddk-executionDock .oddk-recordActions button { min-width:0; padding:8px 4px; gap:4px; font-size:var(--oddk-font-small); }
+  .oddk-executionDock .oddk-recordActions button svg { width:14px; height:14px; flex-shrink:0; }
+}

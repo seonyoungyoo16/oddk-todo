@@ -13,7 +13,7 @@ import { sameValue } from "./json-equality";
 import { downloadExecutionBackup } from "./execution-client";
 import { localExecutionTransaction } from "./execution-idb";
 import { parseExecutionBackup } from "./execution-local-model";
-import "./execution.css";
+import { formatExecutionClock } from "./execution-timer";
 
 const minutes = (ms: number) => `${Math.round(ms / 6000) / 10}분`;
 const label = (iso: string) => new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(iso));
@@ -38,7 +38,7 @@ function useRecordDialog() {
 function RecordFeedback({ model }: { model: ExecutionController }) {
   return <>{model.error && <p role="alert" className="oddk-error">{model.error}</p>}{model.pending && <div className="oddk-recordActions"><span>이전 조작의 저장 결과를 먼저 확인해주세요.</span><button type="button" disabled={model.busy} onClick={() => void model.retry()}>같은 요청으로 결과 확인</button><button type="button" disabled={model.busy || !model.state} onClick={model.clearPending}>현재 상태 기준으로 새로 조작</button></div>}</>;
 }
-export function ExecutionPanel({ scope, plan, date, model, switchTask, onCancelSwitch }: { scope: string; plan: Plan; date: string; model: ExecutionController; switchTask: { task: Task; from: string } | null; onCancelSwitch: () => void }) {
+export function ExecutionPanel({ compact = false, docked = false, scope, plan, date, model, switchTask, onCancelSwitch }: { compact?: boolean; docked?: boolean; scope: string; plan: Plan; date: string; model: ExecutionController; switchTask: { task: Task; from: string } | null; onCancelSwitch: () => void }) {
   const now = useRecordedNow(model.state?.now), current = model.state?.current;
   const [editing, setEditing] = useState<{ record: ExecutionRecord | null } | null>(null), [importing, setImporting] = useState<ExecutionRecord[] | null>(null), [localError, setLocalError] = useState("");
   const suspendPolling = model.suspendPolling;
@@ -46,29 +46,43 @@ export function ExecutionPanel({ scope, plan, date, model, switchTask, onCancelS
   const day = selectDay(plan.tasks, date), phase = current ? executionPhase(current) : null;
   const elapsed = current && now ? executionTotals(current, now) : null;
   const disabled = model.busy || !model.state || Boolean(model.pending);
+  const dockRef = useRef<HTMLElement>(null);
+  const showDock = Boolean(current || model.pending || model.error);
+  useEffect(() => {
+    if (!docked || !showDock) return;
+    const element = dockRef.current, page = element?.closest<HTMLElement>(".oddk-page");
+    if (!element || !page) return;
+    const measure = () => page.style.setProperty("--execution-dock-height", `${element.getBoundingClientRect().height}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => { observer.disconnect(); page.style.removeProperty("--execution-dock-height"); };
+  }, [docked, showDock]);
   async function exportRecords() {
     try {
       if (scope === "local") downloadExecutionBackup((await localExecutionTransaction(v => v)).records);
       else if (model.history) downloadExecutionBackup(model.history.records);
     } catch (error) { setLocalError(error instanceof Error ? error.message : "실적 백업을 받지 못했어요."); }
   }
-  return <section className="oddk-execution" aria-label="실제 시간 기록">
-    <div className="oddk-recordCurrent">
-      <div><strong><HiOutlineClock aria-hidden="true" />{current ? phase === "work" ? "작업 기록 중" : phase === "break" ? "휴식 기록 중" : "일시정지" : "실제 시간 기록"}</strong><p>{current?.title ?? "목록의 작업 시작을 누르면 실제 시간을 기록해요."}</p>
-        {elapsed && <span>작업 <b>{minutes(elapsed.workMs)}</b> · 휴식 <b>{minutes(elapsed.breakMs)}</b>{phase === "paused" && " · 멈춘 시간은 합산하지 않아요"}</span>}
+  if (docked && !showDock) return null;
+  return <section ref={dockRef} className={"oddk-execution" + (compact ? " oddk-executionCompact" : "") + (docked ? " oddk-executionDock" : "")} aria-label={docked ? "작업 타이머" : "실제 시간 기록"}>
+    {(!compact || current) && <div className="oddk-recordCurrent">
+      <div><strong><HiOutlineClock aria-hidden="true" />{current ? phase === "work" ? "작업 기록 중" : phase === "break" ? "휴식 중 · 작업시간 정지" : "일시정지" : "실제 시간 기록"}</strong><p>{current?.title ?? "목록의 작업 시작을 눌러주세요."}</p>
+        {elapsed && <span>작업 <b>{docked ? formatExecutionClock(elapsed.workMs) : minutes(elapsed.workMs)}</b> · 휴식 <b>{docked ? formatExecutionClock(elapsed.breakMs) : minutes(elapsed.breakMs)}</b></span>}
       </div>
+      {docked && elapsed && <div className="oddk-executionWorkClock"><span>작업시간</span><output className="oddk-executionClock" role="timer" aria-label="누적 작업 시간" aria-live="off">{formatExecutionClock(elapsed.workMs)}</output></div>}
       {current && <div className="oddk-recordActions">
         <button type="button" disabled={disabled || phase === "work"} onClick={() => void model.command({ type: "resume", recordId: current.id })}><HiOutlinePlay aria-hidden="true" />{phase === "paused" ? "다시 시작" : "작업으로"}</button>
         <button type="button" disabled={disabled || phase === "paused"} onClick={() => void model.command({ type: "pause", recordId: current.id })}><HiOutlinePause aria-hidden="true" />일시정지</button>
         <button type="button" disabled={disabled || phase === "break"} onClick={() => void model.command({ type: "break", recordId: current.id })}>휴식 시작</button>
         <button type="button" disabled={disabled} onClick={() => void model.command({ type: "stop", recordId: current.id })}><HiOutlineStop aria-hidden="true" />기록 종료</button>
       </div>}
-    </div>
+    </div>}
     <RecordFeedback model={model} />
     {localError && <p role="alert" className="oddk-error">{localError}</p>}
-    <div className="oddk-recordMeta"><small>{scope === "local" ? "이 브라우저에 기록 · 로그인 기록과 별도 보관" : "계정에 기록 · 서버 연결 후 조작 확정"}{model.state && ` · 마지막 확인 ${label(model.state.now)} (한국 시간)`}</small><button type="button" disabled={model.busy} onClick={() => void model.refresh().catch(e => setLocalError(e.message))}>현재 상태 확인</button></div>
-    {model.message && <p role="status">{model.message}</p>}
-    <details className="oddk-recordHistory">
+    {!compact && <div className="oddk-recordMeta"><small>{scope === "local" ? "이 브라우저에 기록 · 로그인 기록과 별도 보관" : "계정에 기록 · 서버 연결 후 조작 확정"}{model.state && ` · 마지막 확인 ${label(model.state.now)} (한국 시간)`}</small><button type="button" disabled={model.busy} onClick={() => void model.refresh().catch(e => setLocalError(e.message))}>현재 상태 확인</button></div>}
+    {!compact && model.message && <p role="status">{model.message}</p>}
+    {!compact && <details className="oddk-recordHistory">
       <summary>{date || "선택 날짜"} · 계획과 실제 비교</summary>
       <p>전체 할 일 기준 · 계획값은 그대로 두고 실제 수행 날짜로 합산해요. 기록 종료와 할 일 완료는 별개예요.</p>
       <div className="oddk-recordComparison">
@@ -85,7 +99,7 @@ export function ExecutionPanel({ scope, plan, date, model, switchTask, onCancelS
       })}</ul>
       {model.history?.records.length === 0 && <p>이 날짜에 수행한 기록이 없어요.</p>}
       {model.history?.cursor && <button type="button" disabled={model.busy} onClick={() => void model.refresh(model.history!.cursor).catch(e => setLocalError(e.message))}>이력 더 보기 · 합계는 날짜 전체 기준</button>}
-    </details>
+    </details>}
     {editing && <ExecutionEditor key={editing.record?.id ?? "manual"} record={editing.record} plan={plan} model={model} onClose={() => setEditing(null)} />}
     {switchTask && <SwitchRecord task={switchTask.task} from={switchTask.from} model={model} onClose={onCancelSwitch} />}
     {importing && <ImportRecords key={scope} records={importing} scope={scope} plan={plan} model={model} onClose={() => setImporting(null)} />}

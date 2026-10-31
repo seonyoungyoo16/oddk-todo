@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HiOutlineBell, HiOutlineBellSlash } from "react-icons/hi2";
 import { disablePush, enablePush, inspectPush, pushDevices, pushSupported, revokePushDevice } from "./push-client";
 import type { PushDevice } from "./push-client";
-import "./push-settings.css";
 
 export function PushSettings({ userId }: { userId: string }) {
   const [enabled, setEnabled] = useState<boolean | null>(null);

@@ -11,7 +11,6 @@ import { makeReplanRecovery, restoreReplanRecovery, validReplanRecovery } from "
 import type { ReplanRecovery } from "./replan-recovery";
 import { useLocalDraft, DraftFeedback } from "./use-local-draft";
 import { keepFocusInDialog } from "./dialog-focus";
-import "./replan.css";
 
 export function ReplanPanel({ scope, date, today, plan, execution, onApplied, onRestore }: {
   scope: string; date: string; today: string; plan: Plan; execution: ExecutionController;

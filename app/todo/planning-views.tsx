@@ -1,12 +1,14 @@
 "use client";
+import { AutoTextarea } from "./auto-textarea";
 import { sortTasks, taskImportance } from "./task-order";
 
-import { useEffect, useRef, useState } from "react";
-import { HiOutlineArrowRight, HiOutlineCheck } from "react-icons/hi2";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { HiOutlineArrowRight, HiOutlineXMark } from "react-icons/hi2";
 
 import type { Task, Mandala } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, validMandala } from "../../supabase/functions/_shared/plan";
 import type { DayPlan } from "./day-selectors";
+import { keepFocusInDialog } from "./dialog-focus";
 const emptyMandala = (): Mandala => ({ goal: "", areas: Array.from({ length: 8 }, () => ({ title: "", taskIds: Array(8).fill("") })) });
 export function safeMandala(value: Mandala | undefined): Mandala {
   return validMandala(value) ? value : emptyMandala();
@@ -15,36 +17,93 @@ const positions = [0, 1, 2, 3, 5, 6, 7, 8];
 const validTime = hasTaskTime;
 const labels = { high: "높음", normal: "보통", low: "낮음" };
 
-export function MandalaView({ tasks, draft, dirty, onChange, onSave, onEdit, onList }: { tasks: Task[]; draft: Mandala; dirty: boolean; onChange: (value: Mandala) => void; onSave: (value: Mandala) => boolean; onEdit: (task: Task) => void; onList: () => void }) {
+export function MandalaView({ tasks, draft, dirty, onChange, onSave, onEdit }: { tasks: Task[]; draft: Mandala; dirty: boolean; onChange: (value: Mandala) => void; onSave: (value: Mandala) => boolean; onEdit: (task: Task) => void }) {
   const [message, setMessage] = useState("");
+  const [fitHeight, setFitHeight] = useState<number | null>(null);
+  const statusId = useId();
+  const resetDialog = useRef<HTMLDialogElement>(null);
+  const plannerScroll = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = plannerScroll.current;
+    if (!element) return;
+    let previousWidth = 0, previousTotal = 0, frame = 0;
+    const measure = () => {
+      if (!element.clientWidth) return;
+      const canvas = element.parentElement!, hint = canvas.querySelector<HTMLElement>(".oddk-mandalaPlannerHint");
+      const main = element.closest("main"), number = (value: string | undefined) => Number.parseFloat(value ?? "0") || 0;
+      const reserved = number(getComputedStyle(canvas).paddingBottom) + (hint?.offsetHeight ?? 0) + (hint ? number(getComputedStyle(hint).marginTop) : 0) + (main ? number(getComputedStyle(main).paddingBottom) : 0) + 8;
+      const available = Math.max(240, Math.floor(window.innerHeight - element.getBoundingClientRect().top - reserved));
+      setFitHeight(window.innerWidth >= 900 ? available : null);
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        if (element.clientWidth === previousWidth && element.scrollWidth === previousTotal) return;
+        previousWidth = element.clientWidth; previousTotal = element.scrollWidth;
+        element.scrollLeft = Math.max(0, (previousTotal - previousWidth) / 2);
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    observer.observe(element.parentElement!);
+    window.addEventListener("resize", measure);
+    return () => { observer.disconnect(); window.removeEventListener("resize", measure); cancelAnimationFrame(frame); };
+  }, []);
+  const hasGoal = Boolean(draft.goal.trim());
+  const activeAreas = draft.areas.map(area => hasGoal && Boolean(area.title.trim()));
+  const linkedIds = new Set(draft.areas.flatMap(area => area.taskIds).filter(Boolean));
+  const availableTasks = tasks.filter(task => !linkedIds.has(task.id));
   const change = (next: Mandala) => { onChange(next); setMessage(""); };
   function areaTitle(index: number, title: string) {
     change({ ...draft, areas: draft.areas.map((area, i) => i === index ? { ...area, title } : area) });
   }
   function cell(areaIndex: number, cellIndex: number) {
     const area = draft.areas[areaIndex];
+    const disabled = !activeAreas[areaIndex];
+    if (disabled) return <div className="oddk-mandalaCell" data-inactive="true" aria-hidden="true" key={`cell-${cellIndex}`} />;
     const id = area.taskIds[cellIndex] ?? "";
     const task = tasks.find((item) => item.id === id);
+    const connect = (taskId: string) => change({ ...draft, areas: draft.areas.map((item, i) => i === areaIndex ? { ...item, taskIds: Array.from({ length: 8 }, (_, j) => j === cellIndex ? taskId : item.taskIds[j] ?? "") } : item) });
     return <div className="oddk-mandalaCell" data-done={task?.done} key={`cell-${cellIndex}`}>
-      <select aria-label={`${areaIndex + 1}번 목표의 실행 ${cellIndex + 1}`} value={task ? id : ""} onChange={(event) => change({ ...draft, areas: draft.areas.map((item, i) => i === areaIndex ? { ...item, taskIds: Array.from({ length: 8 }, (_, j) => j === cellIndex ? event.target.value : item.taskIds[j] ?? "") } : item) })}>
-        <option value="">할 일 연결</option>{tasks.map((item) => <option key={item.id} value={item.id}>{item.done ? "✓ " : ""}{item.title}</option>)}
-      </select>
-      {task && <button type="button" onClick={() => onEdit(task)}>{task.done ? <HiOutlineCheck aria-hidden="true" /> : null}상세 수정</button>}
+      {task ? <><button className="oddk-mandalaTask" type="button" disabled={disabled} aria-label={`${task.title} 수정`} aria-describedby={task.done ? `${statusId}-${areaIndex}-${cellIndex}` : undefined} onClick={() => onEdit(task)}><span>{task.title}</span></button>
+        {task.done && <span id={`${statusId}-${areaIndex}-${cellIndex}`} className="oddk-srOnly">완료한 할 일</span>}
+        <button className="oddk-mandalaUnlink" type="button" disabled={disabled} aria-label={`${areaIndex + 1}번 목표의 실행 ${cellIndex + 1} 연결 해제`} title="할 일 연결 해제" onClick={() => connect("")}><HiOutlineXMark aria-hidden="true" /></button></> : <select disabled={disabled} aria-label={`${areaIndex + 1}번 목표의 실행 ${cellIndex + 1}`} value={id} onChange={(event) => connect(event.target.value)}>
+        <option value="">-</option>{id && !task && <option value={id}>연결된 할 일을 찾을 수 없어요</option>}{availableTasks.map((item) => <option key={item.id} value={item.id}>[{item.summaryOnly ? "요약" : item.done ? "완료" : "진행 중"}] {item.title}</option>)}
+      </select>}
     </div>;
   }
+  function centerCell(index: number) {
+    if (index === 4) return <label key={index} className="oddk-mandalaGoal"><span className="oddk-mandalaFieldLabel">핵심 목표</span><AutoTextarea aria-label="핵심 목표" maxLength={100} value={draft.goal} placeholder="목표 입력" onChange={event => change({ ...draft, goal: event.target.value })} /></label>;
+    const areaIndex = positions.indexOf(index), area = draft.areas[areaIndex];
+    return <label key={index} className="oddk-mandalaSubgoal" data-disabled={!hasGoal} data-filled={Boolean(area.title.trim())}><span className="oddk-mandalaFieldLabel">세부 목표 {areaIndex + 1}</span><AutoTextarea disabled={!hasGoal} aria-label={`세부 목표 ${areaIndex + 1}`} maxLength={60} value={area.title} onChange={event => areaTitle(areaIndex, event.target.value)} placeholder="목표 입력" /></label>;
+  }
   return <section className="oddk-planningView" aria-labelledby="mandala-title">
-    <h2 id="mandala-title" className="oddk-srOnly">만다라트</h2>
-    <div className="oddk-viewContext" aria-label="목표 구성"><span>핵심 목표</span><HiOutlineArrowRight aria-hidden="true" /><span>세부 목표 8개</span><HiOutlineArrowRight aria-hidden="true" /><span>실행할 일 64개</span></div>
-    <form onSubmit={(event) => { event.preventDefault(); if (onSave(draft)) { setMessage("목표와 연결한 할 일을 저장했어요."); } else setMessage("저장하지 못했어요. 다시 시도해주세요."); }}>
-      <div className="oddk-viewActions"><button type="button" onClick={onList}>할 일 추가하러 가기<HiOutlineArrowRight /></button><button className="oddk-primary" type="submit" disabled={!dirty}>목표 저장</button><span role="status">{message || (dirty ? "저장하지 않은 변경사항" : "")}</span></div>
-      <div className="oddk-mandalaScroll"><div className="oddk-mandalaBoard">
-        {Array.from({ length: 9 }, (_, boardIndex) => boardIndex === 4 ? <div key="center" className="oddk-mandalaGroup oddk-mandalaCenter">
-          {Array.from({ length: 9 }, (_, i) => i === 4 ? <label key={i} className="oddk-mandalaGoal">핵심 목표<textarea aria-label="핵심 목표" maxLength={100} value={draft.goal} placeholder="이루고 싶은 목표" onChange={(event) => change({ ...draft, goal: event.target.value })} /></label> : <label key={i} className="oddk-mandalaSubgoal">세부 목표 {positions.indexOf(i) + 1}<textarea aria-label={`세부 목표 ${positions.indexOf(i) + 1}`} maxLength={60} value={draft.areas[positions.indexOf(i)].title} onChange={(event) => areaTitle(positions.indexOf(i), event.target.value)} placeholder="목표 입력" /></label>)}
-        </div> : <div key={boardIndex} className="oddk-mandalaGroup">
-          {Array.from({ length: 9 }, (_, i) => i === 4 ? <div key={i} className="oddk-mandalaSubgoal"><strong>{draft.areas[positions.indexOf(boardIndex)].title || `세부 목표 ${positions.indexOf(boardIndex) + 1}`}</strong></div> : cell(positions.indexOf(boardIndex), positions.indexOf(i)))}
-        </div>)}
+    <h2 id="mandala-title" className="oddk-srOnly">만다라트 8×8</h2>
+    <form onSubmit={(event) => { event.preventDefault(); if (onSave(draft)) { setMessage(""); } else setMessage("저장하지 못했어요. 다시 시도해주세요."); }}>
+      <header className="oddk-mandalaToolbar">
+        <div className="oddk-viewActions oddk-mandalaActions"><button className="oddk-mandalaReset" type="button" onClick={() => resetDialog.current?.showModal()}>전체초기화</button><button className="oddk-primary" type="submit" disabled={!dirty}>목표 저장</button></div>
+      </header>
+      {message && <p role="status" className="oddk-mandalaFeedback">{message}</p>}
+      <div className="oddk-mandalaCanvas" data-expanded="true" data-layout="planner" data-partial={activeAreas.some(active => !active)}>
+      <div ref={plannerScroll} className="oddk-mandalaScroll" data-fit={fitHeight !== null} style={fitHeight === null ? undefined : { "--planner-fit-height": `${fitHeight}px` } as CSSProperties} tabIndex={0} role="region" aria-label="전체 만다라트 플래너. 작은 화면에서는 좌우로 스크롤할 수 있어요."><div className="oddk-mandalaBoard" data-expanded="true">
+        {Array.from({ length: 9 }, (_, boardIndex) => {
+          if (boardIndex === 4) return <div key="center" role="group" aria-label="핵심 목표와 세부 목표" className="oddk-mandalaGroup oddk-mandalaCenter" style={{ gridArea: "2 / 2" }}>
+          {Array.from({ length: 9 }, (_, i) => centerCell(i))}
+        </div>;
+          const areaIndex = positions.indexOf(boardIndex), area = draft.areas[areaIndex], active = activeAreas[areaIndex];
+          return <div key={boardIndex} role="group" aria-label={`세부 목표 ${areaIndex + 1} 실행 계획`} aria-hidden={!active} inert={!active} aria-disabled={!active} data-disabled={!active} data-visible={active} className="oddk-mandalaGroup" style={{ gridRow: Math.floor(boardIndex / 3) + 1, gridColumn: boardIndex % 3 + 1 }}>
+            {Array.from({ length: 9 }, (_, i) => i === 4 ? <div key={i} className="oddk-mandalaSubgoal" title={area.title}><span className="oddk-mandalaFieldLabel">세부 목표 {areaIndex + 1}</span>{area.title && <strong>{area.title}</strong>}</div> : cell(areaIndex, positions.indexOf(i)))}
+          </div>;
+        })}
       </div></div>
+      </div>
     </form>
+    <dialog ref={resetDialog} className="oddk-dialog" aria-labelledby="mandala-reset-title" onKeyDown={keepFocusInDialog} onClick={event => { if (event.target === event.currentTarget) resetDialog.current?.close(); }}>
+      <form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); change(emptyMandala()); resetDialog.current?.close(); }}>
+        <header className="oddk-dialogHeader"><h2 id="mandala-reset-title">만다라트 전체초기화</h2><button type="button" aria-label="초기화 창 닫기" onClick={() => resetDialog.current?.close()}><HiOutlineXMark aria-hidden="true" /></button></header>
+        <p>핵심 목표, 세부 목표, 할 일 연결을 모두 비울까요?</p><p>할 일 목록은 그대로 남아요. 목표 저장을 누르면 반영돼요.</p>
+        <div className="oddk-dialogActions"><button type="button" onClick={() => resetDialog.current?.close()}>취소</button><button type="submit" className="oddk-primary">초기화</button></div>
+      </form>
+    </dialog>
   </section>;
 }
 

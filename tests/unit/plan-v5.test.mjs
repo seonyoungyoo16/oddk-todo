@@ -63,7 +63,7 @@ test("split rejects duplicates, invalid child IDs and limits atomically; summary
   for (const entries of [[{ id: "c", title: "One" }], [{ id: "c", title: "Same" }, { id: "d", title: "same" }], [{ id: "a", title: "New" }, { id: "d", title: "Other" }], [{ id: "c", title: "" }, { id: "d", title: "Other" }]]) assert.throws(() => splitTask(before, "a", entries, true));
   assert.equal(JSON.stringify(before), raw);
   const split = splitTask(before, "a", [{ id: "c", title: "C" }, { id: "d", title: "D" }], true);
-  assert.throws(() => previewBulkAction(split, ["a"], [], "done"), /요약/);
-  const request = previewBulkAction(split, ["a", "c"], [], "done"); assert.equal(request.excludedSummaries, 1); assert.deepEqual(request.tasks.map(t => t.id), ["c"]);
+  assert.throws(() => previewBulkAction(split, ["a"], ["a"], "done"), /요약/);
+  const request = previewBulkAction(split, ["a", "c"], ["a", "c"], "done"); assert.equal(request.excludedSummaries, 1); assert.deepEqual(request.tasks.map(t => t.id), ["c"]);
   const completed = applyBulkAction(split, request); assert.equal(completed.tasks.find(t => t.id === "a").done, false); assert.equal(completed.tasks.find(t => t.id === "c").done, true);
 });

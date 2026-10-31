@@ -1,0 +1,22 @@
+/* Sole owner of the timetable/list split and compact view switch.
+   1100px is the single breakpoint: below it only the selected pane is visible. */
+.oddk-paneSwitch { display:none; }
+@media (min-width:1100px) {
+  .oddk-page .oddk-contentGrid.oddk-dailyGrid {
+    display:grid;
+    grid-template-columns:var(--oddk-plan-columns);
+    gap:var(--oddk-plan-gap);
+  }
+  .oddk-page .oddk-dailyGrid > .oddk-rhythm { min-width:0; border:0; padding:0; }
+  .oddk-page .oddk-dailyGrid > .oddk-taskArea {
+    border-left:1px solid var(--oddk-border);
+    padding-left:var(--oddk-plan-divider-space);
+  }
+}
+@media (max-width:1099px) {
+  .oddk-page .oddk-paneSwitch { display:flex; gap:var(--oddk-space-2); margin-bottom:var(--oddk-space-4); }
+  .oddk-paneSwitch button { display:flex; align-items:center; gap:6px; padding:8px 14px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); }
+  .oddk-paneSwitch [aria-pressed="true"] { background:var(--oddk-highlight); border-color:var(--oddk-focus); }
+  .oddk-dailyGrid[data-pane="list"] > .oddk-rhythm,
+  .oddk-dailyGrid[data-pane="rhythm"] > .oddk-taskArea { display:none; }
+}

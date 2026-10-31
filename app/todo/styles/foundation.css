@@ -1,0 +1,3 @@
+/* App typography and element defaults. */
+.oddk-page, .oddk-dialog { font-family: var(--font-sans); font-size: var(--oddk-font-body); line-height: var(--oddk-line-body); letter-spacing: 0; color: var(--oddk-heading); word-break: keep-all; }
+.oddk-page :is(button, input, select), .oddk-dialog :is(button, input, select) { font-family: inherit; letter-spacing: inherit; }

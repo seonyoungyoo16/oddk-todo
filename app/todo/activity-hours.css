@@ -1,0 +1,9 @@
+.oddk-activityHoursBar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px 16px; margin:0 0 16px; font-size:14px; }
+.oddk-activityHoursBar > span { color:var(--oddk-muted,#657083); }
+.oddk-activityHoursBar strong { margin-left:8px; color:var(--oddk-heading); font-weight:500; }
+.oddk-page .oddk-activityHoursBar > button { min-height:var(--oddk-control-height,44px); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control,6px); background:var(--oddk-surface); color:var(--oddk-heading); font-size:var(--oddk-font-small,12px); }
+.oddk-activityHoursDate { margin:0 0 20px; color:var(--oddk-muted,#657083); font-size:14px; }
+.oddk-activityHoursFields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-bottom:24px; }
+.oddk-activityHoursFields label { display:grid; gap:8px; min-width:0; font-size:14px; }
+.oddk-activityHoursFields input { width:100%; min-width:0; min-height:var(--oddk-control-height,44px); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control,6px); background:var(--oddk-surface); color:var(--oddk-heading); font:inherit; }
+@media(max-width:400px) { .oddk-activityHoursFields { grid-template-columns:minmax(0,1fr); } }

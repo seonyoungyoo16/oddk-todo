@@ -44,7 +44,7 @@ export function TaskTimeFields({
           </span>
         </label>
         <label className="oddk-dialogField" htmlFor="edit-buffer">
-          여유 시간
+          여유 시간 (휴식 포함)
           <span className="oddk-editorNumber">
             <input
               id="edit-buffer"

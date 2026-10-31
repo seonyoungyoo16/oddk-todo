@@ -87,9 +87,9 @@ test("the same itinerary on another date or departure permits completion undo wi
   const input = draft(), first = applyTravelPreview(plan(), createTravelPreview(input), input);
   const tomorrow = { ...input, id: "another-day", date: "2026-10-29" };
   const both = applyTravelPreview(first, createTravelPreview(tomorrow), tomorrow);
-  const completed = applyBulkAction(both, previewBulkAction(both, [both.tasks[0].id], [], "done"));
+  const completed = applyBulkAction(both, previewBulkAction(both, [both.tasks[0].id], [both.tasks[0].id], "done"));
   assert.deepEqual(applyUndo(completed, makeUndo(both, completed, "Complete travel")), both);
-  assert.equal(applyBulkAction(completed, previewBulkAction(completed, [completed.tasks[0].id], [], "undone")).tasks[0].done, false);
+  assert.equal(applyBulkAction(completed, previewBulkAction(completed, [completed.tasks[0].id], [completed.tasks[0].id], "undone")).tasks[0].done, false);
   const later = { ...input, id: "later-trip", departure: "13:00" };
   assert.equal(applyTravelPreview(both, createTravelPreview(later), later).tasks.length, 6);
   const duplicate = { ...input, id: "duplicate-trip" };
