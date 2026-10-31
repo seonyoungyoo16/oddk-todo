@@ -42,7 +42,9 @@ test("all-plan warnings include hidden and fixed overlaps, both dates, and outsi
   assert.deepEqual(previewTimeMove(p, "a", "2026-10-28", "11:00").warnings, []);
   const midnight = previewTimeMove(p, "a", "2026-10-28", "23:30");
   assert.ok(midnight.warnings.some(w => w.includes("2026-10-28") && w.includes("활동 시간 밖")));
-  assert.ok(midnight.warnings.some(w => w.includes("2026-10-29") && w.includes("활동 시간 밖")));
+  assert.equal(midnight.warnings.some(w => w.includes("2026-10-29") && w.includes("활동 시간 밖")), false);
+  p.availabilityByDate["2026-10-29"] = { start: "09:00", end: "18:00", fixed: [] };
+  assert.ok(previewTimeMove(p, "a", "2026-10-28", "23:30").warnings.some(w => w.includes("2026-10-29") && w.includes("활동 시간 밖")));
 });
 test("stale, forged, duplicate, completed and invalid moves never overwrite plans", () => {
   const p = plan(), preview = previewTimeMove(p, "a", "2026-10-28", "11:00");

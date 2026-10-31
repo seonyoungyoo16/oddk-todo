@@ -1,7 +1,7 @@
 import { hasTaskTime, validPlan } from "./plan.ts";
 import type { Plan, Task } from "./plan.ts";
 import { clockMinute, dateOrdinal, isClock, isPlanDate } from "./calendar.ts";
-import { defaultAvailability, deriveScheduleEnd, endBoundaryMinute, freeIntervals, intersectInterval } from "./schedule.ts";
+import { deriveScheduleEnd, endBoundaryMinute, freeIntervals, intersectInterval } from "./schedule.ts";
 import type { MinuteInterval } from "./schedule.ts";
 import { deadlineMinute } from "./task-planning.ts";
 import { preserveManualRepeatEdits } from "./repeat-actions.ts";
@@ -29,7 +29,8 @@ export function defaultReplanPins(plan: Plan, date: string, baseMinute: number) 
 }
 export function previewReplan(plan: Plan, options: ReplanOptions): ReplanPreview {
   if (!validPlan(plan) || ![5, 6].includes(plan.schemaVersion) || !validReplanOptions(options)) throw new Error("재조정할 날짜·시각과 최신 계획을 확인해주세요.");
-  const { date, baseMinute } = options, pins = new Set(options.pinnedIds), availability = plan.availabilityByDate?.[date] ?? defaultAvailability;
+  const { date, baseMinute } = options, pins = new Set(options.pinnedIds), availability = plan.availabilityByDate?.[date];
+  if (!availability) throw new Error("활동 시간을 먼저 설정해주세요.");
   const window = { start: Math.max(baseMinute, clockMinute(availability.start)), end: endBoundaryMinute(availability.end) };
   const eligible = plan.tasks.filter(t => t.plannedDate === date && !t.done && !t.summaryOnly);
   if (options.pinnedIds.some(id => !eligible.some(t => t.id === id && interval(t, date)))) throw new Error("보호할 일정이 바뀌었어요. 최신 계획에서 다시 확인해주세요.");

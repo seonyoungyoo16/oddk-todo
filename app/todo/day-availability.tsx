@@ -2,7 +2,7 @@ import { useState } from "react";
 import { HiOutlineChevronDown, HiOutlinePlus, HiOutlineTrash, HiOutlineClock } from "react-icons/hi2";
 import type { Task } from "../../supabase/functions/_shared/plan";
 import { isPlanDate } from "../../supabase/functions/_shared/calendar";
-import { defaultAvailability, validAvailability } from "../../supabase/functions/_shared/schedule";
+import { validAvailability } from "../../supabase/functions/_shared/schedule";
 import type { Availability } from "../../supabase/functions/_shared/schedule";
 import type { DayPlan } from "./day-selectors";
 import { availabilitySummary } from "./availability";
@@ -11,9 +11,13 @@ import { emptyAvailabilityDrafts, validAvailabilityDrafts } from "./availability
 import { sameValue } from "./json-equality";
 import { clockLabel } from "./timeline";
 
-export function DayAvailability({ day, saved, onSave, onEdit }: { day: DayPlan; saved?: Availability; onSave: (value: Availability) => boolean; onEdit: (task: Task) => void }) {
+type DayAvailabilityProps = { day: DayPlan; saved?: Availability; onSave: (value: Availability) => boolean; onEdit: (task: Task) => void; showWarnings?: boolean };
+export function DayAvailability(props: DayAvailabilityProps) {
+  return props.saved ? <ConfiguredDayAvailability {...props} saved={props.saved} /> : null;
+}
+function ConfiguredDayAvailability({ day, saved, onSave, onEdit, showWarnings = true }: DayAvailabilityProps & { saved: Availability }) {
   const drafts = useLocalDraft("availability", emptyAvailabilityDrafts, validAvailabilityDrafts);
-  const current = saved ?? defaultAvailability, entry = drafts.value[day.date], value = entry?.value ?? current;
+  const current = saved, entry = drafts.value[day.date], value = entry?.value ?? current;
   const conflict = Boolean(entry && !sameValue(entry.value, current) && !sameValue(entry.base, current));
   const [error, setError] = useState<{ date: string; text: string } | null>(null);
   const report = (text: string) => setError({ date: day.date, text });
@@ -25,12 +29,12 @@ export function DayAvailability({ day, saved, onSave, onEdit }: { day: DayPlan; 
   function discard() { drafts.set(all => { const next = { ...all }; delete next[day.date]; return next; }); setError(null); }
   return <section className="oddk-availability" aria-label="하루 시간 배분">
     <div className="oddk-allocationSummary"><div><span>설정한 계획</span><strong>{day.activeTotal}분</strong><small>작업 {day.activeWork} + 여유 {day.activeBuffer}분</small></div><div><span>빈 시간</span><strong>{summary.freeMinutes}분</strong><small>활동 구간 내 실제 빈 시간대</small></div><div><span>아직 미배치</span><strong>{summary.unscheduledMinutes}분</strong><small>소요시간만 정한 계획</small></div></div>
-    <p className="oddk-allocationContext">{current.start}~{current.end} · 활동 {summary.activityMinutes}분 중 고정·휴식 {summary.fixedMinutes}분 · 시간표 점유 {summary.occupiedMinutes}분{summary.occupiedWithin !== summary.occupiedMinutes && ` (활동 구간 안 ${summary.occupiedWithin}분)`}{!saved && " · 기본 활동 구간"}</p>
-    {day.activeTotal > summary.availableMinutes && <p className="oddk-timeWarning">설정한 계획이 고정·휴식을 제외한 활동 가능 시간보다 {day.activeTotal - summary.availableMinutes}분 많아요. 일부 계획을 다른 날짜로 옮기거나 활동 구간을 조정해주세요.</p>}
-    {summary.overlapMinutes > 0 && <p className="oddk-timeWarning">시간표의 계획 합계 {day.activeTotal - summary.unscheduledMinutes}분 중 {summary.overlapMinutes}분이 겹쳐요. 겹침을 해소한 뒤 남은 업무를 배치해주세요.</p>}
-    {summary.overlaps.some(item => item.fixed.length > 0) && <p className="oddk-timeWarning">고정·휴식과 겹친 일정을 옮기면 빈 시간이 달라져요. 충돌을 먼저 확인해주세요.</p>}
-    {summary.overlaps.length > 0 && <ul className="oddk-timeWarnings" aria-label="일정 충돌">{summary.overlaps.map(({ task, others, fixed }) => <li key={task.id}><button type="button" onClick={() => onEdit(task)}>{task.title}</button><span> · {clockLabel(task.start)}~{clockLabel(task.end)} 겹침: </span>{others.map((other, i) => <span key={other.id}>{i > 0 && ", "}<button type="button" onClick={() => onEdit(other)}>{other.title}</button></span>)}{fixed.map(block => <span key={block.id}> {block.title} (고정·휴식)</span>)}</li>)}</ul>}
-    {summary.outside.length > 0 && <p className="oddk-timeWarning">활동 구간 밖: {summary.outside.map((task, i) => <span key={task.id}>{i > 0 && ", "}<button type="button" onClick={() => onEdit(task)}>{task.title}</button></span>)}</p>}
+    <p className="oddk-allocationContext">{current.start}~{current.end} · 활동 {summary.activityMinutes}분 중 고정·휴식 {summary.fixedMinutes}분 · 시간표 점유 {summary.occupiedMinutes}분{summary.occupiedWithin !== summary.occupiedMinutes && ` (활동 구간 안 ${summary.occupiedWithin}분)`}</p>
+    {showWarnings && day.activeTotal > summary.availableMinutes && <p className="oddk-timeWarning">설정한 계획이 고정·휴식을 제외한 활동 가능 시간보다 {day.activeTotal - summary.availableMinutes}분 많아요. 일부 계획을 다른 날짜로 옮기거나 활동 구간을 조정해주세요.</p>}
+    {showWarnings && summary.overlapMinutes > 0 && <p className="oddk-timeWarning">시간표의 계획 합계 {day.activeTotal - summary.unscheduledMinutes}분 중 {summary.overlapMinutes}분이 겹쳐요. 겹침을 해소한 뒤 남은 업무를 배치해주세요.</p>}
+    {showWarnings && summary.overlaps.some(item => item.fixed.length > 0) && <p className="oddk-timeWarning">고정·휴식과 겹친 일정을 옮기면 빈 시간이 달라져요. 충돌을 먼저 확인해주세요.</p>}
+    {showWarnings && summary.overlaps.length > 0 && <ul className="oddk-timeWarnings" aria-label="일정 충돌">{summary.overlaps.map(({ task, others, fixed }) => <li key={task.id}><button type="button" onClick={() => onEdit(task)}>{task.title}</button><span> · {clockLabel(task.start)}~{clockLabel(task.end)} 겹침: </span>{others.map((other, i) => <span key={other.id}>{i > 0 && ", "}<button type="button" onClick={() => onEdit(other)}>{other.title}</button></span>)}{fixed.map(block => <span key={block.id}> {block.title} (고정·휴식)</span>)}</li>)}</ul>}
+    {showWarnings && summary.outside.length > 0 && <p className="oddk-timeWarning">활동 구간 밖: {summary.outside.map((task, i) => <span key={task.id}>{i > 0 && ", "}<button type="button" onClick={() => onEdit(task)}>{task.title}</button></span>)}</p>}
     <details className="oddk-availabilitySettings"><summary><HiOutlineChevronDown aria-hidden="true" />활동 시간·고정·휴식 설정 {entry && <small>작성 중</small>}</summary>
       <form onSubmit={event => { event.preventDefault(); if (conflict) { report("저장된 활동 설정이 바뀌었어요. 아래에서 사용할 내용을 선택해주세요."); return; } if (!validAvailability(value)) { report("활동 종료는 시작 이후로, 고정·휴식의 제목과 시작·종료도 모두 입력해주세요. 자정 종료는 00:00으로 입력하세요."); return; } if (onSave(value)) discard(); else report("활동 설정을 저장하지 못했어요. 초안은 남아 있으니 저장 공간을 확인한 뒤 다시 적용해주세요."); }}>
         <p>선택 날짜에만 적용해요. 종료 00:00은 이 날짜의 자정(24:00)이에요.</p>

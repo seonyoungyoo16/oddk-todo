@@ -7,7 +7,7 @@ const date = "2026-10-29";
 function preview() {
   const loaded = loadPlan(JSON.stringify({ schemaVersion: 2, start: "09:00", reviewsByDate: {}, tasks: [{ id: "one", title: "Synthetic", notes: "Long private note".repeat(100), plannedDate: date, startTime: "08:00", minutes: 30, bufferMinutes: 5, priority: "normal", done: false }] }));
   assert.equal(loaded.ok, true);
-  return previewReplan(loaded.plan, { date, baseMinute: 600, pinnedIds: [] });
+  return previewReplan({ ...loaded.plan, availabilityByDate: { [date]: { start: "09:00", end: "18:00", fixed: [] } } }, { date, baseMinute: 600, pinnedIds: [] });
 }
 test("compact recovery preserves exact timing/presence without duplicating private notes", async () => {
   const p = preview(), recovery = await makeReplanRecovery(p);
