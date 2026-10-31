@@ -4,6 +4,7 @@ import { HiOutlineTrash, HiOutlineXMark } from "react-icons/hi2";
 import { AutoTextarea } from "./auto-textarea";
 import { keepFocusInDialog } from "./dialog-focus";
 import { parseTaskCandidates } from "./batch-tasks";
+import { shouldReviewTaskSplit } from "./task-split-decision";
 
 export function TaskSplitReview({ source, candidates, onCancel, onAdd }: {
   source: string; candidates: string[]; onCancel: () => void; onAdd: (titles: string[]) => string | null;
@@ -21,6 +22,7 @@ export function TaskSplitReview({ source, candidates, onCancel, onAdd }: {
     }}>
       <header className="oddk-dialogHeader"><h2 id="task-split-title">나눈 할 일 확인</h2><button type="button" aria-label="나눈 할 일 닫기" onClick={onCancel}><HiOutlineXMark aria-hidden="true" /></button></header>
       <details className="oddk-splitOriginal"><summary>입력한 원문</summary><p>{source}</p></details>
+      {candidates.length === 1 && shouldReviewTaskSplit(source, candidates) && <p role="status">한 항목으로 분석됐어요. 여러 할 일이라면 취소 후 나눠 입력해주세요.</p>}
       <ol className="oddk-splitCandidates">{titles.map((title, index) => <li key={index}>
         <label><span className="oddk-srOnly">할 일 {index + 1}</span><AutoTextarea value={title} maxLength={120} onChange={event => { const value = event.target.value; setTitles(current => current.map((title, i) => i === index ? value : title)); setError(""); }} /></label>
         <button type="button" aria-label={`할 일 ${index + 1} 제외`} onClick={() => { setTitles(current => current.filter((_, i) => i !== index)); setError(""); }}><HiOutlineTrash aria-hidden="true" /></button>

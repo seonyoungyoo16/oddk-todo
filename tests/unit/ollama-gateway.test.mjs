@@ -55,7 +55,7 @@ test("auth is checked against Supabase and anonymous accounts are denied", async
 });
 test("gateway builds its own model prompt and rejects incomplete model output", async () => {
   const titles = await generateTitles("운동하고 장보기", new AbortController().signal, async (url, init) => {
-    assert.equal(url, "http://127.0.0.1:11434/api/chat"); assert.equal(JSON.parse(init.body).model, "qwen3:4b");
+    assert.equal(url, "http://127.0.0.1:11434/api/chat"); assert.equal(JSON.parse(init.body).model, "qwen3:4b-instruct-2507-q4_K_M");
     return Response.json({ done: true, message: { content: '{"titles":["운동","장보기"]}' } });
   });
   assert.deepEqual(titles, ["운동", "장보기"]);

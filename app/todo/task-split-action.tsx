@@ -6,6 +6,7 @@ import { splitWithLocalAI } from "./local-task-ai";
 import { splitWithRemoteAI } from "./remote-task-ai";
 import { syncClient } from "./supabase-client";
 import { TaskSplitReview } from "./task-split-review";
+import { shouldReviewTaskSplit } from "./task-split-decision";
 export function TaskSplitAction({ source, disabled, onAdd, onBusyChange, onSourceSnapshot, children }: {
   source: string; disabled: boolean; onAdd: (titles: string[], original?: string) => string | null; onBusyChange: (busy: boolean) => void; onSourceSnapshot: (source: string) => void; children: ReactNode;
 }) {
@@ -31,7 +32,7 @@ export function TaskSplitAction({ source, disabled, onAdd, onBusyChange, onSourc
       if (!local && (await syncClient().auth.getSession()).data.session?.user.id !== session?.user.id) throw Error("로그인 계정이 바뀌었어요. 현재 계정에서 다시 추가해주세요.");
       if (!controller.signal.aborted) {
         if (currentText().trim() !== submitted.trim()) throw Error("다른 화면에서 입력 내용이 바뀌었어요. 내용을 확인하고 추가를 다시 눌러주세요.");
-        if (titles.length === 1) {
+        if (!shouldReviewTaskSplit(submitted, titles)) {
           const message = onAdd(submitted.trim().length <= 120 ? [submitted.trim()] : titles, submitted);
           if (message) setError(message);
           else focusInput = true;
