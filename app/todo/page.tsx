@@ -1,5 +1,4 @@
 "use client";
-import { DailyQuote } from "./daily-quote";
 import { taskTitleKey } from "./task-identity";
 import { ExecutionPanel } from "./execution-panel";
 import { ReplanPanel } from "./replan-panel";
@@ -701,7 +700,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
                 <p className="oddk-rhythmNote"><GoDotFill aria-hidden="true" />여유도 계획의 일부예요.</p>
               </aside>
               <div hidden={view !== "mandala"}>
-                <GoalTreeView plan={plan} quote={view === "mandala" ? <DailyQuote date={today} /> : null} onEdit={openEditor} onSave={(tree, expected) => {
+                <GoalTreeView plan={plan} onEdit={openEditor} onSave={(tree, expected) => {
                   if (!sameValue(expected, plan.goalTree)) { setError("목표가 바뀌었어요. 최신 내용과 초안을 확인해주세요."); return false; }
                   try { return save(saveGoalTree(plan, tree), "목표를 저장했어요."); } catch (error) { setError((error as Error).message); return false; }
                 }} />
