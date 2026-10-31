@@ -3,7 +3,10 @@ import { taskTitleKey } from "./task-identity";
 import { ExecutionPanel } from "./execution-panel";
 import { ReplanPanel } from "./replan-panel";
 import { useExecution } from "./use-execution";
-import { HiOutlinePlay } from "react-icons/hi2";
+import { TaskExecutionControl } from "./task-execution-control";
+import { ExecutionHistoryView } from "./execution-history-view";
+import "./task-execution-control.css";
+import "./execution-history.css";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -598,6 +601,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
                     <button type="button" aria-pressed={filter === "active"} onClick={() => changeFilter("active")}>진행 중<span>{active.length}</span></button>
                     <button type="button" aria-pressed={filter === "done"} onClick={() => changeFilter("done")}>완료<span>{doneCount}</span></button>
                   </div>
+                  <ExecutionHistoryView model={execution} date={planDate} />
                   <button className="oddk-selectionToggle" type="button" aria-pressed={selectionMode} onClick={() => setSelectionMode(!selectionMode)}>{selectionMode ? "선택 끝내기" : "선택"}</button>
                 </div>
 
@@ -638,7 +642,8 @@ function TodoWorkspace({ scope }: { scope: string }) {
                         {portion && portion.segmentMinutes !== task.minutes && <span>이 날짜 {portion.segmentMinutes}분 · {portion.continuesBefore ? "전날부터 이어짐" : "다음 날 계속"}</span>}
                       </span>
                     </button>
-                    {!selectionMode && !task.done && !task.summaryOnly && <button type="button" className="oddk-recordStart" disabled={!execution.state || execution.busy || Boolean(execution.pending) || execution.state.current?.taskId === task.id} aria-label={task.title + (execution.state?.current?.taskId === task.id ? " 현재 기록" : " 작업 시작")} onClick={() => startExecutionTask(task)}><HiOutlinePlay aria-hidden="true" />{execution.state?.current?.taskId === task.id ? "현재 기록" : "작업 시작"}</button>}
+                    {!selectionMode && <TaskExecutionControl task={task} currentTaskId={execution.state?.current?.taskId} records={execution.history?.records ?? []} date={planDate}
+                      disabled={!workspace.hydrated || !planLoad.ok || !execution.state || execution.busy || Boolean(execution.pending)} onStart={startExecutionTask} />}
                     {sort === "manual" && <TaskMoveButtons title={task.title} first={index === 0} last={index === visibleTasks.length - 1} onMove={direction => moveTask(task, direction)} />}
                     {!selectionMode && !task.done && today && task.plannedDate && task.plannedDate < today && <button type="button" className="oddk-replanButton" aria-label={task.title + " 다시 계획"} onClick={() => { setReplanDate(koreanToday()); setReplanError(""); setReplanId(task.id); }}><HiOutlineArrowUturnLeft aria-hidden="true" />다시 계획</button>}
                     {task.done && <span className="oddk-doneBadge">완료</span>}
