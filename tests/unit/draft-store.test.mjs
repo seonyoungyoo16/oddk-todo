@@ -56,3 +56,10 @@ test("date-range preferences preserve legacy drafts and survive reload without c
   assert.throws(() => saveDraft(storage, "local", "workspace", { ...legacy, range: "unknown" }, validWorkspace));
   assert.equal(storage.getItem(draftKey("local", "workspace")), before);
 });
+
+test("stored review navigation remains readable without losing selected dates or pending task input", () => {
+  const storage = memory(), pending = { ...emptyWorkspace, input: "Keep task input", view: "review", selectedDate: "2026-10-30" };
+  saveDraft(storage, "local", "workspace", pending, validWorkspace);
+  assert.deepEqual(decodeDraft(storage.getItem(draftKey("local", "workspace")), validWorkspace).data, pending);
+  assert.equal(validWorkspace({ ...pending, view: "unknown" }), false);
+});

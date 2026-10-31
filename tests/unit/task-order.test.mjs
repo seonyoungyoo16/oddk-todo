@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
 import { loadPlan } from "../../supabase/functions/_shared/plan-migration.ts";
 import { validTaskPlanning, deadlineMinute } from "../../supabase/functions/_shared/task-planning.ts";
-import { taskImportance, sortTasks, urgencyLabel, moveVisibleTask, reorderVisibleTasks, selectedTaskSummary } from "../../app/todo/task-order.ts";
+import { taskImportance, sortTasks, urgencyLabel, moveVisibleTask, reorderVisibleTasks, selectedVisibleTasks } from "../../app/todo/task-order.ts";
 import { makeUndo, applyUndo } from "../../app/todo/plan-history.ts";
 import { selectDay } from "../../app/todo/day-selectors.ts";
 const task = (id, patch = {}) => ({ id, title: id, notes: "", minutes: null, bufferMinutes: null, startTime: null, endTime: null, endDate: null, endDayOffset: null, plannedDate: "2026-10-28", priority: "normal", done: false, ...patch });
@@ -38,8 +38,18 @@ test("importance and deadline sorts are stable views and never mutate manual ord
   const tasks = [task("manual-first", { priority: "high" }), task("important", { importance: "high", dueDate: "2026-10-30" }), task("urgent", { importance: "low", dueDate: "2026-10-28" }), task("tie"), task("done", { importance: "high", dueDate: "2026-10-27", done: true })];
   const before = structuredClone(tasks);
   assert.deepEqual(sortTasks(tasks, "importance").map(t => t.id), ["important", "manual-first", "tie", "urgent", "done"]);
+  assert.deepEqual(sortTasks(tasks, "importance-low").map(t => t.id), ["urgent", "manual-first", "tie", "important", "done"]);
   assert.deepEqual(sortTasks(tasks, "deadline").map(t => t.id), ["urgent", "important", "manual-first", "tie", "done"]);
   assert.deepEqual(sortTasks(tasks, "manual"), before); assert.deepEqual(tasks, before);
+});
+
+test("start-time directions keep untimed tasks last, ties stable and completed tasks below unfinished tasks", () => {
+  const tasks = [task("untimed"), task("late", { startTime: "18:00" }), task("early", { startTime: "08:00" }), task("tie", { startTime: "08:00" }), task("midnight", { startTime: "00:00" }), task("done", { startTime: "07:00", done: true }), task("done-untimed", { done: true })];
+  const before = structuredClone(tasks);
+  assert.deepEqual(sortTasks(tasks, "start-asc").map(t => t.id), ["midnight", "early", "tie", "late", "untimed", "done", "done-untimed"]);
+  assert.deepEqual(sortTasks(tasks, "start-desc").map(t => t.id), ["late", "early", "tie", "midnight", "untimed", "done", "done-untimed"]);
+  assert.deepEqual(sortTasks(tasks, "manual"), before);
+  assert.deepEqual(tasks, before);
 });
 test("manual movement only replaces visible ID positions; hidden tasks and undo stay intact", () => {
   const before = plan([task("a"), task("hidden", { plannedDate: "2026-10-29" }), task("b"), task("c")]);
@@ -52,10 +62,9 @@ test("manual movement only replaces visible ID positions; hidden tasks and undo 
   assert.throws(() => reorderVisibleTasks(before, ["a", "b"], ["a", "a"]));
   assert.throws(() => reorderVisibleTasks(before, ["a", "missing"], ["missing", "a"]));
 });
-test("selection counts include hidden dates and distinguish remotely deleted IDs without duplicates", () => {
+test("selection only targets visible existing tasks and removes duplicate IDs", () => {
   const tasks = [task("today"), task("tomorrow", { plannedDate: "2026-10-29" }), task("not-selected")];
-  const result = selectedTaskSummary(tasks, ["today", "tomorrow", "gone", "today"], ["today", "not-selected"]);
-  assert.deepEqual(result.tasks.map(t => t.id), ["today", "tomorrow"]);
-  assert.equal(result.visible, 1); assert.equal(result.hidden, 1); assert.equal(result.missing, 1);
-  const filtered = selectedTaskSummary(tasks, ["today", "tomorrow"], []); assert.equal(filtered.hidden, 2); assert.equal(filtered.tasks.length, 2);
+  const result = selectedVisibleTasks(tasks, ["today", "tomorrow", "gone", "today"], ["today", "not-selected"]);
+  assert.deepEqual(result.map(t => t.id), ["today"]);
+  assert.deepEqual(selectedVisibleTasks(tasks, ["today", "tomorrow"], []), []);
 });

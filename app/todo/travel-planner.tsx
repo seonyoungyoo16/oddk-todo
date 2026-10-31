@@ -10,7 +10,6 @@ import type { TravelDraft, TravelPreview, TravelStop } from "./travel-core";
 import { travelPreviewWarnings } from "./travel-warnings";
 import { lookupTravel } from "./travel-client";
 import { sameValue } from "./json-equality";
-import "./travel.css";
 const validDraft = (v: unknown): v is TravelDraft | null => v === null || validTravelDraft(v);
 const modeLabels = { car: "자동차", foot: "도보", bike: "자전거" };
 const newStop = (): TravelStop => ({ id: crypto.randomUUID(), query: "", place: null, stay: "", manualTravel: "" });

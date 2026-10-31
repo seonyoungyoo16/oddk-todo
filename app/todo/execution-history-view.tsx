@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import type { ExecutionController } from "./use-execution";
-import { HiOutlineXMark } from "react-icons/hi2";
+import { DialogHeader } from "./ui/dialog-header";
 import { keepFocusInDialog } from "./dialog-focus";
 import { formatExecutionClock } from "./execution-timer";
 import { finishedExecutionSummary } from "./execution-history";
@@ -21,7 +21,7 @@ export function ExecutionHistoryView({ model, date }: { model: ExecutionControll
     <button ref={opener} type="button" className="oddk-executionHistoryLink" disabled={model.busy} onClick={() => { setError(""); dialog.current?.showModal(); }}>수행 기록</button>
     <dialog ref={dialog} className="oddk-dialog oddk-executionHistoryDialog" aria-labelledby="execution-history-title" onKeyDown={keepFocusInDialog} onClose={() => opener.current?.focus()} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
       <div className="oddk-dialogForm">
-        <header className="oddk-dialogHeader"><h2 id="execution-history-title">수행 기록</h2><button type="button" aria-label="수행 기록 닫기" onClick={() => dialog.current?.close()}><HiOutlineXMark aria-hidden="true" /></button></header>
+        <DialogHeader id="execution-history-title" title="수행 기록" closeLabel="수행 기록 닫기" onClose={() => dialog.current?.close()} />
         <p className="oddk-executionHistoryDate">{date} · 실제 수행한 시간</p>
         {(error || model.error) && <div role="alert" className="oddk-dialogError"><p>{error || model.error}</p><button type="button" disabled={model.busy} onClick={() => void load()}>다시 불러오기</button></div>}
         {!model.history ? <p>기록을 불러오고 있어요.</p> : records.length ? <ul className="oddk-finishedExecutions">{records.map(record => {

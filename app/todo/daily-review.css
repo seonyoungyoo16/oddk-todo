@@ -1,0 +1,11 @@
+.oddk-reviewPage { padding:var(--oddk-space-6); border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-card); background:var(--oddk-surface); }
+.oddk-reviewPage[hidden] { display:none; }
+.oddk-reviewDateBar { display:flex; align-items:flex-end; flex-wrap:wrap; gap:var(--oddk-space-3); }
+.oddk-reviewDateBar label { display:grid; gap:var(--oddk-space-2); font-size:var(--oddk-font-label); color:var(--oddk-muted); }
+.oddk-reviewDateBar input { min-height:var(--oddk-control-height); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); font:inherit; }
+.oddk-page .oddk-reviewDateBar button { min-height:var(--oddk-control-height); padding:8px 16px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); font-size:var(--oddk-font-label); }
+.oddk-reviewPage .oddk-review { margin-top:var(--oddk-space-6); }
+.oddk-reviewPage .oddk-review textarea { min-height:220px; font-size:var(--oddk-font-body); line-height:var(--oddk-line-body); }
+.oddk-reviewPage .oddk-review > span { display:block; margin:var(--oddk-space-3) 0 0; color:var(--oddk-muted); }
+.oddk-reviewPage .oddk-review > span:empty { display:none; }
+@media(max-width:640px) { .oddk-reviewPage { padding:var(--oddk-space-4); } }

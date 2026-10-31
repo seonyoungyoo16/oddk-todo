@@ -1,0 +1,31 @@
+"use client";
+import { useRef, useState } from "react";
+import { koreanToday } from "../todo/plan-date";
+import { validPlan } from "../../supabase/functions/_shared/plan";
+
+export default function DurationMandalaQA() {
+  const backup = useRef<[string, string][] | null>(null);
+  const [active, setActive] = useState(false), [output, setOutput] = useState("준비 전");
+  function seed() {
+    if (!(location.hostname === "127.0.0.2" && location.port === "3200") || localStorage.getItem("oddk.todo.v1") || Object.keys(localStorage).some(key => key.includes("auth-token"))) { setOutput("REFUSED: use an empty isolated QA origin"); return; }
+    backup.current = Object.entries(localStorage);
+    const date = koreanToday();
+    const task = (id: string, title: string, startTime: string, endTime: string) => ({ id, title, plannedDate: date, startTime, endTime, endDate: date, endDayOffset: 0, minutes: 60, bufferMinutes: 10, priority: "normal", importance: "high", done: false, notes: "유지할 합성 메모" });
+    const plan = { schemaVersion: 5, start: "09:00", tasks: [task("resize", "소요시간 조절 확인", "09:00", "10:00"), task("keep", "유지할 일정", "11:00", "12:00")], reviewsByDate: {}, goalTree: { goal: "", groups: [] } };
+    if (!validPlan(plan)) throw Error("Invalid QA fixture");
+    localStorage.setItem("oddk.todo.v1", JSON.stringify(plan)); setActive(true); setOutput("READY");
+  }
+  function inspect() {
+    const plan = JSON.parse(localStorage.getItem("oddk.todo.v1") ?? "null");
+    setOutput(JSON.stringify({ valid: validPlan(plan), tasks: plan?.tasks, goals: plan?.goalTree }, null, 2));
+  }
+  function cleanup() {
+    setActive(false);
+    if (backup.current) { for (const key of Object.keys(localStorage)) localStorage.removeItem(key); for (const [key, value] of backup.current) localStorage.setItem(key, value); backup.current = null; }
+    setOutput("CLEANED");
+  }
+  return <main><div style={{ padding: 8, display: "flex", gap: 12 }}><button disabled={active} onClick={seed}>검증 데이터 준비</button><button onClick={inspect}>저장 결과 확인</button><button onClick={cleanup}>검증 데이터 비우기</button></div>
+    {active && <iframe title="격리된 실제 앱" src="/todo" style={{ display: "block", width: "100%", height: 820, border: 0 }} />}
+    <pre role="status" style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>{output}</pre>
+  </main>;
+}

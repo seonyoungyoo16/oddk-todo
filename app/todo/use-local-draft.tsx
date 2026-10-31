@@ -52,6 +52,6 @@ export function useLocalDraft<T>(slot: string, initial: T, valid: (value: unknow
 }
 function getSafeScope() { try { return getPlanScope(); } catch { return "unreadable-session"; } }
 export function DraftFeedback({ draft }: { draft: { problem: string; updatedAt: string; retry: () => void; download: () => void; discardUnreadable: () => void } }) {
-  if (!draft.problem && !draft.updatedAt) return null;
-  return <div className="oddk-draftFeedback" role="status">{draft.problem ? <><span>{draft.problem}</span><button type="button" onClick={draft.retry}>초안 저장 재시도</button><button type="button" onClick={draft.download}>초안 백업 받기</button><button type="button" onClick={draft.discardUnreadable}>원문 보관 후 초안 초기화</button></> : <small>이 기기의 초안 보관됨 · {new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(draft.updatedAt))} (한국 시간)</small>}</div>;
+  if (!draft.problem) return null;
+  return <div className="oddk-draftFeedback" role="status"><span>{draft.problem}</span><button type="button" onClick={draft.retry}>초안 저장 재시도</button><button type="button" onClick={draft.download}>초안 백업 받기</button><button type="button" onClick={draft.discardUnreadable}>원문 보관 후 초안 초기화</button></div>;
 }

@@ -1,0 +1,90 @@
+"use client";
+import { useRef, useState } from "react";
+import { koreanToday } from "../todo/plan-date";
+import { validPlan } from "../../supabase/functions/_shared/plan";
+const wait = async (test: () => boolean, label: string) => { const end = Date.now() + 15000; while (Date.now() < end) { if (test()) return; await new Promise(resolve => setTimeout(resolve, 50)); } throw Error(label); };
+export default function DragQA() {
+  const frame = useRef<HTMLIFrameElement>(null);
+  const [active, setActive] = useState(false), [running, setRunning] = useState(false), [events, setEvents] = useState<string[]>([]);
+  const say = (text: string) => setEvents(current => [...current, text]);
+  const doc = () => frame.current?.contentDocument as Document;
+  const read = () => JSON.parse(localStorage.getItem("oddk.todo.v1")!);
+  async function run() {
+    setRunning(true);
+    try {
+      if (location.port !== "3201" || localStorage.getItem("oddk.todo.v1") || sessionStorage.getItem("drag-qa-backup") || localStorage.getItem("oddk.drag-qa.original") || Object.keys(localStorage).some(key => key.includes("auth-token"))) throw Error("Use empty isolated port 3201 only");
+      const backup = JSON.stringify(Object.entries(localStorage)); sessionStorage.setItem("drag-qa-backup", backup); localStorage.setItem("oddk.drag-qa.original", backup);
+      const date = koreanToday();
+      const task = (id: string, title: string, startTime: string, endTime: string) => ({ id, title, plannedDate: date, startTime, endTime, endDate: date, endDayOffset: 0, minutes: 60, bufferMinutes: 10, priority: "normal", done: false, notes: "Keep memo", importance: "high" });
+      const before = { schemaVersion: 5, start: "09:00", tasks: [task("drag", "드래그 검증 업무", "09:00", "10:00"), task("other", "유지할 업무", "12:00", "13:00")], reviewsByDate: {}, goalTree: { goal: "Keep goal", groups: [{ id: "g", title: "Subgoal", taskIds: ["drag"] }] } };
+      if (!validPlan(before)) throw Error("Invalid fixture");
+      localStorage.setItem("oddk.todo.v1", JSON.stringify(before)); setActive(true);
+      await wait(() => Boolean(doc()?.querySelector(".oddk-timeSlot")), "Hydrated timeline");
+      const slot = () => [...doc().querySelectorAll<HTMLButtonElement>(".oddk-timeSlot")].find(button => button.textContent?.includes("드래그 검증 업무"))!;
+      await wait(() => Boolean(slot()), "Task slot");
+      const pointer = (button: HTMLButtonElement, type: string, y: number) => button.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, pointerType: "mouse", button: 0, clientX: button.getBoundingClientRect().left + 20, clientY: y }));
+      const drag = (pixels: number, cancel = false) => {
+        const button = slot(), y = button.getBoundingClientRect().top + 20, capture = button.setPointerCapture;
+        // Synthetic browser events cannot acquire a physical pointer. Only capture is stubbed.
+        button.setPointerCapture = () => {};
+        pointer(button, "pointerdown", y); pointer(button, "pointermove", y + pixels);
+        if (cancel) button.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        else pointer(button, "pointerup", y + pixels);
+        button.setPointerCapture = capture;
+      };
+      drag(180);
+      await wait(() => read().tasks[0].startTime === "10:00", "Drag commits 10:00");
+      let after = read();
+      if (after.tasks[0].endTime !== "11:00" || after.tasks[0].minutes !== 60 || after.tasks[0].bufferMinutes !== 10 || after.tasks[0].notes !== "Keep memo" || JSON.stringify(after.tasks[1]) !== JSON.stringify(before.tasks[1]) || JSON.stringify(after.goalTree) !== JSON.stringify(before.goalTree)) throw Error("Moved task data changed");
+      say("PASS full block drag commits new start/end; work, buffer, memo, other task and goal preserved");
+      drag(60, true); await new Promise(resolve => setTimeout(resolve, 100));
+      if (read().tasks[0].startTime !== "10:00") throw Error("Escape persisted a drag");
+      say("PASS Escape cancels preview without saving");
+      slot().dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", altKey: true, bubbles: true }));
+      await wait(() => read().tasks[0].startTime === "10:05", "Keyboard move");
+      say("PASS Alt+Arrow moves by five minutes");
+      drag(270); // 10:05 -> 11:35 overlaps the 12:00 task.
+      await wait(() => Boolean(doc().querySelector("dialog[open] #time-move-title")), "Conflict dialog");
+      if (read().tasks[0].startTime !== "10:05") throw Error("Conflict saved before confirmation");
+      const dialog = doc().querySelector<HTMLDialogElement>("dialog[open]")!;
+      if (dialog.querySelector('input[type="date"]') || dialog.querySelectorAll('input[type="time"]').length !== 1) throw Error("Time-only popup controls");
+      [...dialog.querySelectorAll("button")].find(button => button.textContent === "취소")!.click();
+      await wait(() => !doc().querySelector("dialog[open]"), "Cancel dialog");
+      say("PASS overlap requires confirmation; cancel retains saved schedule");
+      const button = slot(), y = button.getBoundingClientRect().top + 20, capture = button.setPointerCapture;
+      button.setPointerCapture = () => {}; pointer(button, "pointerdown", y); pointer(button, "pointerup", y); button.click(); button.setPointerCapture = capture;
+      await wait(() => Boolean(doc().querySelector("dialog[open] #edit-dialog-title")), "Click editor");
+      (doc().querySelector('[aria-label="수정 창 닫기"]') as HTMLButtonElement).click();
+      if (doc().querySelector(".oddk-timeMoveControls") || doc().body.textContent?.includes("손잡이를 위·아래로 끌면")) throw Error("Duplicate controls remain");
+      say("PASS click opens existing editor; duplicate move controls and explanation removed");
+      frame.current!.src = "/todo/?drag-qa=reload";
+      await wait(() => doc()?.URL.includes("drag-qa=reload") && Boolean(slot()?.textContent?.includes("10:05")), "Reload persisted schedule");
+      after = read(); if (!validPlan(after)) throw Error("Invalid saved plan");
+      say("PASS reload preserves moved time and valid plan");
+      slot().dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      await wait(() => [...doc().querySelectorAll<HTMLElement>('[role="tooltip"]')].some(tooltip => tooltip.textContent?.includes("Keep memo") && doc().defaultView!.getComputedStyle(tooltip).display !== "none"), "Hover memo");
+      say("PASS hovering the timeline block displays its saved memo");
+      slot().dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: doc().body }));
+      doc().querySelector<HTMLElement>(".oddk-startSort > summary")!.click();
+      [...doc().querySelectorAll<HTMLButtonElement>(".oddk-startSortOptions button")].find(button => button.textContent === "시작시간 내림차순")!.click();
+      await wait(() => doc().querySelectorAll('.oddk-rowGrip[data-manual="false"]').length === 2, "Sorted grips retained");
+      say("PASS sorted lists retain both grip indicators");
+      const field = doc().getElementById("todo-input") as HTMLTextAreaElement;
+      if (field.getBoundingClientRect().height < 110 || doc().querySelector('.oddk-taskArea')!.contains(field)) throw Error("Composer not separated");
+      Object.getOwnPropertyDescriptor(doc().defaultView!.HTMLTextAreaElement.prototype, "value")!.set!.call(field, "넓어진 입력 검증");
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise(resolve => setTimeout(resolve, 100));
+      field.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      await wait(() => read().tasks.some((task: { title: string }) => task.title === "넓어진 입력 검증"), "Composer Enter add");
+      say("PASS spacious independent composer still adds a task with Enter");
+    } catch (error) { say("FAIL " + (error instanceof Error ? error.message : String(error))); }
+    finally { setRunning(false); }
+  }
+  async function restore() {
+    setActive(false); await new Promise(resolve => setTimeout(resolve, 150));
+    const raw = sessionStorage.getItem("drag-qa-backup") ?? localStorage.getItem("oddk.drag-qa.original"); if (!raw) return;
+    localStorage.clear(); for (const [key, value] of JSON.parse(raw)) localStorage.setItem(key, value);
+    sessionStorage.removeItem("drag-qa-backup"); say("CLEANED original storage restored");
+  }
+  return <main style={{ padding: 16 }}><h1>Timeline drag regression</h1><button disabled={running || active} onClick={() => void run()}>Run drag QA</button><button disabled={running} onClick={() => void restore()}>Restore storage</button><ol>{events.map((event, index) => <li key={index}>{event}</li>)}</ol>{active && <iframe ref={frame} src="/todo/?drag-qa=initial" title="Drag application" style={{ width: "100%", height: 850 }} />}</main>;
+}

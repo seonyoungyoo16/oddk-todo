@@ -7,6 +7,7 @@ import type { SyncStatus } from "./sync-store";
 import { keepFocusInDialog } from "./dialog-focus";
 import { PushSettings } from "./push-settings";
 import { getPlanScope } from "./sync-store";
+import { subscribeSettingsDialog } from "./settings-events";
 
 export function SyncPanel({ fallback }: { fallback: string }) {
   const raw = useSyncExternalStore(subscribeSync, getSyncSnapshot, getServerSyncSnapshot);
@@ -16,6 +17,11 @@ export function SyncPanel({ fallback }: { fallback: string }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   useEffect(() => startSync(fallback), [fallback]);
+  useEffect(() => subscribeSettingsDialog(target => {
+    setMessage("");
+    const element = target === "profile" && state.connected ? profileDialog.current : dialog.current;
+    if (element && !element.open) element.showModal();
+  }), [state.connected]);
   async function perform(action: () => Promise<unknown>) {
     setBusy(true); setMessage("");
     try { await action(); }

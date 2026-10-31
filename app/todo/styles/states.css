@@ -1,0 +1,10 @@
+/* Shared selection/completion/importance semantics, inherited in both themes. */
+
+.oddk-page .oddk-mandalaBoard .oddk-mandalaGroup .oddk-mandalaCell[data-done] { background:var(--mandala-filled); color:var(--oddk-heading); }
+.oddk-page .oddk-mandalaGroup .oddk-mandalaCell[data-done="true"] .oddk-mandalaTask > span { color:var(--oddk-muted); text-decoration:line-through; }
+.oddk-page .oddk-listTag[data-status="done"],.oddk-page .oddk-mandalaCell[data-done="true"] { background:var(--oddk-success-surface); color:var(--oddk-success-text); }
+.oddk-page .oddk-listTag[data-status="active"],.oddk-page .oddk-mandalaCell[data-done="false"] { background:var(--oddk-danger-surface); color:var(--oddk-danger-text); }
+.oddk-page .oddk-listTag[data-importance="high"] { background:var(--oddk-danger-surface); color:var(--oddk-danger-text); }
+.oddk-page .oddk-mandalaCell[data-done] .oddk-mandalaTask { color:inherit; }
+.oddk-page .oddk-task.oddk-completed { background:var(--oddk-completed); border-color:var(--oddk-completed-border); }
+.oddk-page .oddk-task:has(.oddk-taskContent[aria-pressed="true"]) { background:var(--oddk-selected); border-color:var(--oddk-border); box-shadow:none; }

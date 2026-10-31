@@ -1,0 +1,20 @@
+.oddk-page .oddk-dashboard { gap:16px; }
+.oddk-dashboardCard { min-width:0; padding:var(--oddk-space-6); border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-card); background:var(--oddk-surface); }
+.oddk-page .oddk-dashboardCard h2 { margin:0; font-size:var(--oddk-font-section); line-height:1.5; font-weight:600; letter-spacing:-.02em; color:var(--oddk-heading); }
+.oddk-dashboardGrid { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+.oddk-dashboardReview { display:flex; flex-direction:column; }
+.oddk-page .oddk-dashboardReview .oddk-review > button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:var(--oddk-control-height); padding:8px 16px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); font-size:var(--oddk-font-label); line-height:1.6; }
+.oddk-dashboardReview .oddk-dailyReview { display:flex; flex-direction:column; flex:1; min-width:0; }
+.oddk-dashboardReview .oddk-review { display:flex; flex-direction:column; align-items:stretch; flex:1; margin:20px 0 0; }
+.oddk-dashboardReview .oddk-review label { font-weight:400; }
+.oddk-dashboardReview .oddk-review textarea { min-height:108px; margin:0 0 20px; font-size:var(--oddk-font-label); line-height:var(--oddk-line-body); }
+.oddk-dashboardReview .oddk-review > button { align-self:flex-end; margin-top:auto; background:var(--oddk-surface); color:var(--oddk-heading); }
+.oddk-dashboardReview .oddk-review > span { margin:8px 0 0; color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+.oddk-dashboardReview .oddk-review > span:empty { display:none; }
+.oddk-page .oddk-executionCompact { margin:16px 0 0; padding:0; border:0; background:transparent; font-size:var(--oddk-font-label); }
+.oddk-executionCompact:empty { display:none; }
+.oddk-executionCompact .oddk-recordActions { margin-bottom:0; }
+.oddk-executionCompact .oddk-recordCurrent { gap:var(--oddk-space-2); }
+.oddk-executionCompact .oddk-recordCurrent strong { font-size:var(--oddk-font-label); }
+.oddk-executionCompact .oddk-recordCurrent strong svg { width:16px; height:16px; }
+@media(max-width:640px) { .oddk-dashboardCard { padding:var(--oddk-space-5); } .oddk-dashboardReview .oddk-review textarea { font-size:var(--oddk-font-section); } }

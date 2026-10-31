@@ -1,0 +1,17 @@
+import assert from "node:assert/strict";
+const base = "https://desktop-m9bcsrv.tailba6cb5.ts.net";
+const request = (path, init = {}) => fetch(base + path, { ...init, signal: AbortSignal.timeout(20000), redirect: "error" });
+const health = await request("/health");
+assert.equal(health.status, 200);
+assert.equal((await health.json()).service, "oddk-task-ai");
+const origin = "https://seonyoungyoo16.github.io";
+const preflight = await request("/split", { method: "OPTIONS", headers: { Origin: origin, "Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "authorization,content-type" } });
+assert.equal(preflight.status, 204);
+assert.equal(preflight.headers.get("access-control-allow-origin"), origin);
+const missing = await request("/split", { method: "POST", headers: { Origin: origin, "Content-Type": "application/json" }, body: '{"text":"외부 연결 검증"}' });
+assert.equal(missing.status, 401);
+const forged = await request("/split", { method: "POST", headers: { Origin: origin, Authorization: `Bearer ${"invalid-token-".repeat(3)}`, "Content-Type": "application/json" }, body: '{"text":"외부 연결 검증"}' });
+assert.equal(forged.status, 401);
+assert.equal((await request("/split", { method: "POST", headers: { Origin: "https://not-allowed.example" } })).status, 403);
+assert.equal((await request("/api/chat", { method: "POST" })).status, 404);
+console.log("PASS: public HTTPS, service identity, production CORS, missing/forged credentials, foreign origins and raw Ollama path protection.");

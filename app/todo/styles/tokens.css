@@ -1,0 +1,93 @@
+/* Public design tokens. Change shared values here, never in a feature stylesheet. */
+.oddk-page, .landing-page {
+  --oddk-brand: #2454e6;
+  --oddk-brand-hover: #1b43c2;
+  --oddk-accent-text: var(--oddk-brand);
+  --oddk-brand-foreground: #fff;
+  --oddk-focus: var(--oddk-brand);
+  --oddk-surface: #fff;
+  --oddk-sidebar: #fbfcff;
+  --oddk-heading: #243047;
+  --oddk-muted: #657083;
+  --oddk-border: #e4e8ef;
+  --oddk-soft: #f4f6f9;
+  --oddk-highlight: #edf3ff;
+  --oddk-selected: var(--oddk-highlight);
+  --oddk-completed: #f1f2f4;
+  --oddk-completed-border: #e1e4e8;
+  --oddk-success-surface: #eaf7ee;
+  --oddk-success-text: #166534;
+  --oddk-danger-surface: #fff0ef;
+  --oddk-danger-text: #b42318;
+  --oddk-editor-surface: var(--oddk-surface);
+  --oddk-editor-field: var(--oddk-surface);
+  --oddk-editor-heading: var(--oddk-heading);
+  --oddk-editor-muted: var(--oddk-muted);
+  --oddk-editor-border: var(--oddk-border);
+  --oddk-editor-accent: var(--oddk-accent-text);
+  --oddk-editor-soft: var(--oddk-highlight);
+  --oddk-font-body: 14px;
+  --oddk-font-small: 12px;
+  --oddk-font-label: 14px;
+  --oddk-font-section: 16px;
+  --oddk-font-title: 24px;
+  --oddk-line-body: 1.6;
+  --oddk-space-1: 4px;
+  --oddk-space-2: 8px;
+  --oddk-space-3: 12px;
+  --oddk-space-4: 16px;
+  --oddk-space-5: 20px;
+  --oddk-space-6: 24px;
+  --oddk-space-8: 32px;
+  --oddk-radius-control: 6px;
+  --oddk-radius-card: 8px;
+  --oddk-radius-dialog: 8px;
+  --oddk-control-height: 44px;
+  --oddk-button-height: 44px;
+  --oddk-icon-size: 20px;
+  --oddk-icon-gap: 8px;
+  --oddk-dialog-width: 540px;
+  --oddk-dialog-padding: 24px;
+  --oddk-dialog-border: var(--oddk-border);
+  --oddk-dialog-backdrop: #20263466;
+  --oddk-dialog-shadow: 0 24px 80px #20263426;
+  --oddk-plan-columns: repeat(2, minmax(0, 1fr));
+  --oddk-plan-gap: 24px;
+  --oddk-plan-divider-space: 20px;
+  --oddk-sidebar-width: 188px;
+  --oddk-page-max-width: 1600px;
+  --oddk-page-gutter: 40px;
+  --oddk-page-top-space: 32px;
+  --oddk-page-bottom-space: 40px;
+  --oddk-page-header-height: 72px;
+  --oddk-page-section-gap: 24px;
+}
+
+@media (max-width:1000px) { .oddk-page { --oddk-sidebar-width:176px; } }
+@media (max-width:760px) { .oddk-page { --oddk-sidebar-width:160px; } }
+@media (max-width:520px) { .oddk-page { --oddk-sidebar-width:0px; } }
+@media (max-width:900px) { .oddk-page { --oddk-page-gutter:24px; --oddk-page-top-space:24px; --oddk-page-bottom-space:32px; } }
+@media (max-width:640px) { .oddk-page { --oddk-page-gutter:16px; --oddk-page-bottom-space:24px; --oddk-page-header-height:88px; } }
+
+@media (max-width:520px) {
+  .oddk-page { --oddk-dialog-padding:20px; }
+}
+
+.oddk-page[data-theme="dark"] {
+  --oddk-accent-text: #a8bfff;
+  --oddk-surface: #151d2b;
+  --oddk-sidebar: #111926;
+  --oddk-heading: #dbe5f5;
+  --oddk-muted: #a7b5c8;
+  --oddk-border: #2b374b;
+  --oddk-soft: #202b3d;
+  --oddk-highlight: #233955;
+  --oddk-selected: #1c3047;
+  --oddk-completed: #232a34;
+  --oddk-completed-border: #35404e;
+  --oddk-success-surface: #163527;
+  --oddk-success-text: #a7e8b5;
+  --oddk-danger-surface: #452522;
+  --oddk-danger-text: #ffb4ac;
+  color-scheme: dark;
+}

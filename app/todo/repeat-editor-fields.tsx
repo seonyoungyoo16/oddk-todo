@@ -3,7 +3,6 @@ import { useEffect, useRef } from "react";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan";
 import { reminderOptions } from "../../supabase/functions/_shared/recurrence";
 import type { RepeatDraft, RepeatEditPreview } from "./repeat-editor-model";
-import "./repeat-editor.css";
 const days = ["월", "화", "수", "목", "금", "토", "일"];
 export function RepeatEditorFields({ task, plan, value, reminder, scheduled, canStart, onChange, onReminder }: { task: Task; plan: Plan; value: RepeatDraft; reminder: string; scheduled: boolean; canStart: boolean; onChange: (value: RepeatDraft) => void; onReminder: (value: string) => void }) {
   const source = plan.recurrences?.find(series => series.id === task.repeatSeriesId);

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint && npm run lint:styles",
+    "lint:styles": "node scripts/check-style-structure.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --test tests/unit/*.test.mjs",
     "test:integration": "node tests/run-integration.mjs"
@@ -26,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "postcss": "8.5.23",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
