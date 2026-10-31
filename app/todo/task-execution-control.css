@@ -1,0 +1,6 @@
+.oddk-taskExecution { display:flex; flex-direction:column; align-items:flex-end; flex:0 1 auto; min-width:0; gap:4px; max-width:230px; }
+.oddk-page .oddk-taskExecution .oddk-recordStart { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:var(--oddk-control-height,36px); padding:7px 12px; border:1px solid var(--oddk-brand,#1769df); border-radius:var(--oddk-radius-control,6px); background:var(--oddk-brand,#1769df); color:#fff; font-size:var(--oddk-font-small,12px); white-space:nowrap; }
+.oddk-taskExecution .oddk-recordStart svg { width:15px; height:15px; }
+.oddk-page .oddk-taskExecution:not([data-recording="true"]) .oddk-recordStart:disabled { background:var(--oddk-completed,var(--oddk-soft)); border-color:var(--oddk-border); color:var(--oddk-muted,#718096); opacity:1; cursor:not-allowed; }
+.oddk-taskExecutionActual { color:var(--oddk-muted,#718096); font-size:var(--oddk-font-small,12px); line-height:1.6; text-align:right; overflow-wrap:anywhere; }
+@media(max-width:640px) { .oddk-taskExecution { max-width:150px; } .oddk-page .oddk-taskExecution .oddk-recordStart { padding:7px 10px; } }
