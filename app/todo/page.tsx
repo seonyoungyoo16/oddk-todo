@@ -577,7 +577,6 @@ function TodoWorkspace({ scope }: { scope: string }) {
               </>}
               {planningView && range !== "all" && plan.tasks.some(task => task.plannedDate === null && !task.done) && <button type="button" className="oddk-undatedLink" onClick={() => navigateRange("all")}>날짜 없는 할 일 {plan.tasks.filter(task => task.plannedDate === null && !task.done).length}개 보기<HiOutlineArrowRight aria-hidden="true" /></button>}
             </header>
-            <DailyQuote date={today} hidden={!planningView || range !== "day"} />
             <ExecutionPanel scope={scope} plan={plan} date={planDate} model={execution} switchTask={switchExecution} onCancelSwitch={() => setSwitchExecution(null)} />
             {planningView && range === "day" && <ReplanPanel key={scope} scope={scope} date={planDate} today={today} plan={plan} execution={execution} onApplied={preview => { history.set(makeUndo(preview.expected, preview.after, "남은 시간을 재조정했어요.")); setNotice({ message: "남은 시간을 재조정했어요." }); }} onRestore={next => save(next, "재조정 전 시각을 복구했어요.", true, false)} />}
             {planningView && range === "day" && isPlanDate(planDate) && <DayAvailability day={day} saved={plan.availabilityByDate?.[planDate]} onSave={value => save({ ...plan, availabilityByDate: { ...plan.availabilityByDate, [planDate]: value } }, "활동 시간과 고정·휴식을 저장했어요.")} onEdit={openEditor} />}
@@ -702,7 +701,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
                 <p className="oddk-rhythmNote"><GoDotFill aria-hidden="true" />여유도 계획의 일부예요.</p>
               </aside>
               <div hidden={view !== "mandala"}>
-                <GoalTreeView plan={plan} onEdit={openEditor} onSave={(tree, expected) => {
+                <GoalTreeView plan={plan} quote={view === "mandala" ? <DailyQuote date={today} /> : null} onEdit={openEditor} onSave={(tree, expected) => {
                   if (!sameValue(expected, plan.goalTree)) { setError("목표가 바뀌었어요. 최신 내용과 초안을 확인해주세요."); return false; }
                   try { return save(saveGoalTree(plan, tree), "목표를 저장했어요."); } catch (error) { setError((error as Error).message); return false; }
                 }} />
