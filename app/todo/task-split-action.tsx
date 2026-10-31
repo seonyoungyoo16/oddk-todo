@@ -2,7 +2,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { HiOutlinePlus, HiOutlineXMark, HiOutlineArrowPath } from "react-icons/hi2";
-import { resolveTaskInput } from "./local-task-ai";
+import { splitWithLocalAI } from "./local-task-ai";
+import { splitWithRemoteAI } from "./remote-task-ai";
+import { syncClient } from "./supabase-client";
 import { TaskSplitReview } from "./task-split-review";
 export function TaskSplitAction({ source, disabled, onAdd, onBusyChange, onSourceSnapshot, children }: {
   source: string; disabled: boolean; onAdd: (titles: string[], original?: string) => string | null; onBusyChange: (busy: boolean) => void; onSourceSnapshot: (source: string) => void; children: ReactNode;
@@ -22,7 +24,11 @@ export function TaskSplitAction({ source, disabled, onAdd, onBusyChange, onSourc
     if (submitted !== source) onSourceSnapshot(submitted);
     setBusy(true); onBusyChange(true); setError("");
     try {
-      const titles = await resolveTaskInput(submitted, controller.signal, location.hostname);
+      const local = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+      const session = local ? null : (await syncClient().auth.getSession()).data.session;
+      const titles = local ? await splitWithLocalAI(submitted, controller.signal, location.hostname)
+        : await splitWithRemoteAI(submitted, controller.signal, session?.access_token ?? null);
+      if (!local && (await syncClient().auth.getSession()).data.session?.user.id !== session?.user.id) throw Error("로그인 계정이 바뀌었어요. 현재 계정에서 다시 추가해주세요.");
       if (!controller.signal.aborted) {
         if (currentText().trim() !== submitted.trim()) throw Error("다른 화면에서 입력 내용이 바뀌었어요. 내용을 확인하고 추가를 다시 눌러주세요.");
         if (titles.length === 1) {

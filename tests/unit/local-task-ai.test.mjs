@@ -1,17 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { splitWithLocalAI, taskSplitRequest, resolveTaskInput } from "../../app/todo/local-task-ai.ts";
+import { splitWithLocalAI, taskSplitRequest } from "../../app/todo/local-task-ai.ts";
 const signal = () => new AbortController().signal;
 
-test("deployed entry works offline without contacting local AI and preserves line boundaries", async () => {
-  const noNetwork = async () => { throw Error("must not contact Ollama"); };
-  assert.deepEqual(await resolveTaskInput("장보기", signal(), "seonyoungyoo16.github.io", noNetwork), ["장보기"]);
-  assert.deepEqual(await resolveTaskInput("운동하기\r\n\n장보기", signal(), "seonyoungyoo16.github.io", noNetwork), ["운동하기", "장보기"]);
-  assert.equal((await resolveTaskInput("가".repeat(121), signal(), "example.com", noNetwork))[0].length, 120);
-  await assert.rejects(resolveTaskInput("가".repeat(2001), signal(), "example.com", noNetwork));
-  const cancelled = new AbortController(); cancelled.abort();
-  await assert.rejects(resolveTaskInput("운동", cancelled.signal, "example.com", noNetwork));
-});
 test("semantic requests use a local generative model, strict schema and separate untrusted user text", () => {
   const source = '운동하고 장 보고 메일 보내기';
   const body = taskSplitRequest(source);
