@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineXMark, HiOutlineCheckCircle } from "react-icons/hi2";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan";
 import type { GoalTree } from "../../supabase/functions/_shared/goal-tree";
@@ -12,9 +12,9 @@ import { useLocalDraft, DraftFeedback } from "./use-local-draft";
 import "./goal-tree.css";
 
 const validDraft = (value: unknown): value is GoalDraft | null => value === null || validGoalDraft(value);
-type Props = { plan: Plan; quote?: ReactNode; onSave: (tree: GoalTree, expected: GoalTree) => boolean; onEdit: (task: Task) => void };
+type Props = { plan: Plan; onSave: (tree: GoalTree, expected: GoalTree) => boolean; onEdit: (task: Task) => void };
 
-export function GoalTreeView({ plan, quote, onSave, onEdit }: Props) {
+export function GoalTreeView({ plan, onSave, onEdit }: Props) {
   const local = useLocalDraft<GoalDraft | null>("goal-tree", null, validDraft);
   const tree = local.value?.value ?? plan.goalTree;
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -36,7 +36,6 @@ export function GoalTreeView({ plan, quote, onSave, onEdit }: Props) {
   }
   const projection = goalTreeProjection(tree);
   return <section className="oddk-goalTree" aria-label="목표와 연결한 할 일">
-    {quote}
     <DraftFeedback draft={local} />
     {conflict && <section className="oddk-draftConflict" role="alert"><strong>다른 화면에서 목표가 바뀌었어요.</strong><p>저장본: {plan.goalTree.goal || "이름 없음"} · {plan.goalTree.groups.length}개 / 내 초안: {tree.goal || "이름 없음"} · {tree.groups.length}개</p>
       <ul>{changedGroups.map(id => { const saved = plan.goalTree.groups.find(group => group.id === id), mine = tree.groups.find(group => group.id === id); return <li key={id}>저장본: {saved?.title || (saved ? "이름 없음" : "삭제됨")} · 연결 {saved?.taskIds.length ?? 0}개 / 내 초안: {mine?.title || (mine ? "이름 없음" : "없음")} · 연결 {mine?.taskIds.length ?? 0}개</li>; })}</ul><p>내 초안으로 계속 편집하면 위 저장본의 변경을 덮을 수 있어요. 사용할 내용을 확인한 뒤 목표 저장을 눌러주세요.</p>
