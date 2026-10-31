@@ -20,7 +20,11 @@
 .oddk-dailyQuote figcaption a svg { width: 13px; height: 13px; flex-shrink: 0; margin-left: 2px; }
 .oddk-dailyQuote figcaption a:hover { color: var(--oddk-heading); text-decoration: underline; text-underline-offset: 4px; }
 .oddk-dailyQuote figcaption a:focus-visible { outline: 2px solid #4874cb; outline-offset: 4px; }
-.oddk-dailyQuoteTranslation { font-size: 11px; }
+.oddk-dailyQuoteAuthor { overflow-wrap: anywhere; }
+.oddk-dailyQuoteAuthor > span { font-size: 11px; }
+.oddk-dailyQuoteStatus { margin: 12px 0 0; color: var(--oddk-heading); font-size: 13px; line-height: 1.7; }
+.oddk-dailyQuoteStatus p { margin: 0; }
+.oddk-page .oddk-dailyQuoteStatus button { min-height: 36px; margin-top: 10px; padding: 6px 12px; border: 1px solid var(--oddk-border); border-radius: 6px; background: var(--oddk-surface); font-size: 12px; }
 .oddk-page[data-theme="dark"] .oddk-dailyQuoteHeading h2 { color: #a1bff5; }
 .oddk-page[data-theme="dark"] .oddk-dailyQuoteHeading time, .oddk-page[data-theme="dark"] .oddk-dailyQuote figcaption { color: #9cacbf; }
 @media (max-width: 640px) {
