@@ -1,0 +1,18 @@
+/* One frame and heading for every workspace view. */
+html:has(.oddk-page) { scrollbar-gutter:stable; }
+.oddk-page .oddk-workspace { position:relative; box-sizing:border-box; width:100%; min-width:0; max-width:var(--oddk-page-max-width,1600px); margin-inline:auto; padding:var(--oddk-page-top-space,32px) var(--oddk-page-gutter,40px) var(--oddk-page-bottom-space,40px); }
+.oddk-page .oddk-pageHeader { display:grid; grid-template-columns:minmax(0,1fr) auto; align-content:start; align-items:start; column-gap:16px; row-gap:8px; min-height:var(--oddk-page-header-height,72px); margin:0 0 var(--oddk-page-section-gap,24px); }
+.oddk-pageHeader h1 { grid-column:1; grid-row:1; min-width:0; margin:0; color:var(--oddk-heading); font-size:var(--oddk-font-title,24px); font-weight:600; line-height:1.4; letter-spacing:-.02em; overflow-wrap:anywhere; }
+.oddk-pageHeaderActions { display:flex; align-items:center; justify-content:flex-end; gap:8px; grid-column:2; grid-row:1; }
+.oddk-pageHeader .oddk-pageDescription { grid-column:1 / -1; margin:0; color:var(--oddk-muted,#657083); font-size:var(--oddk-font-label,14px); line-height:1.6; }
+.oddk-page .oddk-pageHeader .oddk-themeToggle { position:static; display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; padding:0; border-radius:var(--oddk-radius-control,6px); color:var(--oddk-muted,#657083); background:transparent; }
+.oddk-pageHeader .oddk-themeToggle > svg { width:18px; height:18px; }
+.oddk-pageHeader .oddk-themeToggle:hover { background:var(--oddk-soft); color:var(--oddk-heading); }
+.oddk-pageBody { width:100%; min-width:0; }
+.oddk-pageToolbar { margin-bottom:var(--oddk-page-section-gap,24px); }
+.oddk-pageToolbar .oddk-dateToolbar { margin-top:0; }
+@media(max-width:900px) { .oddk-page .oddk-workspace { padding:var(--oddk-page-top-space,24px) var(--oddk-page-gutter,24px) var(--oddk-page-bottom-space,32px); } }
+@media(max-width:640px) {
+  .oddk-page .oddk-workspace { padding:var(--oddk-page-top-space,24px) var(--oddk-page-gutter,16px) var(--oddk-page-bottom-space,24px); }
+  .oddk-page .oddk-pageHeader { min-height:var(--oddk-page-header-height,88px); }
+}
