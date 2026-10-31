@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { HiOutlineArrowUp, HiOutlineArrowDown, HiOutlineXMark } from "react-icons/hi2";
+import { HiOutlineArrowUp, HiOutlineArrowDown } from "react-icons/hi2";
+import { DialogHeader } from "./ui/dialog-header";
 import type { Task } from "../../supabase/functions/_shared/plan";
 import type { Importance } from "../../supabase/functions/_shared/task-planning";
 import { taskImportance, urgencyLabel } from "./task-order";
@@ -24,5 +25,16 @@ export function BulkActionDialog({ request, onCancel, onConfirm }: { request: Bu
   const [error, setError] = useState("");
   useEffect(() => { dialog.current?.showModal(); cancel.current?.focus(); }, []);
   const label = request.kind === "delete" ? "삭제" : request.kind === "done" ? "완료" : "완료 취소";
-  return <dialog ref={dialog} className="oddk-dialog oddk-bulkDialog" aria-labelledby="bulk-dialog-title" onKeyDown={keepFocusInDialog} onCancel={event => { event.preventDefault(); onCancel(); }} onClick={event => { if (event.target === event.currentTarget) onCancel(); }}><form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); const message = onConfirm(); if (message) setError(message); }}><header className="oddk-dialogHeader"><h2 id="bulk-dialog-title">선택한 할 일 {label}</h2><button type="button" aria-label="일괄 처리 창 닫기" onClick={onCancel}><HiOutlineXMark aria-hidden="true" /></button></header>{request.kind !== "done" && <><p><strong>총 {request.tasks.length}개</strong></p><p>아래 선택한 항목에만 적용해요.</p></>}{Boolean(request.excludedSummaries) && <p>요약 업무 {request.excludedSummaries}개는 완료 처리에서 제외해요. 선택한 실행 업무만 변경돼요.</p>}<ul className="oddk-bulkTargets">{request.tasks.map(task => <li key={task.id}><strong>{task.title}</strong><span>{task.plannedDate ?? "날짜 없음"} · {task.done ? "완료" : "진행 중"}</span></li>)}</ul>{error && <p className="oddk-error" role="alert">{error}</p>}<div className="oddk-dialogActions"><button ref={cancel} type="button" onClick={onCancel}>취소</button><button type="submit" className="oddk-primary">{request.tasks.length}개 {label}하기</button></div></form></dialog>;
+  return <dialog ref={dialog} className="oddk-dialog oddk-bulkDialog" aria-labelledby="bulk-dialog-title" onKeyDown={keepFocusInDialog} onCancel={event => { event.preventDefault(); onCancel(); }} onClick={event => { if (event.target === event.currentTarget) onCancel(); }}>
+    <form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); const message = onConfirm(); if (message) setError(message); }}>
+      <DialogHeader id="bulk-dialog-title" title={`선택한 할 일 ${label}`} closeLabel="일괄 처리 창 닫기" onClose={onCancel} />
+      <div className="oddk-bulkBody">
+        {request.kind !== "done" && <><p><strong>총 {request.tasks.length}개</strong></p><p>아래 선택한 항목에만 적용해요.</p></>}
+        {Boolean(request.excludedSummaries) && <p>요약 업무 {request.excludedSummaries}개는 완료 처리에서 제외해요. 선택한 실행 업무만 변경돼요.</p>}
+        <ul className="oddk-bulkTargets">{request.tasks.map(task => <li key={task.id}><strong>{task.title}</strong><span>{task.plannedDate ?? "날짜 없음"} · {task.done ? "완료" : "진행 중"}</span></li>)}</ul>
+        {error && <p className="oddk-error" role="alert">{error}</p>}
+      </div>
+      <div className="oddk-dialogActions"><button ref={cancel} type="button" className="oddk-dialogCancel" onClick={onCancel}>취소</button><button type="submit" className="oddk-primary">{request.tasks.length}개 {label}하기</button></div>
+    </form>
+  </dialog>;
 }
