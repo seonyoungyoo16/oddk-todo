@@ -1,0 +1,29 @@
+.oddk-page .oddk-dailyQuote {
+  min-width: 0;
+  margin: 0 0 24px;
+  padding: 24px 28px;
+  border: 1px solid var(--oddk-border);
+  border-left: 3px solid #4874cb;
+  border-radius: 8px;
+  background: var(--oddk-sidebar);
+  color: var(--oddk-heading);
+}
+.oddk-dailyQuoteHeading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.oddk-dailyQuoteHeading h2 { margin: 0; color: #456bb5; font-size: 12px; font-weight: 600; line-height: 1.5; }
+.oddk-dailyQuoteHeading time { flex-shrink: 0; color: #6b778c; font-size: 12px; font-variant-numeric: tabular-nums; }
+.oddk-dailyQuote figure, .oddk-dailyQuote blockquote, .oddk-dailyQuote blockquote p { margin: 0; }
+.oddk-dailyQuote blockquote { max-width: 48em; }
+.oddk-dailyQuote blockquote p { font-size: clamp(19px, 1.8vw, 25px); font-weight: 550; line-height: 1.65; letter-spacing: -.025em; word-break: keep-all; overflow-wrap: anywhere; text-wrap: pretty; }
+.oddk-dailyQuote figcaption { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 16px; color: #64718a; font-size: 12px; line-height: 1.7; }
+.oddk-dailyQuote figcaption a { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 0 4px; border-radius: 3px; color: inherit; text-decoration: none; }
+.oddk-dailyQuote cite { font-style: normal; }
+.oddk-dailyQuote figcaption a svg { width: 13px; height: 13px; flex-shrink: 0; margin-left: 2px; }
+.oddk-dailyQuote figcaption a:hover { color: var(--oddk-heading); text-decoration: underline; text-underline-offset: 4px; }
+.oddk-dailyQuote figcaption a:focus-visible { outline: 2px solid #4874cb; outline-offset: 4px; }
+.oddk-dailyQuoteTranslation { font-size: 11px; }
+.oddk-page[data-theme="dark"] .oddk-dailyQuoteHeading h2 { color: #a1bff5; }
+.oddk-page[data-theme="dark"] .oddk-dailyQuoteHeading time, .oddk-page[data-theme="dark"] .oddk-dailyQuote figcaption { color: #9cacbf; }
+@media (max-width: 640px) {
+  .oddk-page .oddk-dailyQuote { padding: 20px; }
+  .oddk-dailyQuote blockquote p { font-size: 19px; line-height: 1.7; }
+}
