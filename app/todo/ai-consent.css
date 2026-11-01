@@ -11,8 +11,9 @@
 .oddk-aiConsentCheck { display: flex; align-items: flex-start; gap: 10px; line-height: 1.6; cursor: pointer; }
 .oddk-aiConsentCheck input { flex-shrink: 0; width: 18px; height: 18px; margin-top: 3px; }
 .oddk-aiConsentOptional, .oddk-aiConsentNote { margin: 0; color: var(--oddk-muted); font-size: 13px; line-height: 1.6; }
-.oddk-aiConsentNote { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
-.oddk-aiConsentNote button { padding: 4px; border: 0; background: none; color: var(--oddk-accent-text); text-decoration: underline; font: inherit; white-space: nowrap; }
+.oddk-aiConsentNote { display: block; margin-top: 8px; overflow-wrap: anywhere; }
+.oddk-aiConsentNote > svg { display: inline-block; width: 14px; height: 14px; margin-inline-end: 6px; vertical-align: -2px; }
+.oddk-page .oddk-aiConsentNote > button { width: auto; height: auto; min-height: 32px; max-width: 100%; margin-inline-start: 6px; padding: 4px; border: 0; background: none; color: var(--oddk-accent-text); text-decoration: underline; font: inherit; white-space: nowrap; }
 .oddk-aiConsent .oddk-primary:disabled { opacity: .45; cursor: not-allowed; }
 .oddk-aiConsentSettings > .oddk-settingTextButton { margin-top: 14px; }
 @media (max-width: 480px) {
