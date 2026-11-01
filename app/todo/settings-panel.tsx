@@ -24,6 +24,7 @@ import {
   subscribeSync,
 } from "./sync-store";
 import type { SyncStatus } from "./sync-store";
+import { AccountHelpLinks } from "./account-help-links";
 
 const tabs = [
   { id: "general", label: "일반" },
@@ -145,6 +146,8 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: 
           <button type="button" className="oddk-settingButton" onClick={() => openSettingsDialog(sync.connected ? "profile" : "sync")}>{sync.connected ? "내 정보" : "계정 연결"}<HiOutlineArrowUpRight aria-hidden="true" /></button>
         </div>
       </SettingsCard>
+
+      <AccountHelpLinks />
 
       <SettingsCard title="기기 동기화">
         <div className="oddk-settingActionRow"><div className="oddk-settingCopy"><strong>저장 상태</strong><p>{sync.message}</p></div><span className="oddk-settingStatus" data-attention={sync.phase === "conflict" || sync.phase === "error"}><i aria-hidden="true" />{syncLabel}</span></div>

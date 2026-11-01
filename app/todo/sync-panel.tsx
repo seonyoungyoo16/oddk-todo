@@ -8,6 +8,7 @@ import { keepFocusInDialog } from "./dialog-focus";
 import { PushSettings } from "./push-settings";
 import { getPlanScope } from "./sync-store";
 import { subscribeSettingsDialog } from "./settings-events";
+import { AccountHelpLinks } from "./account-help-links";
 
 export function SyncPanel({ fallback }: { fallback: string }) {
   const raw = useSyncExternalStore(subscribeSync, getSyncSnapshot, getServerSyncSnapshot);
@@ -42,6 +43,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
         <div className="oddk-profileIdentity"><span className="oddk-providerMark"><ProviderIcon aria-hidden="true" /></span><strong>{state.displayName || state.name}</strong><span className="oddk-providerBadge">{providerName} 계정으로 로그인</span></div>
         <dl className="oddk-profileDetails"><div className="oddk-profileEmail"><dt><HiOutlineEnvelope aria-hidden="true" />이메일</dt><dd>{state.name}</dd></div><div><dt>가입일</dt><dd>{date(state.createdAt)}</dd></div><div><dt>최근 로그인</dt><dd>{date(state.lastSignInAt)}</dd></div></dl>
         {state.connected && <PushSettings key={getPlanScope()} userId={getPlanScope()} />}
+        <AccountHelpLinks />
         {message && <p className="oddk-syncFeedback" role="status">{message}</p>}
         <div className="oddk-profileFooter"><button type="button" className="oddk-logoutButton" disabled={busy} onClick={() => void perform(async () => { await disconnectSync(); profileDialog.current?.close(); })}><HiOutlineArrowRightOnRectangle aria-hidden="true" />{busy ? "로그아웃 중…" : "로그아웃"}</button><small>이 기기에서만 로그아웃돼요.</small></div>
       </div>
@@ -63,6 +65,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
         </>}
         <div className="oddk-syncActions"><button type="button" onClick={() => { try { exportPlanBackup(fallback); } catch (error) { setMessage((error as Error).message); } }}>현재 내용 백업</button><button type="button" onClick={() => { try { exportPlanBackup(fallback, true); } catch (error) { setMessage((error as Error).message); } }}>최근 보관 백업 받기</button></div>
         {message && <p className="oddk-syncFeedback" role="status">{message}</p>}
+        <AccountHelpLinks />
       </div>
     </dialog>
   </>;
