@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./landing.css";
 import { AppPreview } from "@/components/landing/app-preview";
 import {
@@ -194,6 +195,8 @@ export default function Home() {
           <div className="footer-brand">
             <Brand />
           </div>
+          <Link href="/privacy/">개인정보처리방침</Link>
+          <Link href="/support/">지원·문의</Link>
           <a href="#main">
             맨 위로 <Icon name="arrow-up" />
           </a>
