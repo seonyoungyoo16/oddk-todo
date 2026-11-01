@@ -61,6 +61,7 @@ import { filterClassifiedTasks } from "./classification-actions";
 import { sameValue } from "./json-equality";
 import { preserveManualRepeatEdits } from "../../supabase/functions/_shared/repeat-actions";
 import { useLocalDraft, DraftFeedback } from "./use-local-draft";
+import { markNativeUpdateReady } from "./native-updates";
 import { emptyWorkspace, validWorkspace, withoutEditor } from "./workspace-draft";
 import type { WorkspaceDraft, EditorDraft, DraftView } from "./workspace-draft";
 import initialPlan from "./initial-plan.json";
@@ -134,6 +135,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
   const plan = planLoad.ok ? planLoad.plan : EMPTY_PLAN;
   const today = useSyncExternalStore(subscribeToday, koreanToday, () => "");
   const workspace = useLocalDraft("workspace", emptyWorkspace, validWorkspace);
+  useEffect(() => { if (workspace.hydrated && planLoad.ok) markNativeUpdateReady(); }, [workspace.hydrated, planLoad.ok]);
   function field<K extends keyof WorkspaceDraft>(key: K): [WorkspaceDraft[K], (value: SetStateAction<WorkspaceDraft[K]>) => void] {
     return [workspace.value[key], value => workspace.set(current => ({ ...current, [key]: typeof value === "function" ? (value as (v: WorkspaceDraft[K]) => WorkspaceDraft[K])(current[key]) : value }))];
   }

@@ -1,0 +1,6 @@
+{
+  "appId": "com.oddk.todo",
+  "channel": "stable",
+  "manifestUrl": "https://seonyoungyoo16.github.io/oddk-todo/mobile-updates/stable.json",
+  "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArCPH77xJuNO0dlZwYILH\n61J0bWoRL4oXcUkNSPEiH2RAYr4edYcaxH2gOxMB4pY1iTfEVIngycUVHBPQzu5y\nHn2vKSA02FVfXn1x5Ko8YF1jpY2flz7LQ7eUtVcqOXSVBpYvynddhMqvo1lNgNnw\n3U8r0kyklz1fE6WhXkiXrpHurUKukceZlNbY1O90yJer6dtnwPTU9PKklgBh+P+z\n567jZo23w7WsMnroB2YUU19kZlzd15fOsBBKnQqfO6Ss2g4CLUCzf8M6e7yKF/J/\ncefYUz3vy3SA1NzIPsBaPaUqvy5f7egG18nj7MuP/gXhJ0nYE2LVam3AKaJiyGIU\nEwIDAQAB\n-----END PUBLIC KEY-----\n"
+}

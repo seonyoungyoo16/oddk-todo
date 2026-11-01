@@ -10,6 +10,11 @@ const eslintConfig = defineConfig([
     // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
+    "out-android/**",
+    "out-native/**",
+    "android/**",
+    "ios/**",
+    "artifacts/**",
     "build/**",
     "next-env.d.ts",
     ".sync-test-runtime/**",

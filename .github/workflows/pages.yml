@@ -35,6 +35,13 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
       - run: node tests/verify-push-export.mjs
+      - name: Build shared iOS and Android web bundle
+        run: npm run mobile:web
+      - name: Sign mobile update for installed apps
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+        run: npm run mobile:release
+        env:
+          MOBILE_UPDATE_SIGNING_KEY: ${{ secrets.MOBILE_UPDATE_SIGNING_KEY }}
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:

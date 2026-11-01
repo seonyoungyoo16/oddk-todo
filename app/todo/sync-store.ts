@@ -1,4 +1,7 @@
 import { syncClient } from "./supabase-client";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
+import { NATIVE_AUTH_REDIRECT } from "./native-options";
 import { alignPushBinding, clearPushBinding, stopPushForLogout } from "./push-client";
 import { validPlan } from "../../supabase/functions/_shared/plan";
 import { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } from "../../supabase/functions/_shared/plan-migration";
@@ -290,8 +293,13 @@ async function connectAccount(auth: AuthSession, fallback: string) {
 }
 export async function loginSync(provider: "google" | "github") {
   localStorage.setItem("oddk.sync.login-provider", provider);
-  const { error } = await syncClient().auth.signInWithOAuth({ provider, options: { redirectTo: `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/todo/` } });
+  const native = Capacitor.isNativePlatform();
+  const { data, error } = await syncClient().auth.signInWithOAuth({ provider, options: { redirectTo: native ? NATIVE_AUTH_REDIRECT : `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/todo/`, skipBrowserRedirect: native } });
   if (error) throw error;
+  if (native) {
+    if (!data.url) throw Error("로그인 주소를 만들지 못했어요. 다시 시도해주세요.");
+    await Browser.open({ url: data.url });
+  }
 }
 export async function disconnectSync() {
   const s = session();

@@ -20,6 +20,8 @@ test("invalid writes, local recovery and review backups preserve snapshots", () 
       if (name.includes("_shared/plan-migration")) return { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup };
       if (name.includes("_shared/plan")) return { validPlan };
       if (name === "./supabase-client") return { syncClient: () => { throw new Error("Offline test must not access auth/network"); } };
+      if (name === "@capacitor/core") return { Capacitor: { isNativePlatform: () => false } };
+      if (name === "@capacitor/browser" || name === "./native-options") return {};
       if (name === "./push-client") return { alignPushBinding: async () => {}, clearPushBinding: async () => {}, stopPushForLogout: async () => {} };
       throw new Error(`Unexpected dependency: ${name}`);
     },
