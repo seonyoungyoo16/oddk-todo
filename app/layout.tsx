@@ -17,7 +17,10 @@ export const metadata: Metadata = {
   description: "할 일과 여유를 시간표에 배치하고 목표와 연결하는 하루 계획",
   applicationName: "oddk",
   appleWebApp: { capable: true, title: "oddk", statusBarStyle: "default" },
-  icons: { apple: [{ url: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/oddk-icon-192.png`, sizes: "192x192", type: "image/png" }] },
+  icons: {
+    icon: [{ url: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/oddk-icon.svg?v=oddk-grid-check-1`, type: "image/svg+xml" }],
+    apple: [180, 192].map(size => ({ url: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/oddk-icon-${size}.png`, sizes: `${size}x${size}`, type: "image/png" })),
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
