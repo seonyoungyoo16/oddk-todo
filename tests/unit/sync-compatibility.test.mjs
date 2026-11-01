@@ -48,7 +48,7 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
       return new Response(JSON.stringify(remote));
     },
   });
-  return { storageEvent: key => window.dispatchEvent(Object.assign(new Event("storage"), { key })), store: exports, values, remote, calls, oauthCalls, privacyCalls, browserCalls, set privacyIntercept(fn) { privacyIntercept = fn; }, set intercept(fn) { intercept = fn; }, async jobs() { await new Promise(setImmediate); const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
+  return { storage, storageEvent: key => window.dispatchEvent(Object.assign(new Event("storage"), { key })), store: exports, values, remote, calls, oauthCalls, privacyCalls, browserCalls, set privacyIntercept(fn) { privacyIntercept = fn; }, set intercept(fn) { intercept = fn; }, async jobs() { await new Promise(setImmediate); const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
     async login(id) { login = id ? auth(id) : null; listener?.(id ? "SIGNED_IN" : "SIGNED_OUT", login); await this.jobs(); await new Promise(setImmediate); },
     async download() { exports.exportPlanBackup("null", true); return JSON.parse(await download.text()); }, cache() { return JSON.parse(values.get(key)); }, snapshot() { return JSON.parse(exports.getPlanSnapshot("null")); }, status() { return JSON.parse(exports.getSyncSnapshot()); } };
 }
@@ -112,6 +112,30 @@ test("uncertain deletion pauses account writes and resumes cleanup from receipt"
   await h.store.recoverAccountDeletion();
   assert.equal(h.values.has(key), false);
   assert.equal(h.store.hasPendingAccountDeletion(), false);
+});
+test("confirmed server deletion with failed AI receipt cleanup stays pending until durable retry succeeds", async () => {
+  for (const failure of ["throw", "silent", "readback"]) {
+    const h = harness(), guest = h.values.get(localKey), original = h.values.get(key);
+    const target = "oddk.ai-consent.v1.local.account-a";
+    h.values.set("oddk.ai-consent.v1.gateway.account-a", "stale gateway receipt"); h.values.set(target, "stale local receipt");
+    const keep = new Map([["oddk.ai-consent.v1.gateway.account-b", "other"], ["oddk.ai-consent.v1.local.local", "guest consent"]]);
+    for (const [k, value] of keep) h.values.set(k, value);
+    h.intercept = body => ["delete", "status"].includes(body.action) ? Response.json({ state: "deleted" }) : undefined;
+    const remove = h.storage.removeItem, read = h.storage.getItem;
+    h.storage.removeItem = k => { if (k === target && failure === "throw") throw Error("quota"); if (k === target && failure === "silent") return; remove(k); };
+    h.storage.getItem = k => { if (k === target && failure === "readback") throw Error("read denied"); return read(k); };
+    await assert.rejects(h.store.deleteSyncAccount(), /AI 동의 기록.*다시 확인/);
+    assert.equal(h.store.hasPendingAccountDeletion(), true); assert.equal(h.status().deletionPending, true);
+    assert.doesNotMatch(h.status().message, /계정과 계정 데이터를 삭제했어요/);
+    assert.equal(h.values.get(key), original); assert.equal(h.values.get(localKey), guest);
+    for (const [k, value] of keep) assert.equal(h.values.get(k), value);
+    h.storage.removeItem = remove; h.storage.getItem = read;
+    await h.store.recoverAccountDeletion();
+    assert.equal(h.store.hasPendingAccountDeletion(), false); assert.equal(h.values.has(target), false); assert.equal(h.values.has(key), false);
+    assert.match(h.status().message, /계정과 계정 데이터를 삭제했어요/);
+    assert.equal(h.values.get(localKey), guest); for (const [k, value] of keep) assert.equal(h.values.get(k), value);
+    assert.equal(h.calls.filter(call => call.action === "delete").length, 1, "recovery checks the receipt, it does not issue a second deletion");
+  }
 });
 test("Apple reauthentication failure preserves account and releases deletion pause", async () => {
   const h = harness(), before = h.values.get(key);

@@ -49,6 +49,14 @@ export function revokeAIConsent(context: AIConsentContext, storage: ConsentStora
   storage.removeItem(key);
   if (storage.getItem(key) !== null) throw Error("AI 동의 철회를 저장하지 못했어요. 현재 화면의 AI 요청은 중단했어요. 저장 설정을 확인해주세요.");
 }
+export function eraseAccountAIConsent(storage: ConsentStorage, userId: string): void {
+  if (!userId || userId === "local" || userId === "unreadable-session") throw Error("삭제할 계정의 정보를 확인해주세요.");
+  try {
+    for (const target of ["gateway", "local"] as const) revokeAIConsent({ scope: userId, target }, storage);
+  } catch {
+    throw Error("AI 동의 기록을 지우지 못했어요. 계정 삭제 결과를 다시 확인해주세요.");
+  }
+}
 export function requireAIConsent(context: AIConsentContext, storage: ConsentStorage, readContext: () => AIConsentContext, signal: AbortSignal): AIRequestPermit {
   const receipt = readAIConsent(context, storage);
   if (!receipt) throw Error("AI 전송 안내를 확인하고 동의해주세요. 일반 추가는 그대로 사용할 수 있어요.");

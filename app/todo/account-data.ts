@@ -1,3 +1,5 @@
+import { eraseAccountAIConsent } from "./ai-consent.ts";
+
 export const DELETION_KEY = "oddk.account-deletion.v1";
 export type PendingDeletion = { userId: string; operation: string };
 export function pendingDeletion(storage: Pick<Storage, "getItem">): PendingDeletion | null {
@@ -8,6 +10,9 @@ export function pendingDeletion(storage: Pick<Storage, "getItem">): PendingDelet
   return value;
 }
 export function eraseAccountData(storage: Storage, userId: string) {
+  // Fail before clearing recoverable plan data if either receipt cannot be erased.
+  // finishAccountDeletion removes its retry marker only after this succeeds.
+  eraseAccountAIConsent(storage, userId);
   const plan = `oddk.sync.plan.${userId}`;
   const drafts = `oddk.drafts.v1.${encodeURIComponent(userId)}.`;
   const keys = Array.from({ length: storage.length }, (_, i) => storage.key(i)).filter((key): key is string => key !== null);
