@@ -68,6 +68,9 @@
 .oddk-page .oddk-settingsClassification .oddk-filterFields { align-items: flex-start; }
 .oddk-settingsClassification .oddk-availabilityActions { margin-top: 20px; }
 .oddk-settingsPanel :is(button, input, summary):focus-visible { outline: 2px solid var(--settings-accent); outline-offset: 4px; }
+.oddk-accountHelpLinks { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; font-size: var(--oddk-font-label); }
+.oddk-accountHelpLinks > a { display: inline-flex; align-items: center; min-height: 44px; color: var(--oddk-accent-text); text-decoration: underline; text-underline-offset: 3px; }
+
 @media (max-width: 760px) {
   .oddk-settingsTabs { gap: 21px; margin-bottom: 21px; }
   .oddk-settingsCard { padding: 24px; }
