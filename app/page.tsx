@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title: "oddk — 오늘 할 일, 가볍게 시작.",
   description:
     "복잡한 할 일은 한곳에, 오늘의 시간은 여유롭게. 내 속도에 맞는 하루를 시작하는 작은 계기, oddk.",
-  icons: { icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/oddk-icon.svg` },
+  icons: { icon: `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/oddk-icon.svg?v=oddk-grid-check-1` },
 };
 
 export default function Home() {
