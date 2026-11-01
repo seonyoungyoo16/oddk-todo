@@ -9,6 +9,8 @@ export function decodeDraft<T>(raw: string | null, valid: (value: unknown) => va
   return value;
 }
 export function saveDraft<T>(storage: DraftStorage, scope: string, slot: string, data: T, valid: (value: unknown) => value is T) {
+  const deleting = storage.getItem("oddk.account-deletion.v1");
+  if (deleting && JSON.parse(deleting).userId === scope) throw new Error("계정 삭제 결과를 먼저 확인해주세요.");
   if (!valid(data)) throw new Error("초안 형식을 확인해주세요.");
   const key = draftKey(scope, slot);
   // Do not overwrite an unreadable/future draft with an empty initial value.

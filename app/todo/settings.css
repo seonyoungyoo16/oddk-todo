@@ -1,3 +1,4 @@
+@import "./ai-consent.css";
 .oddk-settingsPanel {
   --settings-muted: var(--oddk-muted);
   --settings-accent: var(--oddk-editor-accent);

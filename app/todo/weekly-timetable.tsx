@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { HiOutlineChevronLeft, HiOutlineChevronRight } from "react-icons/hi2";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan";
 import { isPlanDate } from "../../supabase/functions/_shared/plan";
@@ -11,6 +11,7 @@ import { TimetableAddDialog } from "./timetable-add-dialog";
 import type { NewTimetableTaskPreview } from "./timetable-add-dialog";
 import { timetableTaskDragType, timetableDropMinute } from "./timetable-drag";
 import type { PlanningIssue } from "./planning-alert-model";
+import { TimetableDetails } from "./timetable-details";
 
 type Props = { plan: Plan; tasks: Task[]; date: string; today: string; onSelectDate: (date: string) => void; onEdit: (task: Task) => void; onMove: (task: Task, delta: number, days?: number) => void; onResize: (task: Task, minutes: number) => void; onPlace?: (id: string, date: string, time: string) => void; onCreate: (preview: NewTimetableTaskPreview) => string | null; newTaskContext?: { categoryId: string | null; tagIds: string[] }; highlightedIssues?: PlanningIssue[]; focusTaskId?: string };
 const pixelsPerMinute = 1;
@@ -20,6 +21,8 @@ const shortDate = (date: string) => date.slice(5).replace("-", ".");
 export function WeeklyTimetable({ plan, tasks, date, today, onSelectDate, onEdit, onMove, onResize, onPlace, onCreate, newTaskContext, highlightedIssues = [], focusTaskId }: Props) {
   const [offset, setOffset] = useState(0);
   const [adding, setAdding] = useState<{ date: string; time: string } | null>(null);
+  const [inspected, setInspected] = useState<{ id: string; date: string } | null>(null);
+  const inspectionOpener = useRef<HTMLElement | null>(null);
   const [dropHint, setDropHint] = useState<{ date: string; minute: number } | null>(null);
   useEffect(() => {
     const clear = () => setDropHint(null);
@@ -29,8 +32,18 @@ export function WeeklyTimetable({ plan, tasks, date, today, onSelectDate, onEdit
   }, []);
   const anchor = shiftDate(date, offset * 7) ?? date;
   const days = useMemo(() => buildWeeklyTimetable(plan, anchor, tasks), [plan, anchor, tasks]);
+  const inspectedDay = days.find(day => day.date === inspected?.date);
+  const inspectedTask = inspectedDay?.tasks.find(task => task.id === inspected?.id);
+  function inspect(id: string, date: string) {
+    inspectionOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setInspected({ id, date });
+  }
+  function closeInspection() {
+    setInspected(null);
+    if (inspectionOpener.current?.getClientRects().length) inspectionOpener.current.focus({ preventScroll: true });
+  }
   const initialMinute = days.find(day => day.date === date)?.tasks.find(task => task.id === focusTaskId)?.start ?? Math.min(540, ...(days.find(day => day.date === date)?.tasks ?? []).map(task => task.start));
-  const shortTasks = days.flatMap(day => day.tasks.filter(task => task.segmentMinutes < 20).map(task => ({ date: day.date, task })));
+  const shortTasks = days.flatMap(day => day.tasks.filter(task => task.segmentMinutes < 20 || task.segmentWork < 16).map(task => ({ date: day.date, task })));
   if (!days.length) return <p>시간표를 불러오고 있어요.</p>;
 
   return <section className="oddk-weekTable" aria-label="주간 시간표">
@@ -67,11 +80,11 @@ export function WeeklyTimetable({ plan, tasks, date, today, onSelectDate, onEdit
               const tone = timetablePastels[timetableTone(task)];
               const issue = day.date === date ? highlightedIssues.find(issue => issue.id === task.id) : undefined;
               const description = `${dayLabel(day.date)}, ${task.title}, ${clockLabel(task.start)}부터 ${clockLabel(task.end)}, 작업 ${task.segmentWork}분, 여유 ${task.segmentBuffer}분${task.continuesBefore ? ", 전날부터 이어짐" : ""}${task.continuesAfter ? ", 다음 날 계속" : ""}${task.conflict ? ", 시간 겹침" : ""}`;
-              return <TimelineTask key={task.id} taskId={task.id} highlighted={Boolean(issue)} title={task.title} notes={task.notes} description={description + (issue ? `, ${issue.reasons.join(" · ")}` : "")} start={task.start} end={task.end} pixelsPerMinute={pixelsPerMinute} conflict={task.conflict} onEdit={() => onEdit(task)} sourceDate={day.date} onMove={(delta, dayOffset) => onMove(task, delta, dayOffset)} duration={!task.continuesAfter ? { minutes: task.minutes!, bufferMinutes: task.bufferMinutes! } : undefined} onResize={minutes => onResize(task, minutes)} style={{ top: task.start * pixelsPerMinute, height: task.segmentMinutes * pixelsPerMinute, left: `${task.lane / task.columns * 100}%`, width: `${100 / task.columns}%`, "--tt-fill": tone.fill, "--tt-ink": tone.ink, "--tt-dark-fill": tone.darkFill, "--tt-dark-ink": tone.darkInk } as CSSProperties}>
+              return <TimelineTask key={task.id} taskId={task.id} highlighted={Boolean(issue)} title={task.title} notes={task.notes} description={description + (issue ? `, ${issue.reasons.join(" · ")}` : "")} start={task.start} end={task.end} pixelsPerMinute={pixelsPerMinute} conflict={task.conflict} selected={inspected?.id === task.id && inspected.date === day.date} actionLabel="클릭하여 상세 보기" onEdit={() => inspect(task.id, day.date)} sourceDate={day.date} onMove={(delta, dayOffset) => onMove(task, delta, dayOffset)} duration={!task.continuesAfter ? { minutes: task.minutes!, bufferMinutes: task.bufferMinutes! } : undefined} onResize={minutes => onResize(task, minutes)} style={{ top: task.start * pixelsPerMinute, height: task.segmentMinutes * pixelsPerMinute, left: `${task.lane / task.columns * 100}%`, width: `${100 / task.columns}%`, "--tt-fill": tone.fill, "--tt-ink": tone.ink, "--tt-dark-fill": tone.darkFill, "--tt-dark-ink": tone.darkInk } as CSSProperties}>
                 {delta => {
                   const segment = Math.max(0, task.segmentMinutes + delta), buffer = delta === 0 ? task.segmentBuffer : Math.min(task.bufferMinutes!, segment), work = segment - buffer;
-                  return <>{issue && <span className="oddk-timetableIssueBadge" aria-hidden="true">!</span>}{work > 0 && <span className="oddk-slotWork" style={{ height: work * pixelsPerMinute }}><strong>{task.title}</strong><span>{clockLabel(task.start)}–{clockLabel(task.end + delta)}</span>{task.conflict && <span>시간 겹침</span>}</span>}
-                    {buffer > 0 && <span className="oddk-slotBuffer" style={{ height: buffer * pixelsPerMinute }}>{!work && <strong>{task.title}</strong>}<span>여유 {buffer}분</span></span>}</>;
+                  return <>{issue && <span className="oddk-timetableIssueBadge" aria-hidden="true">!</span>}{work > 0 && <span className="oddk-slotWork" data-compact={work * pixelsPerMinute < 48} data-tiny={work * pixelsPerMinute < 16} style={{ height: work * pixelsPerMinute }}><strong>{task.title}</strong><span>{clockLabel(task.start)}–{clockLabel(task.end + delta)}</span></span>}
+                    {buffer > 0 && <span className="oddk-slotBuffer" data-compact={buffer * pixelsPerMinute < 16} style={{ height: buffer * pixelsPerMinute }}>{!work && <strong>{task.title}</strong>}<span>여유 {buffer}분</span></span>}</>;
                 }}
               </TimelineTask>;
             })}
@@ -80,7 +93,8 @@ export function WeeklyTimetable({ plan, tasks, date, today, onSelectDate, onEdit
       </div>
     </TimelineScroll>
     {!days.some(day => day.tasks.length || day.fixed.length) && <p className="oddk-weekEmpty">빈 시간을 클릭해 이 주의 할 일을 추가해보세요.</p>}
-    {shortTasks.length > 0 && <div className="oddk-weekShort" aria-label="짧은 일정">{shortTasks.map(({ date: taskDate, task }) => <button key={`${taskDate}:${task.id}`} type="button" onClick={() => onEdit(task)}>{shortDate(taskDate)} {clockLabel(task.start)} · {task.title}</button>)}</div>}
+    {shortTasks.length > 0 && <div className="oddk-weekShort" aria-label="짧은 일정">{shortTasks.map(({ date: taskDate, task }) => <button key={`${taskDate}:${task.id}`} type="button" onClick={() => inspect(task.id, taskDate)}>{shortDate(taskDate)} {clockLabel(task.start)} · {task.title}</button>)}</div>}
+    {inspectedTask && inspectedDay && <TimetableDetails key={inspectedDay.date + inspectedTask.id} task={inspectedTask} date={inspectedDay.date} start={inspectedTask.start} end={inspectedTask.end} work={inspectedTask.segmentWork} buffer={inspectedTask.segmentBuffer} conflict={inspectedTask.conflict} onClose={closeInspection} onEdit={() => { closeInspection(); onEdit(inspectedTask); }} />}
     {adding && <TimetableAddDialog plan={plan} date={adding.date} time={adding.time} context={newTaskContext} onClose={() => setAdding(null)} onCreate={onCreate} />}
   </section>;
 }

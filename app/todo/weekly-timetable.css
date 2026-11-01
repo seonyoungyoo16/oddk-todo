@@ -42,12 +42,20 @@
 .oddk-weekTable .oddk-timeSlotGroup { position:absolute; z-index:2; min-width:0; }
 .oddk-weekTable .oddk-timeSlotGroup:focus-within { z-index:9; }
 .oddk-weekTable .oddk-timeSlotGroup[data-dragging="true"] { z-index:20; }
-.oddk-page .oddk-weekTable .oddk-timeSlot { display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; border:1px solid var(--oddk-surface); border-radius:0; background:var(--tt-fill); color:var(--tt-ink); text-align:left; }
+.oddk-page .oddk-weekTable .oddk-timeSlot { display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; border:0; border-radius:0; box-shadow:inset 0 0 0 1px var(--oddk-surface); overflow:hidden; background:var(--tt-fill); color:var(--tt-ink); text-align:left; }
 .oddk-weekTable .oddk-timeSlot:hover { filter:brightness(.98); }
 .oddk-weekTable .oddk-timeSlot[data-conflict="true"] { box-shadow:inset 0 0 0 1px #bb7c63; border-style:dashed; }
-.oddk-weekTable .oddk-slotWork { padding:4px 4px 2px; background:transparent; color:inherit; }
-.oddk-page .oddk-weekTable .oddk-slotWork strong { padding:0 8px 0 0; white-space:normal; overflow-wrap:anywhere; font-size:var(--oddk-font-small); line-height:1.35; font-weight:600; }
-.oddk-weekTable .oddk-slotWork > span { margin-top:4px; font-size:var(--oddk-font-small); line-height:1.3; color:inherit; }
+.oddk-weekTable .oddk-slotWork { flex:0 0 auto; min-height:0; overflow:hidden; padding:4px 4px 2px; background:transparent; color:inherit; }
+.oddk-page .oddk-weekTable .oddk-slotWork strong { display:block; flex:none; width:100%; padding:0 8px 0 0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:var(--oddk-font-small); line-height:16px; font-weight:600; }
+.oddk-weekTable .oddk-slotWork > span { flex:none; margin-top:4px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-size:var(--oddk-font-small); line-height:16px; color:inherit; }
+.oddk-weekTable .oddk-slotWork[data-compact="true"] { display:flex; align-items:center; padding:0 4px; }
+.oddk-page .oddk-weekTable .oddk-slotWork[data-compact="true"] > strong { display:block; flex:none; min-height:0; width:100%; padding:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; line-height:16px; }
+.oddk-weekTable .oddk-slotWork[data-compact="true"] > span { display:none; }
+.oddk-weekTable .oddk-slotWork[data-tiny="true"] > strong { visibility:hidden; }
+.oddk-weekTable .oddk-slotBuffer { flex:0 0 auto; min-height:0; overflow:hidden; }
+.oddk-weekTable .oddk-slotBuffer[data-compact="true"] > :is(span,strong) { display:none; }
+.oddk-page .oddk-weekTable .oddk-timeSlot[aria-pressed="true"] { box-shadow:inset 0 0 0 2px var(--oddk-focus); }
+.oddk-weekShort > button { min-height:44px; max-width:100%; white-space:normal; overflow-wrap:anywhere; }
 .oddk-weekTable .oddk-slotBuffer { justify-content:center; padding:0 4px; background:repeating-linear-gradient(135deg,transparent 0 4px,#ffffff44 4px 5px); color:inherit; border-top:1px dashed #ffffffbb; font-size:8px; white-space:nowrap; }
 .oddk-weekTable .oddk-timelineGrip { top:3px; right:2px; width:9px; height:9px; opacity:.5; }
 .oddk-page .oddk-weekTable .oddk-resizeHandle { position:absolute; z-index:3; bottom:0; left:1px; right:1px; display:flex; justify-content:center; align-items:center; width:calc(100% - 2px); height:8px; min-height:0; padding:0; border:0; border-radius:0; background:transparent; color:var(--tt-ink); cursor:ns-resize; touch-action:none; }
@@ -64,14 +72,27 @@
 .oddk-weekDropMarker span { position:absolute; left:2px; bottom:2px; padding:2px 4px; border-radius:var(--oddk-radius-control); background:var(--oddk-brand); color:#fff; font-size:var(--oddk-font-small); white-space:nowrap; }
 .oddk-placementDialog label { display:grid; gap:8px; margin:16px 0; font-size:13px; }
 .oddk-placementDialog :is(select,input) { width:100%; min-width:0; min-height:var(--oddk-control-height); padding:8px 8px; border:1px solid var(--oddk-border,#e0e4ec); border-radius:var(--oddk-radius-control); background:var(--oddk-surface,#fff); color:inherit; font:inherit; }
-.oddk-page .oddk-timetableAddDialog { max-height:calc(100dvh - 32px); overflow:hidden; }
-.oddk-timetableAddDialog .oddk-dialogForm { display:flex; flex-direction:column; max-height:calc(100dvh - 32px); padding:0; }
-.oddk-timetableAddDialog .oddk-dialogHeader { flex-shrink:0; margin:0; padding:20px 24px 12px; }
-.oddk-timetableAddBody { min-height:0; overflow:auto; padding:0 24px; }
-.oddk-timetableAddDialog .oddk-dialogActions { flex-shrink:0; margin:0; padding:16px 24px 20px; }
-.oddk-timetableAddDialog textarea { width:100%; min-height:44px; padding:8px; border:1px solid var(--oddk-border,#e0e4ec); border-radius:var(--oddk-radius-card); background:var(--oddk-surface,#fff); color:inherit; font:inherit; resize:vertical; }
-.oddk-timetableAddDialog label small { color:var(--oddk-muted,#7b879e); font-size:var(--oddk-font-small); }
-.oddk-newTaskDuration > h3 { margin:12px 0; font-size:var(--oddk-font-section); font-weight:500; }
+.oddk-page .oddk-timetableAddDialog { width:min(600px,calc(100% - 32px)); max-height:calc(100dvh - 32px); overflow:hidden; }
+.oddk-timetableAddDialog .oddk-dialogForm { display:flex; flex-direction:column; max-height:calc(100dvh - 34px); padding:0; }
+.oddk-timetableAddDialog .oddk-dialogHeader { flex-shrink:0; margin:0; padding:8px 20px; border-bottom:1px solid var(--oddk-border); }
+.oddk-timetableAddDialog .oddk-dialogHeader h2 { font-size:18px; }
+.oddk-timetableAddBody { display:grid; gap:14px; min-height:0; overflow:auto; padding:16px 20px; }
+.oddk-timetableAddDialog .oddk-dialogActions { flex-shrink:0; margin:0; padding:12px 20px; }
+.oddk-timetableAddDialog label { min-width:0; gap:6px; margin:0; font-size:13px; font-weight:600; line-height:18px; }
+.oddk-timetableAddDialog :is(input,textarea) { font-size:14px; font-weight:400; line-height:20px; }
+.oddk-timetableAddDialog textarea { width:100%; min-height:44px; padding:10px; border:1px solid var(--oddk-border,#e0e4ec); border-radius:var(--oddk-radius-control); background:var(--oddk-surface,#fff); color:inherit; font:inherit; font-weight:400; resize:vertical; }
+.oddk-timetableAddDialog #timetable-new-notes { min-height:64px; }
+.oddk-timetableAddDialog label small { display:block; color:var(--oddk-muted); font-size:var(--oddk-font-small); font-weight:400; line-height:16px; }
+.oddk-timetableAddDialog .oddk-placementFields { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+.oddk-newTaskDuration > h3 { margin:0 0 4px; font-size:14px; font-weight:600; line-height:20px; }
+.oddk-timetableAddDialog .oddk-editorTimeGrid { gap:12px; margin:0; }
+.oddk-timetableAddDialog .oddk-editorTimeGrid label { gap:6px; color:var(--oddk-muted); font-size:12px; font-weight:400; }
+.oddk-timetableAddDialog .oddk-editorNumber input { padding-right:40px; color:var(--oddk-heading); }
+.oddk-timetableAddDialog .oddk-editorUnit { width:36px; border-color:var(--oddk-border); }
+.oddk-timetableAddDialog .oddk-editorTimeTotal { gap:10px; min-height:56px; padding:8px 12px; background:var(--oddk-highlight); color:var(--oddk-accent-text); font-size:12px; font-weight:600; line-height:20px; }
+.oddk-timetableAddDialog .oddk-editorTimeTotal > svg { width:16px; height:16px; }
+.oddk-timetableAddDialog .oddk-editorTimeTotal small { display:block; font-size:13px; font-weight:400; }
+.oddk-timetableAddDialog .oddk-placementWarning { margin:0; }
 .oddk-weekMeta > .oddk-weekAddHint { font-size:var(--oddk-font-small); }
 .oddk-placementFields { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .oddk-placementSummary { margin-top:16px; padding:12px; border-radius:var(--oddk-radius-card); background:var(--oddk-highlight); color:var(--oddk-accent-text); font-size:var(--oddk-font-body); font-weight:600; }
@@ -85,3 +106,6 @@
 [data-theme="dark"] .oddk-weekFixed { background:repeating-linear-gradient(135deg,#303744 0 5px,#353d4b 5px 6px); border-color:#596474; color:#c1c8d3; }
 [data-theme="dark"] .oddk-placementSummary { background:#352f44; color:#e2d7f3; }
 @media(max-width:640px) { .oddk-page .oddk-weekTable .oddk-timelineScroll { height:480px; max-height:65dvh; } .oddk-placementFields { grid-template-columns:1fr; gap:0; } }
+@media(max-width:520px) { .oddk-page .oddk-timetableAddDialog { width:calc(100% - 56px); } }
+@media(max-width:520px) and (min-height:740px) { .oddk-page .oddk-timetableAddDialog { inset-block-start:60px; max-height:calc(100dvh - 92px); } .oddk-timetableAddDialog .oddk-dialogForm { max-height:calc(100dvh - 94px); } }
+@media(max-width:360px) { .oddk-page .oddk-timetableAddDialog { width:calc(100% - 24px); } }

@@ -17,7 +17,8 @@ export { isClock, isPlanDate } from "./calendar.ts";
 export type Priority = "high" | "normal" | "low";
 export type Task = { id: string; title: string; minutes: number | null; bufferMinutes: number | null; startTime: string | null; priority: Priority; done: boolean; plannedDate: string | null; notes?: string; endTime?: string | null; endDate?: string | null; endDayOffset?: 0 | 1 | null } & TaskClassification & TaskPlanning & TaskHierarchy & RepeatTaskFields;
 export type Mandala = { goal: string; areas: Array<{ title: string; taskIds: string[] }> };
-export type Plan = { schemaVersion: 5 | 6; goalTree: GoalTree; tasks: Task[]; start: string; mandala?: Mandala; review?: string; reviewsByDate: Record<string, string>; availabilityByDate?: Record<string, Availability>; categories?: Category[]; tags?: Tag[]; recurrences?: RepeatSeries[] };
+export type GoalBoard = { id: string; goal: string; groupIds: string[]; layout?: Mandala };
+export type Plan = { schemaVersion: 5 | 6; goalTree: GoalTree; goalBoards?: GoalBoard[]; tasks: Task[]; start: string; mandala?: Mandala; review?: string; reviewsByDate: Record<string, string>; availabilityByDate?: Record<string, Availability>; categories?: Category[]; tags?: Tag[]; recurrences?: RepeatSeries[] };
 export type LegacyPlan = { tasks: Array<Omit<Task, "plannedDate">>; start: string; mandala?: Mandala; review?: string };
 export type PlanV2 = Omit<Plan, "schemaVersion" | "goalTree" | "recurrences"> & { schemaVersion: 2; goalTree?: GoalTree };
 export type PlanV3 = Omit<PlanV2, "schemaVersion"> & { schemaVersion: 3 };
@@ -45,6 +46,25 @@ export function validMandala(value: unknown): value is Mandala {
     Array.isArray(value.areas) && value.areas.length === 8 && value.areas.every((area: unknown) =>
       record(area) && typeof area.title === "string" && area.title.length <= 60 &&
       Array.isArray(area.taskIds) && area.taskIds.length === 8 && area.taskIds.every((id: unknown) => typeof id === "string" && id.length <= 100));
+}
+
+// Board slots reference the shared goal tree. Empty slots may reserve an ID
+// without creating a goal group; task and recurrence links keep their IDs.
+export function validGoalBoards(value: unknown, tree: GoalTree): value is GoalBoard[] {
+  if (!Array.isArray(value) || !value.length || value.length > 32) return false;
+  const boards = new Set<string>(), groups = new Set<string>();
+  const id = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 100 && value.trim() === value && !/[\u0000-\u001f\u007f]/.test(value);
+  for (const board of value) {
+    if (!record(board) || !id(board.id) || ["__proto__", "constructor", "prototype"].includes(board.id) || boards.has(board.id) || typeof board.goal !== "string" || board.goal.length > 100 ||
+      !Array.isArray(board.groupIds) || board.groupIds.length < 8 || board.groupIds.length > 32 ||
+      board.layout !== undefined && !validMandala(board.layout)) return false;
+    boards.add(board.id);
+    for (const group of board.groupIds) {
+      if (!id(group) || groups.has(group)) return false;
+      groups.add(group);
+    }
+  }
+  return tree.groups.every(group => groups.has(group.id));
 }
 
 
@@ -88,5 +108,6 @@ export function validPlan(value: unknown): value is PlanData {
   if (!validTaxonomyReferences(value.tasks, value.categories as Category[] | undefined, value.tags as Tag[] | undefined)) return false;
   if ((value.schemaVersion === 5 || value.schemaVersion === 6) && (!validGoalTree(value.goalTree, value.tasks, value.mandala as Mandala | undefined) || !validTaskParents(value.tasks))) return false;
   if (value.schemaVersion !== 5 && value.schemaVersion !== 6 && value.goalTree !== undefined && !validGoalTree(value.goalTree, value.tasks, value.mandala as Mandala | undefined)) return false;
+  if (value.goalBoards !== undefined && (!(value.schemaVersion === 5 || value.schemaVersion === 6) || !validGoalBoards(value.goalBoards, value.goalTree as GoalTree))) return false;
   return validRepeatPlan(value as Plan);
 }

@@ -2,7 +2,7 @@
 import { AutoTextarea } from "./auto-textarea";
 import { sortTasks, taskImportance } from "./task-order";
 
-import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { HiOutlineArrowRight, HiOutlineXMark } from "react-icons/hi2";
 
 import type { Task, Mandala } from "../../supabase/functions/_shared/plan";
@@ -16,13 +16,44 @@ export function safeMandala(value: Mandala | undefined): Mandala {
 const positions = [0, 1, 2, 3, 5, 6, 7, 8];
 const validTime = hasTaskTime;
 const labels = { high: "높음", normal: "보통", low: "낮음" };
+const compactMandalaQuery = "(max-width: 899px)";
+function subscribeCompactMandala(notify: () => void) {
+  const media = window.matchMedia(compactMandalaQuery);
+  media.addEventListener("change", notify);
+  return () => media.removeEventListener("change", notify);
+}
+const compactMandalaSnapshot = () => window.matchMedia(compactMandalaQuery).matches;
+const desktopMandalaSnapshot = () => false;
 
-export function MandalaView({ tasks, draft, dirty, onChange, onSave, onEdit }: { tasks: Task[]; draft: Mandala; dirty: boolean; onChange: (value: Mandala) => void; onSave: (value: Mandala) => boolean; onEdit: (task: Task) => void }) {
-  const [message, setMessage] = useState("");
+export function MandalaView({ tasks, draft, toolbar, onChange, onEdit }: { tasks: Task[]; draft: Mandala; toolbar?: ReactNode; onChange: (value: Mandala) => void; onEdit: (task: Task) => void }) {
+  const compact = useSyncExternalStore(subscribeCompactMandala, compactMandalaSnapshot, desktopMandalaSnapshot);
+  const [activeArea, setActiveArea] = useState<number | null>(null);
+  const [editingName, setEditingName] = useState<"core" | number | null>(null);
   const [fitHeight, setFitHeight] = useState<number | null>(null);
   const statusId = useId();
   const resetDialog = useRef<HTMLDialogElement>(null);
+  const nameDialog = useRef<HTMLDialogElement>(null);
+  const nameField = useRef<HTMLTextAreaElement>(null);
+  const nameTrigger = useRef<HTMLElement | null>(null);
+  const coreButton = useRef<HTMLButtonElement>(null);
+  const areaButtons = useRef<(HTMLButtonElement | null)[]>([]);
+  const slotPickers = useRef<(HTMLSelectElement | null)[]>([]);
+  const compactHeading = useRef<HTMLHeadingElement>(null);
   const plannerScroll = useRef<HTMLDivElement>(null);
+  const hasGoal = Boolean(draft.goal.trim());
+  const activeAreas = draft.areas.map(area => hasGoal && Boolean(area.title.trim()));
+  const selectedArea = activeArea !== null && activeAreas[activeArea] ? activeArea : null;
+  const invalidActiveArea = activeArea !== null && !activeAreas[activeArea];
+  useEffect(() => {
+    if (!invalidActiveArea) return;
+    const frame = requestAnimationFrame(() => { setActiveArea(null); compactHeading.current?.focus(); });
+    return () => cancelAnimationFrame(frame);
+  }, [invalidActiveArea]);
+  useEffect(() => {
+    if (editingName === null) return;
+    nameDialog.current?.showModal();
+    nameField.current?.focus();
+  }, [editingName]);
   useEffect(() => {
     const element = plannerScroll.current;
     if (!element) return;
@@ -47,43 +78,98 @@ export function MandalaView({ tasks, draft, dirty, onChange, onSave, onEdit }: {
     observer.observe(element.parentElement!);
     window.addEventListener("resize", measure);
     return () => { observer.disconnect(); window.removeEventListener("resize", measure); cancelAnimationFrame(frame); };
-  }, []);
-  const hasGoal = Boolean(draft.goal.trim());
-  const activeAreas = draft.areas.map(area => hasGoal && Boolean(area.title.trim()));
+  }, [compact]);
   const linkedIds = new Set(draft.areas.flatMap(area => area.taskIds).filter(Boolean));
   const availableTasks = tasks.filter(task => !linkedIds.has(task.id));
-  const change = (next: Mandala) => { onChange(next); setMessage(""); };
+  const change = onChange;
   function areaTitle(index: number, title: string) {
+    if (!title.trim() && activeArea === index) setActiveArea(null);
     change({ ...draft, areas: draft.areas.map((area, i) => i === index ? { ...area, title } : area) });
   }
-  function cell(areaIndex: number, cellIndex: number) {
+  function coreTitle(goal: string) {
+    if (!goal.trim()) setActiveArea(null);
+    change({ ...draft, goal });
+  }
+  function showArea(index: number) {
+    setActiveArea(index);
+    requestAnimationFrame(() => compactHeading.current?.focus());
+  }
+  function showOverview() {
+    const previous = selectedArea;
+    setActiveArea(null);
+    requestAnimationFrame(() => (previous === null ? coreButton.current : areaButtons.current[previous])?.focus());
+  }
+  function editName(target: "core" | number) {
+    nameTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setEditingName(target);
+  }
+  function finishNameEdit() {
+    const area = typeof editingName === "number" ? editingName : null;
+    setEditingName(null);
+    if (area !== null && activeAreas[area]) {
+      setActiveArea(area);
+      requestAnimationFrame(() => {
+        if (nameTrigger.current?.isConnected && nameTrigger.current.getClientRects().length) nameTrigger.current.focus();
+        else compactHeading.current?.focus();
+      });
+    } else {
+      if (!hasGoal || area !== null) setActiveArea(null);
+      requestAnimationFrame(() => {
+        if (nameTrigger.current?.isConnected && nameTrigger.current.getClientRects().length && !nameTrigger.current.hasAttribute("disabled")) nameTrigger.current.focus();
+        else (coreButton.current ?? compactHeading.current)?.focus();
+      });
+    }
+  }
+  function cell(areaIndex: number, cellIndex: number, small = false) {
     const area = draft.areas[areaIndex];
     const disabled = !activeAreas[areaIndex];
     if (disabled) return <div className="oddk-mandalaCell" data-inactive="true" aria-hidden="true" key={`cell-${cellIndex}`} />;
     const id = area.taskIds[cellIndex] ?? "";
     const task = tasks.find((item) => item.id === id);
     const connect = (taskId: string) => change({ ...draft, areas: draft.areas.map((item, i) => i === areaIndex ? { ...item, taskIds: Array.from({ length: 8 }, (_, j) => j === cellIndex ? taskId : item.taskIds[j] ?? "") } : item) });
+    const slotName = `${area.title} 실행 ${cellIndex + 1}`;
+    const unlink = () => { connect(""); if (small) requestAnimationFrame(() => slotPickers.current[cellIndex]?.focus()); };
     return <div className="oddk-mandalaCell" data-done={task?.done} key={`cell-${cellIndex}`}>
-      {task ? <><button className="oddk-mandalaTask" type="button" disabled={disabled} aria-label={`${task.title} 수정`} aria-describedby={task.done ? `${statusId}-${areaIndex}-${cellIndex}` : undefined} onClick={() => onEdit(task)}><span>{task.title}</span></button>
+      {small && <span className="oddk-mandalaSlotLabel">실행 {cellIndex + 1}</span>}
+      {small && !task && !id && <span className="oddk-mandalaConnectLabel">할 일 연결</span>}
+      {task ? <><button className="oddk-mandalaTask" type="button" disabled={disabled} aria-label={small ? `${slotName} ${task.title} 수정` : `${task.title} 수정`} aria-describedby={task.done ? `${statusId}-${areaIndex}-${cellIndex}` : undefined} onClick={() => onEdit(task)}><span>{task.title}</span>{small && task.done && <span className="oddk-mandalaDone">완료</span>}</button>
         {task.done && <span id={`${statusId}-${areaIndex}-${cellIndex}`} className="oddk-srOnly">완료한 할 일</span>}
-        <button className="oddk-mandalaUnlink" type="button" disabled={disabled} aria-label={`${areaIndex + 1}번 목표의 실행 ${cellIndex + 1} 연결 해제`} title="할 일 연결 해제" onClick={() => connect("")}><HiOutlineXMark aria-hidden="true" /></button></> : <select disabled={disabled} aria-label={`${areaIndex + 1}번 목표의 실행 ${cellIndex + 1}`} value={id} onChange={(event) => connect(event.target.value)}>
-        <option value="">-</option>{id && !task && <option value={id}>연결된 할 일을 찾을 수 없어요</option>}{availableTasks.map((item) => <option key={item.id} value={item.id}>[{item.summaryOnly ? "요약" : item.done ? "완료" : "진행 중"}] {item.title}</option>)}
-      </select>}
+        <button className="oddk-mandalaUnlink" type="button" disabled={disabled} aria-label={small ? `${slotName} 연결 해제` : `${areaIndex + 1}번 목표의 실행 ${cellIndex + 1} 연결 해제`} title="할 일 연결 해제" onClick={unlink}>{small ? "연결 해제" : <HiOutlineXMark aria-hidden="true" />}</button></> : <>
+      {small && id && <span className="oddk-mandalaMissing">연결된 할 일을 찾을 수 없어요</span>}
+      <select ref={small ? element => { slotPickers.current[cellIndex] = element; } : undefined} disabled={disabled} aria-label={small ? `${slotName} 할 일 연결` : `${areaIndex + 1}번 목표의 실행 ${cellIndex + 1}`} value={id} onChange={(event) => connect(event.target.value)}>
+        <option value="">{small ? "+ 할 일 연결" : "-"}</option>{id && !task && <option value={id}>연결된 할 일을 찾을 수 없어요</option>}{availableTasks.map((item) => <option key={item.id} value={item.id}>[{item.summaryOnly ? "요약" : item.done ? "완료" : "진행 중"}] {item.title}</option>)}
+        {small && !availableTasks.length && <option disabled>연결할 할 일이 없어요</option>}
+      </select>{small && id && <button className="oddk-mandalaUnlink" type="button" aria-label={`${slotName} 연결 해제`} onClick={unlink}>연결 해제</button>}</>}
     </div>;
   }
   function centerCell(index: number) {
-    if (index === 4) return <label key={index} className="oddk-mandalaGoal"><span className="oddk-mandalaFieldLabel">핵심 목표</span><AutoTextarea aria-label="핵심 목표" maxLength={100} value={draft.goal} placeholder="목표 입력" onChange={event => change({ ...draft, goal: event.target.value })} /></label>;
+    if (index === 4) return <label key={index} className="oddk-mandalaGoal"><span className="oddk-mandalaFieldLabel">핵심 목표</span><AutoTextarea aria-label="핵심 목표" maxLength={100} value={draft.goal} placeholder="목표 입력" onChange={event => coreTitle(event.target.value)} /></label>;
     const areaIndex = positions.indexOf(index), area = draft.areas[areaIndex];
     return <label key={index} className="oddk-mandalaSubgoal" data-disabled={!hasGoal} data-filled={Boolean(area.title.trim())}><span className="oddk-mandalaFieldLabel">세부 목표 {areaIndex + 1}</span><AutoTextarea disabled={!hasGoal} aria-label={`세부 목표 ${areaIndex + 1}`} maxLength={60} value={area.title} onChange={event => areaTitle(areaIndex, event.target.value)} placeholder="목표 입력" /></label>;
   }
   return <section className="oddk-planningView" aria-labelledby="mandala-title">
-    <h2 id="mandala-title" className="oddk-srOnly">만다라트 8×8</h2>
-    <form onSubmit={(event) => { event.preventDefault(); if (onSave(draft)) { setMessage(""); } else setMessage("저장하지 못했어요. 다시 시도해주세요."); }}>
+    <h2 id="mandala-title" className="oddk-srOnly">만다라트 목표추적</h2>
+    <div>
       <header className="oddk-mandalaToolbar">
-        <div className="oddk-viewActions oddk-mandalaActions"><button className="oddk-mandalaReset" type="button" onClick={() => resetDialog.current?.showModal()}>전체초기화</button><button className="oddk-primary" type="submit" disabled={!dirty}>목표 저장</button></div>
+        {toolbar}
+        <div className="oddk-viewActions oddk-mandalaActions"><button className="oddk-mandalaReset" type="button" onClick={() => resetDialog.current?.showModal()}>전체초기화</button></div>
       </header>
-      {message && <p role="status" className="oddk-mandalaFeedback">{message}</p>}
-      <div className="oddk-mandalaCanvas" data-expanded="true" data-layout="planner" data-partial={activeAreas.some(active => !active)}>
+      {compact ? <div className="oddk-mandalaCanvas oddk-mandalaCompact" data-layout="compact">
+        <div className="oddk-mandalaCompactHeader">
+          {selectedArea !== null && <button className="oddk-mandalaBack" type="button" onClick={showOverview}>← 핵심목표로</button>}
+          <span className="oddk-mandalaLevel">{selectedArea === null ? "핵심목표" : `세부목표 ${selectedArea + 1}`}</span>
+          <h3 ref={compactHeading} tabIndex={-1}>{selectedArea === null ? draft.goal.trim() || "핵심목표를 입력해주세요" : draft.areas[selectedArea].title}</h3>
+          {!hasGoal && <p id={`${statusId}-core-guide`}>핵심목표를 입력하면 세부목표를 추가할 수 있어요.</p>}
+        </div>
+        <div className="oddk-mandalaCompactGrid" data-level={selectedArea === null ? "overview" : "area"} role="group" aria-label={selectedArea === null ? "핵심 목표와 세부 목표 9칸" : `${draft.areas[selectedArea].title} 실행 계획 9칸`}>
+          {Array.from({ length: 9 }, (_, index) => {
+            if (selectedArea !== null) return index === 4 ? <button key="area-center" type="button" className="oddk-mandalaCompactCell" data-center="true" aria-label={`세부목표 ${selectedArea + 1} ${draft.areas[selectedArea].title} 이름 편집`} onClick={() => editName(selectedArea)}><span className="oddk-mandalaSlotLabel">세부목표 {selectedArea + 1}</span><strong>{draft.areas[selectedArea].title}</strong><span className="oddk-mandalaCellAction">이름 편집</span></button> : cell(selectedArea, positions.indexOf(index), true);
+            if (index === 4) return <button key="core-center" ref={coreButton} type="button" className="oddk-mandalaCompactCell" data-center="true" aria-label={`핵심목표 ${draft.goal.trim() || "입력"} 이름 편집`} onClick={() => editName("core")}><span className="oddk-mandalaSlotLabel">핵심목표</span><strong>{draft.goal.trim() || "+ 핵심목표"}</strong><span className="oddk-mandalaCellAction">이름 편집</span></button>;
+            const areaIndex = positions.indexOf(index), area = draft.areas[areaIndex];
+            return <button key={`area-${areaIndex}`} ref={element => { areaButtons.current[areaIndex] = element; }} type="button" className="oddk-mandalaCompactCell" disabled={!hasGoal} aria-label={`세부목표 ${areaIndex + 1} ${area.title.trim() ? `${area.title} 실행 보기` : "추가"}`} onClick={() => area.title.trim() ? showArea(areaIndex) : editName(areaIndex)}><span className="oddk-mandalaSlotLabel">세부목표 {areaIndex + 1}</span><strong>{area.title.trim() || `+ 세부목표 ${areaIndex + 1}`}</strong>{area.title.trim() && <span className="oddk-mandalaCellAction">실행 보기</span>}</button>;
+          })}
+        </div>
+      </div> : <div className="oddk-mandalaCanvas" data-expanded="true" data-layout="planner" data-partial={activeAreas.some(active => !active)}>
       <div ref={plannerScroll} className="oddk-mandalaScroll" data-fit={fitHeight !== null} style={fitHeight === null ? undefined : { "--planner-fit-height": `${fitHeight}px` } as CSSProperties} tabIndex={0} role="region" aria-label="전체 만다라트 플래너. 작은 화면에서는 좌우로 스크롤할 수 있어요."><div className="oddk-mandalaBoard" data-expanded="true">
         {Array.from({ length: 9 }, (_, boardIndex) => {
           if (boardIndex === 4) return <div key="center" role="group" aria-label="핵심 목표와 세부 목표" className="oddk-mandalaGroup oddk-mandalaCenter" style={{ gridArea: "2 / 2" }}>
@@ -95,12 +181,20 @@ export function MandalaView({ tasks, draft, dirty, onChange, onSave, onEdit }: {
           </div>;
         })}
       </div></div>
-      </div>
-    </form>
+      </div>}
+    </div>
+    <dialog ref={nameDialog} className="oddk-dialog oddk-mandalaNameEditor" aria-labelledby={`${statusId}-name-title`} onKeyDown={keepFocusInDialog} onClose={finishNameEdit} onClick={event => { if (event.target === event.currentTarget) nameDialog.current?.close(); }}>
+      <form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); nameDialog.current?.close(); }}>
+        <header className="oddk-dialogHeader"><h2 id={`${statusId}-name-title`}>{typeof editingName === "number" ? `세부목표 ${editingName + 1} 이름` : "핵심목표 이름"}</h2><button type="button" aria-label="목표 이름 편집 닫기" onClick={() => nameDialog.current?.close()}><HiOutlineXMark aria-hidden="true" /></button></header>
+        <label className="oddk-dialogField"><span>{typeof editingName === "number" ? `세부목표 ${editingName + 1}` : "핵심목표"}</span><AutoTextarea ref={nameField} aria-label={typeof editingName === "number" ? `세부목표 ${editingName + 1} 이름` : "핵심목표 이름"} maxLength={typeof editingName === "number" ? 60 : 100} value={typeof editingName === "number" ? draft.areas[editingName].title : draft.goal} onChange={event => typeof editingName === "number" ? areaTitle(editingName, event.target.value) : coreTitle(event.target.value)} /></label>
+        <p>입력한 내용은 이 목표에 자동 반영돼요. 닫아도 입력은 유지돼요.</p>
+        <div className="oddk-dialogActions"><button type="button" onClick={() => nameDialog.current?.close()}>닫기</button></div>
+      </form>
+    </dialog>
     <dialog ref={resetDialog} className="oddk-dialog" aria-labelledby="mandala-reset-title" onKeyDown={keepFocusInDialog} onClick={event => { if (event.target === event.currentTarget) resetDialog.current?.close(); }}>
-      <form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); change(emptyMandala()); resetDialog.current?.close(); }}>
+      <form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); change(emptyMandala()); setActiveArea(null); resetDialog.current?.close(); }}>
         <header className="oddk-dialogHeader"><h2 id="mandala-reset-title">만다라트 전체초기화</h2><button type="button" aria-label="초기화 창 닫기" onClick={() => resetDialog.current?.close()}><HiOutlineXMark aria-hidden="true" /></button></header>
-        <p>핵심 목표, 세부 목표, 할 일 연결을 모두 비울까요?</p><p>할 일 목록은 그대로 남아요. 목표 저장을 누르면 반영돼요.</p>
+        <p>현재 선택한 목표의 핵심목표, 세부목표, 할 일 연결을 모두 비울까요?</p><p>이 목표의 변경사항은 자동 저장돼요. 할 일 목록과 다른 목표는 유지돼요.</p>
         <div className="oddk-dialogActions"><button type="button" onClick={() => resetDialog.current?.close()}>취소</button><button type="submit" className="oddk-primary">초기화</button></div>
       </form>
     </dialog>

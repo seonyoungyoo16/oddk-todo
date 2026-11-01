@@ -20,3 +20,10 @@
   .oddk-dailyGrid[data-pane="list"] > .oddk-rhythm,
   .oddk-dailyGrid[data-pane="rhythm"] > .oddk-taskArea { display:none; }
 }
+@media(max-width:640px),(max-width:960px) and (max-height:500px) {
+  .oddk-page .oddk-paneSwitch { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0; margin-bottom:24px; }
+  .oddk-paneSwitch button { min-height:44px; border-radius:0; font-size:14px; color:var(--oddk-muted); }
+  .oddk-paneSwitch button:first-child { order:2; border-left:0; border-radius:0 var(--oddk-radius-control) var(--oddk-radius-control) 0; }
+  .oddk-paneSwitch button:last-child { order:1; border-radius:var(--oddk-radius-control) 0 0 var(--oddk-radius-control); }
+  .oddk-paneSwitch [aria-pressed="true"] { border-color:var(--oddk-border); color:var(--oddk-accent-text); font-weight:600; }
+}

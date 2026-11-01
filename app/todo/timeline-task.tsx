@@ -26,12 +26,12 @@ export function TimelineScroll({ initialMinute, pixelsPerMinute, label, children
   return <div ref={ref} className="oddk-timelineScroll" tabIndex={0} role="region" aria-label={label}>{children}</div>;
 }
 
-export function TimelineTask({ title, notes, description, start, end, pixelsPerMinute, style, conflict, children, onEdit, onMove, sourceDate, duration, onResize, taskId, highlighted }: {
+export function TimelineTask({ title, notes, description, start, end, pixelsPerMinute, style, conflict, children, onEdit, onMove, sourceDate, duration, onResize, taskId, highlighted, selected, actionLabel = "클릭하여 수정" }: {
   notes?: string;
   title: string; description: string; start: number; end: number; pixelsPerMinute: number;
   style: CSSProperties; conflict: boolean; children: ReactNode | ((resizeDelta: number) => ReactNode); onEdit: () => void; onMove: (minutes: number, days?: number) => void; sourceDate?: string;
   duration?: { minutes: number; bufferMinutes: number }; onResize?: (minutes: number) => void;
-  taskId?: string; highlighted?: boolean;
+  taskId?: string; highlighted?: boolean; selected?: boolean; actionLabel?: string;
 }) {
   const [offset, setOffset] = useState({ minutes: 0, days: 0, x: 0, date: "" }), [dragging, setDragging] = useState(false);
   const [resizeDelta, setResizeDelta] = useState<number | null>(null);
@@ -80,7 +80,7 @@ export function TimelineTask({ title, notes, description, start, end, pixelsPerM
     {dragging && <span className="oddk-dragTime" role="status">{offset.date && `${offset.date.slice(5).replace("-", ".")} `}{clock(start + offset.minutes)}~{end + offset.minutes >= 1440 ? "다음 날 " : ""}{clock(end + offset.minutes)}</span>}
     {resizeDelta !== null && duration && <span className="oddk-dragTime" role="status">종료 {end + resizeDelta >= 1440 ? "다음 날 " : ""}{clock(end + resizeDelta)} · 작업 {duration.minutes + resizeDelta - duration.bufferMinutes}분 + 여유 {duration.bufferMinutes}분 = 총 {duration.minutes + resizeDelta}분</span>}
     <button ref={buttonRef} type="button" className="oddk-timeSlot" data-conflict={conflict} style={{ top: 0, left: 0, width: "100%", height: "100%" }}
-      aria-label={description + ", 클릭하여 수정. 드래그 또는 Alt+방향키로 날짜와 시간 이동"} aria-describedby={notes?.trim() ? memoId : undefined} title={notes?.trim() ? undefined : title}
+      aria-label={description + `, ${actionLabel}. 드래그 또는 Alt+방향키로 날짜와 시간 이동`} aria-pressed={selected} aria-describedby={notes?.trim() ? memoId : undefined} title={notes?.trim() ? undefined : title}
       onClick={() => { if (suppressClick.current) { suppressClick.current = false; return; } onEdit(); }}
       onKeyDown={event => {
         if (event.key === "Escape") { event.preventDefault(); cancel(); return; }

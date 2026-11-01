@@ -15,6 +15,7 @@
 @import "./goal-tree.css";
 @import "./mandala-planner.css";
 @import "./settings.css";
+@import "./account.css";
 @import "./dashboard.css";
 @import "./daily-review.css";
 @import "./weekly-timetable.css";
@@ -28,4 +29,6 @@
 @import "./execution-history.css";
 @import "./task-execution-control.css";
 @import "./native.css";
-
+@import "./mobile-navigation.css";
+@import "./bottom-controls.css";
+@import "./goal-actions.css";

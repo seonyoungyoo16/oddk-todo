@@ -5,7 +5,7 @@ export type LookupCache = { payload: unknown; expiresAt: string };
 export type LookupLease = { id: string; validUntil: string };
 export type LookupStore = { get: (key: string) => Promise<LookupCache | null>; put: (key: string, provider: string, payload: LookupPayload, fetchedAt: string, expiresAt: string) => Promise<void>; claim: (provider: string) => Promise<LookupLease | null>; finish: (provider: string, lease: string) => Promise<void> };
 export type LookupDependencies = { store: LookupStore; fetcher: typeof fetch; now: () => Date; enabled: boolean };
-const origins = new Set(["https://seonyoungyoo16.github.io", "http://localhost:3000", "http://127.0.0.1:3200"]);
+const origins = new Set(["https://seonyoungyoo16.github.io", "http://localhost:3000", "http://127.0.0.1:3200", "https://localhost", "capacitor://localhost"]);
 export function providerUrl(query: TravelQuery): string {
   if (query.action === "search") {
     const url = new URL("https://photon.komoot.io/api/"); url.searchParams.set("q", query.query); url.searchParams.set("limit", "5"); return url.toString();

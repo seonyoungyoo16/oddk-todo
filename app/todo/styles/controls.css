@@ -21,3 +21,6 @@
 .oddk-dialogActions > .oddk-dialogDelete:is(:hover, :focus-visible) { border-color: #f6d8d2; background: #fff0ed; color: #b3413b; }
 .oddk-dialog :is(button, input, select):focus-visible { outline: 2px solid var(--oddk-focus); outline-offset: 3px; }
 .oddk-dialog button { cursor: pointer; }
+.oddk-dialog .oddk-danger { background:var(--oddk-danger-text); color:#fff; }
+.oddk-dialog .oddk-danger:hover { background:var(--oddk-danger-text); filter:brightness(.9); }
+.oddk-page .oddk-dialog .oddk-primary:disabled { border:1px solid var(--oddk-disabled-border); background:var(--oddk-disabled-surface); color:var(--oddk-disabled-text); opacity:1; box-shadow:none; cursor:not-allowed; }

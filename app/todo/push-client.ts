@@ -1,5 +1,6 @@
 import { syncClient } from "./supabase-client";
 import { Capacitor } from "@capacitor/core";
+import { disableNativeReminders } from "./native-reminders";
 
 const endpoint = "https://synxmskamifpovuziecx.supabase.co/functions/v1/push-subscriptions";
 export type PushBinding = { installationId: string; deviceToken: string; epoch: string; userId: string | null; revision: number; enabled: boolean; seen: { id: string; until: number }[] };
@@ -55,6 +56,7 @@ async function api<T>(userId: string, body: object): Promise<T> {
 }
 const proof = (state: PushBinding) => ({ installationId: state.installationId, deviceToken: state.deviceToken });
 export async function clearPushBinding() {
+  await disableNativeReminders();
   const registration = await worker();
   if (registration) await message(registration, { action: "block" });
 }

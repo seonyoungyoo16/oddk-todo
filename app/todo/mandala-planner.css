@@ -26,6 +26,42 @@
 .oddk-page[data-theme="dark"] .oddk-mandalaCanvas[data-layout="planner"] { --planner-rule:var(--oddk-border); --planner-grid:var(--oddk-border); background:transparent; }
 .oddk-page[data-theme="dark"] .oddk-mandalaFieldLabel { color:var(--oddk-muted); }
 /* Keep all grid slots so entering the core goal never moves the center table. */
+.oddk-goalSwitcher { display:flex; align-items:center; flex-wrap:wrap; gap:var(--oddk-space-3); min-width:0; }
+.oddk-goalSwitcher label { display:flex; align-items:center; gap:var(--oddk-space-2); min-width:0; color:var(--oddk-muted); font-size:var(--oddk-font-label); }
+.oddk-goalSwitcher select { width:clamp(140px,20vw,260px); max-width:100%; min-height:var(--oddk-control-height); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); font:inherit; }
+.oddk-page .oddk-goalAdd { min-height:var(--oddk-control-height); gap:var(--oddk-space-2); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); font-size:var(--oddk-font-label); }
+.oddk-goalAdd svg { width:var(--oddk-icon-size); height:var(--oddk-icon-size); }
+.oddk-goalSaveStatus { color:var(--oddk-muted); font-size:var(--oddk-font-small); }
 .oddk-page .oddk-mandalaCanvas[data-partial="true"] :is(.oddk-mandalaBoard,.oddk-mandalaGroup) { border-color:transparent; }
 .oddk-page .oddk-mandalaCanvas .oddk-mandalaGroup[data-visible="false"] { visibility:hidden; }
 .oddk-page .oddk-mandalaCanvas[data-partial="true"] .oddk-mandalaGroup:is(.oddk-mandalaCenter,[data-visible="true"]) { outline:2px dashed var(--planner-rule); outline-offset:-1px; }
+
+/* Compact navigation renders one level at a time; the desktop planner stays intact. */
+.oddk-page .oddk-mandalaCompact { min-width:0; padding:16px; border:0; border-radius:0; background:transparent; }
+.oddk-mandalaCompactHeader { display:flex; flex-direction:column; align-items:flex-start; gap:8px; margin-bottom:16px; min-width:0; }
+.oddk-mandalaCompactHeader h3 { max-width:100%; margin:0; color:var(--oddk-heading); font-size:16px; font-weight:600; line-height:1.5; overflow-wrap:anywhere; white-space:pre-wrap; }
+.oddk-mandalaCompactHeader h3:focus-visible { outline:2px solid var(--oddk-focus); outline-offset:4px; }
+.oddk-mandalaCompactHeader p { margin:0; color:var(--oddk-muted); font-size:14px; line-height:1.5; }
+.oddk-mandalaLevel { color:var(--oddk-muted); font-size:12px; line-height:1.5; }
+.oddk-page .oddk-mandalaBack { min-height:44px; padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); font-size:16px; }
+.oddk-mandalaCompactGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; min-width:0; }
+.oddk-page .oddk-mandalaCompactCell,.oddk-page .oddk-mandalaCompact .oddk-mandalaCell { display:flex; flex-direction:column; justify-content:center; align-items:stretch; gap:8px; min-width:0; min-height:112px; margin:0; padding:10px 6px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); text-align:center; }
+.oddk-page .oddk-mandalaCompactCell[data-center="true"] { background:var(--mandala-accent); color:var(--mandala-accent-ink); }
+.oddk-page .oddk-mandalaCompactCell:disabled { opacity:1; background:var(--oddk-soft); color:var(--oddk-muted); cursor:not-allowed; }
+.oddk-page .oddk-mandalaCompactCell strong { display:-webkit-box; min-width:0; margin:0; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:16px; font-weight:500; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
+.oddk-mandalaSlotLabel,.oddk-mandalaCellAction { color:inherit; font-size:12px; line-height:1.5; }
+.oddk-mandalaSlotLabel { font-weight:500; }
+.oddk-mandalaCellAction { text-decoration:underline; text-underline-offset:3px; }
+.oddk-page .oddk-mandalaCompactGrid[data-level="area"] > :is(.oddk-mandalaCell,.oddk-mandalaCompactCell) { min-height:132px; }
+.oddk-page .oddk-mandalaCompact .oddk-mandalaCell .oddk-mandalaTask { display:flex; flex:1; flex-direction:column; gap:8px; min-height:44px; padding:8px 0; color:var(--oddk-heading); font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+.oddk-page .oddk-mandalaCompact .oddk-mandalaUnlink { position:static; display:flex; justify-content:center; min-height:44px; min-width:44px; max-width:100%; margin:0; padding:8px 2px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); font-size:12px; line-height:1.5; white-space:normal; }
+.oddk-page .oddk-mandalaCompact .oddk-mandalaCell select { display:block; min-width:0; width:100%; max-width:100%; min-height:44px; padding:4px 0; border:0; border-radius:0; background:var(--oddk-surface); color:var(--oddk-heading); font-size:16px; line-height:1.5; }
+.oddk-mandalaDone { color:var(--oddk-muted); font-size:12px; line-height:1.5; }
+.oddk-mandalaConnectLabel { color:var(--oddk-heading); font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+.oddk-mandalaMissing { font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+.oddk-page .oddk-mandalaCompact :is(button,select):focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; }
+.oddk-mandalaNameEditor .oddk-dialogForm { min-width:0; }
+.oddk-mandalaNameEditor .oddk-dialogHeader { position:sticky; top:0; z-index:1; background:var(--oddk-surface); }
+.oddk-mandalaNameEditor .oddk-dialogField textarea { width:100%; max-width:100%; min-height:120px; max-height:min(320px,40dvh); padding:12px; border:1px solid var(--oddk-dialog-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); font-size:16px; line-height:1.5; overflow-y:auto; }
+.oddk-mandalaNameEditor .oddk-dialogField textarea:focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; }
+.oddk-mandalaNameEditor p { color:var(--oddk-muted); font-size:14px; line-height:1.5; }

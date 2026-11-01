@@ -1,3 +1,4 @@
+import * as accountData from "../../app/todo/account-data.ts";
 import { sameValue } from "../../supabase/functions/_shared/json-equality.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -16,6 +17,7 @@ test("invalid writes, local recovery and review backups preserve snapshots", () 
   vm.runInNewContext(js, {
     exports,
     require: (name) => {
+      if (name === "./account-data") return accountData;
       if (name.includes("json-equality")) return { sameValue };
       if (name.includes("_shared/plan-migration")) return { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup };
       if (name.includes("_shared/plan")) return { validPlan };

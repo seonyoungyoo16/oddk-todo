@@ -1,5 +1,4 @@
 /* The timer belongs to the workspace, outside view-specific hidden sections. */
-.oddk-page:has(.oddk-executionDock) { padding-bottom:calc(var(--execution-dock-height, 140px) + var(--oddk-space-4)); }
 .oddk-page .oddk-execution.oddk-executionDock {
   position:fixed;
   z-index:45;

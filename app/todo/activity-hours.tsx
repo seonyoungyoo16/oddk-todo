@@ -5,6 +5,7 @@ import { DialogHeader } from "./ui/dialog-header";
 import { keepFocusInDialog } from "./dialog-focus";
 import { sameValue } from "./json-equality";
 import { activityHoursValue } from "./activity-hours-model";
+import { HiOutlinePencilSquare } from "react-icons/hi2";
 
 export function ActivityHours({ date, saved, onSave }: { date: string; saved?: Availability; onSave: (value: Availability, expected?: Availability) => boolean }) {
   const dialog = useRef<HTMLDialogElement>(null), opener = useRef<HTMLButtonElement>(null), first = useRef<HTMLInputElement>(null);
@@ -13,7 +14,7 @@ export function ActivityHours({ date, saved, onSave }: { date: string; saved?: A
   const parsed = activityHoursValue(start, end, saved?.fixed ?? []);
   return <>
     <div className="oddk-activityHoursBar"><span>활동 시간 <strong>{saved ? `${saved.start}–${saved.end}` : "미설정"}</strong></span>
-      <button ref={opener} type="button" onClick={() => { setStart(saved?.start ?? ""); setEnd(saved?.end === "24:00" ? "00:00" : saved?.end ?? ""); setBase(saved); setError(""); dialog.current?.showModal(); first.current?.focus(); }}>활동 시간 {saved ? "변경" : "설정"}</button>
+      <button ref={opener} type="button" aria-label={`활동 시간 ${saved ? "변경" : "설정"}`} onClick={() => { setStart(saved?.start ?? ""); setEnd(saved?.end === "24:00" ? "00:00" : saved?.end ?? ""); setBase(saved); setError(""); dialog.current?.showModal(); first.current?.focus(); }}><HiOutlinePencilSquare className="oddk-activityHoursIcon" aria-hidden="true" /><span>활동 시간 {saved ? "변경" : "설정"}</span></button>
     </div>
     <dialog ref={dialog} className="oddk-dialog oddk-activityHoursDialog" aria-labelledby="activity-hours-title" onKeyDown={keepFocusInDialog} onClose={() => opener.current?.focus()} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
       <form className="oddk-dialogForm" onSubmit={event => {
@@ -29,10 +30,10 @@ export function ActivityHours({ date, saved, onSave }: { date: string; saved?: A
         <p className="oddk-activityHoursDate">{date}에 적용할 시작·종료 시간을 직접 정해주세요.</p>
         <div className="oddk-activityHoursFields">
           <label>활동 시작<input ref={first} type="time" step={60} required value={start} onChange={event => { setStart(event.target.value); setError(""); }} /></label>
-          <label>활동 종료<input type="time" step={60} required value={end} onChange={event => { setEnd(event.target.value); setError(""); }} /></label>
+          <label>활동 종료<input type="time" step={60} required value={end} aria-invalid={Boolean(start && end && parsed.error)} aria-describedby={error || start && end && parsed.error ? "activity-hours-error" : undefined} onChange={event => { setEnd(event.target.value); setError(""); }} /></label>
         </div>
-        {(error || start && end && parsed.error) && <p role="alert" className="oddk-error">{error || parsed.error}</p>}
-        <div className="oddk-dialogActions"><button type="button" onClick={() => dialog.current?.close()}>취소</button><button type="submit" className="oddk-primary" disabled={!parsed.value}>저장</button></div>
+        {(error || start && end && parsed.error) && <p id="activity-hours-error" role="alert" className="oddk-error">{error || parsed.error}</p>}
+        <div className="oddk-dialogActions"><button type="button" className="oddk-dialogCancel" onClick={() => dialog.current?.close()}>취소</button><button type="submit" className="oddk-primary" disabled={!parsed.value}>저장</button></div>
       </form>
     </dialog>
   </>;

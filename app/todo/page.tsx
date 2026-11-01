@@ -1,6 +1,9 @@
 "use client";
 import { TaskSplitAction } from "./task-split-action";
 import { WorkspaceHeader } from "./workspace-header";
+import { MobileNavigation, type MobileDestination } from "./mobile-navigation";
+import { SelectionActions } from "./selection-actions";
+import { openSettingsDialog } from "./settings-events";
 import { usePlanningAlerts } from "./use-planning-alerts";
 import { PlanningAlert, PlanningIssuesButton, PlanningIssueBadge } from "./planning-alert";
 import { ActivityHours } from "./activity-hours";
@@ -9,11 +12,11 @@ import { ExecutionPanel } from "./execution-panel";
 import { TaskExecutionControl } from "./task-execution-control";
 import { ExecutionHistoryPage } from "./execution-history-page";
 import { useExecution } from "./use-execution";
-import { HiOutlineBars3, HiOutlineFunnel, HiOutlineCog6Tooth, HiOutlineChartBar } from "react-icons/hi2";
+import { HiOutlineBars3, HiOutlineFunnel, HiOutlineCog6Tooth, HiOutlineChartBar, HiOutlineUserCircle } from "react-icons/hi2";
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent, SetStateAction } from "react";
 import { HiOutlineXMark, HiOutlineCheck, HiOutlineMinus, HiOutlineTrash, HiOutlineArrowUturnLeft, HiOutlineClipboardDocumentCheck, HiOutlineSun, HiOutlineListBullet, HiOutlineSquares2X2, HiOutlineClock, HiOutlineChevronDown } from "react-icons/hi2";
 import { TaskImportanceFields, BulkActionDialog } from "./task-planning-controls";
@@ -34,7 +37,8 @@ import { RepeatMaintenance } from "./repeat-maintenance";
 import type { TaskSort } from "./task-order";
 import { previewBulkAction, applyBulkAction } from "./bulk-actions";
 import type { BulkRequest } from "./bulk-actions";
-import { saveGoalTree } from "./goal-actions";
+import { addGoalBoard, saveGoalBoard, deleteGoalBoard, type GoalDeletion } from "./goal-boards";
+import type { GoalDraft } from "./goal-draft";
 import { GoalTreeView } from "./goal-tree-view";
 import { taskGoalIds } from "./goal-editor";
 import { TaskTimeFields } from "./task-time-fields";
@@ -92,6 +96,12 @@ function getSnapshot() {
   return getPlanSnapshot(EMPTY_SNAPSHOT);
 }
 
+function readLatestPlan() {
+  const loaded = loadPlan(getSnapshot());
+  if (!loaded.ok) throw new Error(loaded.error);
+  return loaded.plan;
+}
+
 function subscribeTheme(notify: () => void) {
   window.addEventListener("storage", notify);
   window.addEventListener(THEME_EVENT, notify);
@@ -136,6 +146,24 @@ function TodoWorkspace({ scope }: { scope: string }) {
   const today = useSyncExternalStore(subscribeToday, koreanToday, () => "");
   const workspace = useLocalDraft("workspace", emptyWorkspace, validWorkspace);
   useEffect(() => { if (workspace.hydrated && planLoad.ok) markNativeUpdateReady(); }, [workspace.hydrated, planLoad.ok]);
+  const addGoalAutomatically = useCallback((id: string) => {
+    try {
+      if (getPlanScope() !== scope) throw new Error("계정이 바뀌었어요. 현재 계정의 목표를 다시 열어주세요.");
+      writePlan(addGoalBoard(readLatestPlan(), id)); return null;
+    } catch (error) { return (error as Error).message; }
+  }, [scope]);
+  const deleteGoalAutomatically = useCallback((target: GoalDeletion) => {
+    try {
+      if (getPlanScope() !== scope) throw new Error("계정이 바뀌었어요. 현재 계정의 목표를 다시 열어주세요.");
+      writePlan(deleteGoalBoard(readLatestPlan(), target)); return null;
+    } catch (error) { return (error as Error).message; }
+  }, [scope]);
+  const saveGoalAutomatically = useCallback((id: string, draft: GoalDraft) => {
+    try {
+      if (getPlanScope() !== scope) throw new Error("계정이 바뀌었어요. 초안은 원래 계정에 남아 있어요.");
+      writePlan(saveGoalBoard(readLatestPlan(), id, draft)); return null;
+    } catch (error) { return (error as Error).message; }
+  }, [scope]);
   function field<K extends keyof WorkspaceDraft>(key: K): [WorkspaceDraft[K], (value: SetStateAction<WorkspaceDraft[K]>) => void] {
     return [workspace.value[key], value => workspace.set(current => ({ ...current, [key]: typeof value === "function" ? (value as (v: WorkspaceDraft[K]) => WorkspaceDraft[K])(current[key]) : value }))];
   }
@@ -154,6 +182,8 @@ function TodoWorkspace({ scope }: { scope: string }) {
   const [filter, setFilter] = useState<Filter>("all");
   // Navigation starts at the daily plan; saved workspace content stays intact.
   const [view, setView] = useState<View>("list");
+  const mobileDayPane = useRef<"list" | "rhythm">("list");
+  const mobileScroll = useRef(new Map<View, number>());
   const [dashboardOpen, setDashboardOpen] = useState(true);
   const [rangeDraft, setRange] = field("range");
   const range: RangeScope = rangeDraft ?? "day";
@@ -277,6 +307,10 @@ function TodoWorkspace({ scope }: { scope: string }) {
       if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
+    requestAnimationFrame(() => {
+      const row = document.querySelector<HTMLElement>(`.oddk-task[data-order-task="${CSS.escape(id)}"]`);
+      if (row?.getClientRects().length) row.scrollIntoView({ block: "nearest", behavior: "instant" });
+    });
   }
 
   function toggleTheme() {
@@ -317,12 +351,6 @@ function TodoWorkspace({ scope }: { scope: string }) {
       if (!save(prepared, `${titles.length}개의 할 일을 추가했어요.`)) return "저장하지 못했어요. 원문과 나눈 내용은 그대로 유지했어요.";
       setInput(""); setFilter("all"); inputRef.current?.focus(); return null;
     } catch (error) { return (error as Error).message; }
-  }
-
-  function readLatestPlan() {
-    const loaded = loadPlan(getPlanSnapshot(EMPTY_SNAPSHOT));
-    if (!loaded.ok) throw new Error(loaded.error);
-    return loaded.plan;
   }
 
   function submitReplan(event: FormEvent<HTMLFormElement>) {
@@ -450,9 +478,18 @@ function TodoWorkspace({ scope }: { scope: string }) {
 
   function changeView(value: View) {
     setSelectionIds([]);
+    if (value === "list" || value === "rhythm") mobileDayPane.current = value;
     if (value === "rhythm") setRange("day");
     setView(value);
     window.scrollTo({ top: 0, behavior: "instant" });
+  }
+
+  function navigateMobile(destination: MobileDestination) {
+    const target = destination === "day" ? mobileDayPane.current : destination;
+    if (target === view) { window.scrollTo({ top: 0, behavior: "instant" }); return; }
+    mobileScroll.current.set(view, window.scrollY);
+    changeView(target);
+    requestAnimationFrame(() => window.scrollTo({ top: mobileScroll.current.get(target) ?? 0, behavior: "instant" }));
   }
 
   function navigateRange(value: RangeScope) {
@@ -510,7 +547,10 @@ function TodoWorkspace({ scope }: { scope: string }) {
               <button type="button" aria-current={view === "settings" ? "page" : undefined} onClick={() => changeView("settings")}><HiOutlineCog6Tooth aria-hidden="true" /><span>환경설정</span></button>
             </nav>
             <SyncPanel fallback={EMPTY_SNAPSHOT} />
+            <button type="button" className="oddk-mobileAccount" aria-label="계정 및 동기화 보기" onClick={() => openSettingsDialog("profile")}><HiOutlineUserCircle aria-hidden="true" /></button>
           </aside>
+
+          <MobileNavigation current={view === "mandala" || view === "history" || view === "settings" ? view : "day"} onNavigate={navigateMobile} />
 
           <main className="oddk-workspace" aria-labelledby="workspace-title">
             <WorkspaceHeader title={headerTitle} description={headerDescription} actions={<button type="button" className="oddk-themeToggle" onClick={toggleTheme} aria-pressed={theme === "dark"}
@@ -533,10 +573,11 @@ function TodoWorkspace({ scope }: { scope: string }) {
                   <div className="oddk-entryField">
                   <AutoTextarea ref={inputRef} id="todo-input" aria-label="할 일 입력" disabled={!today || splitting} value={input} onChange={(event) => { setInput(event.target.value); setError(""); }} aria-describedby="todo-input-count todo-add-target todo-entry-guide" onLimit={() => setError("원문은 2000자까지 입력할 수 있어요. 입력은 유지했으니 조금 나눠 적어주세요.")}
                     onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} title="Enter로 추가, Shift+Enter로 줄바꿈"
-                    rows={4} maxLength={2000} placeholder={today ? "" : "저장된 할 일을 불러오고 있어요"} autoComplete="off" />
+                    rows={1} maxLength={2000} placeholder={today ? "" : "저장된 할 일을 불러오고 있어요"} autoComplete="off" />
                   <div id="todo-entry-guide" className="oddk-entryGuide" hidden={Boolean(input) || !today}>
-                    할 일을 자유롭게 적어보세요.<br />여러 할 일을 한 문장이나 여러 줄로 적어도 돼요.
-                    <p><em>Enter로 추가 · Shift+Enter로 줄바꿈</em></p>
+                    <div className="oddk-entryGuideDesktop">할 일을 적고 바로 추가하세요.<br />여러 일을 나누려면 AI 분석을 선택하세요.
+                    <p><em>Enter로 추가 · Shift+Enter로 줄바꿈</em></p></div>
+                    <span className="oddk-entryGuideMobile">할 일을 적어보세요</span>
                   </div>
                   </div>
                 </TaskSplitAction>
@@ -561,9 +602,9 @@ function TodoWorkspace({ scope }: { scope: string }) {
                     } catch (error) { return (error as Error).message; }
                   }} />
               </aside>
-              <section hidden={!planningView} className="oddk-taskArea" aria-labelledby="task-list-title">
+              <section hidden={!planningView} className="oddk-taskArea" data-range={range} aria-labelledby="task-list-title">
                 <div className="oddk-sectionHeading">
-                  <h2 id="task-list-title" className="oddk-srOnly">할 일 리스트</h2>
+                  <h2 id="task-list-title" className="oddk-srOnly oddk-mobileListHeading">오늘 할 일 <span>{scopedTasks.length}개</span></h2>
                   <div className="oddk-listTabs" role="group" aria-label="할 일 상태">
                     <button type="button" aria-pressed={filter === "all"} onClick={() => changeFilter("all")}>전체<span>{scopedTasks.length}</span></button>
                     <button type="button" aria-pressed={filter === "active"} onClick={() => changeFilter("active")}>진행 중<span>{active.length}</span></button>
@@ -579,11 +620,15 @@ function TodoWorkspace({ scope }: { scope: string }) {
                 </div>
 
 
-                {selectionMode && <div className="oddk-selectionBar">
+                {selectionMode && <div className="oddk-selectionBar" data-selected-count={selectedTasks.length}>
                   <SelectionCheckbox label="현재 목록 전체 선택" checked={allSelected} disabled={visibleTasks.length === 0} mixed={selectedTasks.length > 0 && !allSelected} onChange={toggleSelectAll} />
                   <button type="button" disabled={visibleTasks.length === 0} onClick={toggleSelectAll}>전체 선택</button>
 
-<section className="oddk-selectionDock" aria-label="선택한 할 일 작업"><div className="oddk-bulkActions"><button type="button" disabled={selectedTasks.length !== 1} onClick={() => openEditor(selectedTasks[0])}>수정</button><button type="button" disabled={!selectedTasks.length} onClick={completeSelected}><HiOutlineCheck aria-hidden="true" />{allSelectedDone ? "완료 취소" : "완료"}</button><button type="button" disabled={!selectedTasks.length} onClick={deleteSelected}><HiOutlineTrash aria-hidden="true" />삭제</button><button type="button" disabled={!selectedIds.size} onClick={() => setSelectedIds(new Set())}><HiOutlineXMark aria-hidden="true" />선택 해제</button></div></section>
+{selectedTasks.length > 0 && <SelectionActions count={selectedTasks.length} onClear={() => setSelectedIds(new Set())}>
+  <button type="button" disabled={selectedTasks.length !== 1} onClick={() => openEditor(selectedTasks[0])}>수정</button>
+  <button type="button" className="oddk-selectionComplete" onClick={completeSelected}><HiOutlineCheck aria-hidden="true" />{allSelectedDone ? "완료 취소" : "완료"}</button>
+  <button type="button" className="oddk-selectionDelete" onClick={deleteSelected}><HiOutlineTrash aria-hidden="true" />삭제</button>
+</SelectionActions>}
                 </div>}
 
 
@@ -627,10 +672,8 @@ function TodoWorkspace({ scope }: { scope: string }) {
               </section>
 
               <div hidden={view !== "mandala"}>
-                <GoalTreeView plan={plan} onEdit={openEditor} onSave={(tree, expected) => {
-                  if (!sameValue(expected, plan.goalTree)) { setError("목표가 바뀌었어요. 최신 내용과 초안을 확인해주세요."); return false; }
-                  try { return save(saveGoalTree(plan, tree), "목표를 저장했어요."); } catch (error) { setError((error as Error).message); return false; }
-                }} />
+                <GoalTreeView plan={plan} ready={workspace.hydrated && planLoad.ok} onEdit={openEditor}
+                  onAdd={addGoalAutomatically} onSave={saveGoalAutomatically} onDelete={deleteGoalAutomatically} />
               </div>
             </div>
             <section className="oddk-settings" hidden={view !== "settings"} aria-label="환경설정">

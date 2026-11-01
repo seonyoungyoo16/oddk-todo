@@ -26,7 +26,7 @@ assert.ok(manifestRef && manifestBuild && Object.values(objects.PBXResourcesBuil
 assert.match(read("ios/App/App/SceneDelegate.swift"), /SceneDelegateProxy\.shared\.scene\(scene, openURLContexts: URLContexts\)/);
 const spm = read("ios/App/CapApp-SPM/Package.swift");
 assert.match(spm, /exact: "8\.6\.0"/);
-for (const plugin of ["CapacitorApp", "CapacitorBrowser", "CapacitorPreferences", "CapawesomeCapacitorLiveUpdate"]) assert.ok(spm.includes(plugin), `Missing SPM plugin ${plugin}`);
+for (const plugin of ["CapacitorApp", "CapacitorBrowser", "CapacitorPreferences", "CapacitorLocalNotifications", "CapawesomeCapacitorLiveUpdate"]) assert.ok(spm.includes(plugin), `Missing SPM plugin ${plugin}`);
 const icon = readFileSync(path.join(root, "ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png"));
 assert.equal(icon.readUInt32BE(16), 1024); assert.equal(icon.readUInt32BE(20), 1024);
 assert.ok(![4, 6].includes(icon[25]), "App icon must be opaque RGB PNG");

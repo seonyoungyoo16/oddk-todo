@@ -16,3 +16,10 @@ html:has(.oddk-page) { scrollbar-gutter:stable; }
   .oddk-page .oddk-workspace { padding:var(--oddk-page-top-space,24px) var(--oddk-page-gutter,16px) var(--oddk-page-bottom-space,24px); }
   .oddk-page .oddk-pageHeader { min-height:var(--oddk-page-header-height,88px); }
 }
+@media(max-width:640px),(max-width:960px) and (max-height:500px) {
+  .oddk-page .oddk-workspace { padding:12px 16px 24px; }
+  .oddk-page .oddk-pageHeader { min-height:0; row-gap:10px; margin-bottom:20px; }
+  .oddk-pageHeader h1 { font-size:28px; line-height:1.3; }
+  .oddk-pageHeader .oddk-pageDescription { font-size:14px; }
+  .oddk-page .oddk-pageHeader .oddk-themeToggle { display:none; }
+}

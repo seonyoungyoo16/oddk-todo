@@ -2,6 +2,7 @@ import { syncClient } from "./supabase-client";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 import { NATIVE_AUTH_REDIRECT } from "./native-options";
+import { DELETION_KEY, pendingDeletion, eraseAccountData } from "./account-data";
 import { alignPushBinding, clearPushBinding, stopPushForLogout } from "./push-client";
 import { validPlan } from "../../supabase/functions/_shared/plan";
 import { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } from "../../supabase/functions/_shared/plan-migration";
@@ -13,12 +14,15 @@ const ENDPOINT = "https://synxmskamifpovuziecx.supabase.co/functions/v1/plan-syn
 const LOCAL_KEY = "oddk.todo.v1";
 const SESSION_KEY = "oddk.sync.session.v1";
 const CHANGE_EVENT = "oddk-todo-change";
+// Enable in a QA build after membership/provider setup; verify before release.
+export const APPLE_LOGIN_ENABLED = false;
+export const APPLE_LOGIN_PREPARING_MESSAGE = "Apple 로그인은 연결 준비 중이에요. 지금은 Google·GitHub로 로그인할 수 있어요.";
 // Keep providers enabled; the user performs actual OAuth acceptance separately.
 
 type Session = { id: string; deviceId: string; name: string; displayName: string; provider: string; createdAt: string; lastSignInAt: string };
 type Cache = { plan: string; version: number; dirty: boolean };
 type Cloud = { plan: unknown; version: number; updated_at: string };
-export type SyncStatus = { connected: boolean; name: string; displayName?: string; provider?: string; createdAt?: string; lastSignInAt?: string; refreshRequired?: boolean; phase: "local" | "syncing" | "synced" | "waiting" | "conflict" | "error"; message: string; updatedAt?: string };
+export type SyncStatus = { connected: boolean; name: string; displayName?: string; provider?: string; createdAt?: string; lastSignInAt?: string; refreshRequired?: boolean; deletionPending?: boolean; phase: "local" | "syncing" | "synced" | "waiting" | "conflict" | "error"; message: string; updatedAt?: string };
 const INITIAL: SyncStatus = { connected: false, name: "", phase: "local", message: "이 기기에 저장 중" };
 let state = JSON.stringify(INITIAL);
 const listeners = new Set<() => void>();
@@ -68,9 +72,9 @@ function readCloud(remote: Cloud, s: Session): { remote: Cloud; migrated: boolea
   return { remote: { ...remote, plan: loaded.plan }, migrated: loaded.migrated };
 }
 function changed() { window.dispatchEvent(new Event(CHANGE_EVENT)); }
-function publish(next: SyncStatus) { state = JSON.stringify(next); listeners.forEach((notify) => notify()); }
+function publish(next: SyncStatus) { state = JSON.stringify({ ...next, deletionPending: !!pendingDeletion(localStorage) }); listeners.forEach((notify) => notify()); }
 function status(s: Session, phase: SyncStatus["phase"], message: string, updatedAt?: string) { publish({ connected: true, name: s.name, displayName: s.displayName, provider: s.provider, createdAt: s.createdAt, lastSignInAt: s.lastSignInAt, phase, message, updatedAt }); }
-function current(s: Session) { const now = session(); return now?.id === s.id && now.deviceId === s.deviceId; }
+function current(s: Session) { const now = session(); return now?.id === s.id && now.deviceId === s.deviceId && pendingDeletion(localStorage)?.userId !== s.id; }
 class SyncError extends Error { readonly code: number; constructor(message: string, code: number) { super(message); this.code = code; } }
 async function api(action: string, values: object = {}, s?: Pick<Session, "id">): Promise<Cloud & { id: string }> {
   const { data: auth, error } = await syncClient().auth.getSession();
@@ -140,6 +144,7 @@ export function writePlan(plan: unknown) {
   if (!loaded.ok) throw new Error(loaded.error);
   const value = JSON.stringify(loaded.plan);
   const s = session();
+  if (s && pendingDeletion(localStorage)?.userId === s.id) throw new Error("계정 삭제 결과를 먼저 확인해주세요.");
   if (s && blockedDevice === s.deviceId) throw new Error("새 데이터 형식에 맞게 페이지를 새로고침해주세요. 미전송 내용은 보관돼 있어요.");
   const key = s ? cacheKey(s) : LOCAL_KEY;
   const oldRaw = s ? cache(s).plan : localStorage.getItem(LOCAL_KEY);
@@ -181,7 +186,7 @@ export async function syncNow() {
   let s: Session | null = null;
   let again = false;
   try {
-    s = session(); if (!s || blockedDevice === s.deviceId) return;
+    s = session(); if (!s || blockedDevice === s.deviceId || pendingDeletion(localStorage)?.userId === s.id) return;
     busy = true;
     const before = prepareCache(s);
     status(s, "syncing", "동기화 중");
@@ -242,7 +247,14 @@ export function startSync(fallback: string) {
   }
   const check = () => { if (document.visibilityState === "visible") void syncNow(); };
   const privacyError = () => { if (active) publish({ ...INITIAL, phase: "error", message: "이전 계정의 알림 연결을 차단하지 못했어요. 브라우저 알림 설정을 확인해주세요." }); };
-  const storage = (event: StorageEvent) => { if (event.key === SESSION_KEY) { conflict = null; void alignPushBinding(session()?.id ?? null).catch(privacyError); if (!session()) publish(INITIAL); check(); changed(); } };
+  const storage = (event: StorageEvent) => {
+    if (event.key === DELETION_KEY) {
+      if (pendingDeletion(localStorage)) publish({ ...JSON.parse(state), phase: "error", message: "다른 창에서 요청한 계정 삭제 결과를 확인해주세요." });
+      else check();
+      changed();
+    }
+    if (event.key === SESSION_KEY) { conflict = null; void alignPushBinding(session()?.id ?? null).catch(privacyError); if (!session()) publish(INITIAL); check(); changed(); }
+  };
   const interval = setInterval(check, 5000);
   let active = true;
   const hydrate = (auth: AuthSession | null) => { if (active) void alignPushBinding(auth?.user.id ?? null).then(() => { if (active && auth) return connectAccount(auth, fallback); }).catch((error) => { if (active) publish({ ...INITIAL, phase: "error", message: error instanceof Error ? error.message : "계정 데이터를 불러오지 못했어요." }); }); };
@@ -251,7 +263,13 @@ export function startSync(fallback: string) {
     else if (auth && session()?.id !== auth.user.id) { localStorage.removeItem(SESSION_KEY); changed(); void clearPushBinding().then(() => { if (active) setTimeout(() => hydrate(auth), 0); }).catch(privacyError); }
     else if (auth && event === "SIGNED_IN") setTimeout(() => hydrate(auth), 0);
   });
-  void syncClient().auth.getSession().then(({ data, error }) => { if (error) publish({ ...INITIAL, phase: "error", message: "로그인 상태를 확인하지 못했어요. 다시 로그인해주세요." }); else hydrate(data.session); });
+  void syncClient().auth.getSession().then(async ({ data, error }) => {
+    if (pendingDeletion(localStorage)) {
+      try { await recoverAccountDeletion(); } catch (failure) { publish({ ...INITIAL, phase: "error", message: failure instanceof Error ? failure.message : "계정 삭제 결과를 확인해주세요." }); }
+      return;
+    }
+    if (error) publish({ ...INITIAL, phase: "error", message: "로그인 상태를 확인하지 못했어요. 다시 로그인해주세요." }); else hydrate(data.session);
+  });
   window.addEventListener("online", check); window.addEventListener("focus", check); window.addEventListener("storage", storage); document.addEventListener("visibilitychange", check);
   check();
   stop = () => { active = false; authListener.subscription.unsubscribe(); clearInterval(interval); clearTimeout(timer); window.removeEventListener("online", check); window.removeEventListener("focus", check); window.removeEventListener("storage", storage); document.removeEventListener("visibilitychange", check); stop = undefined; };
@@ -265,6 +283,9 @@ async function connectAccount(auth: AuthSession, fallback: string) {
   const provider = hint && auth.user.identities?.some((identity) => identity.provider === hint) ? hint : auth.user.app_metadata.provider ?? "github";
   const profile = { name: auth.user.email ?? "로그인한 계정", displayName: String(metadata.full_name || metadata.name || metadata.user_name || auth.user.email?.split("@")[0] || "사용자").slice(0, 80), provider, createdAt: auth.user.created_at, lastSignInAt: auth.user.last_sign_in_at ?? "" };
   const oldSession = session();
+  const deleting = pendingDeletion(localStorage);
+  if (APPLE_LOGIN_ENABLED && (!deleting || deleting.userId === auth.user.id) && provider === "apple" && auth.provider_refresh_token) await lifecycleRequest("apple-token", { refreshToken: auth.provider_refresh_token }, auth.access_token);
+  if (deleting) { if (oldSession) status(oldSession, "error", "계정 삭제 결과를 먼저 확인해주세요."); return; }
   if (oldSession?.id === auth.user.id) { localStorage.setItem(SESSION_KEY, JSON.stringify({ ...oldSession, ...profile })); await syncNow(); return; }
   connecting = auth.user.id;
   try {
@@ -272,7 +293,7 @@ async function connectAccount(auth: AuthSession, fallback: string) {
   const loaded = loadPlan(local); if (!loaded.ok) throw new Error(loaded.error);
   const remote = await api("ensure", { plan: loaded.plan }, { id: auth.user.id });
   const latest = await syncClient().auth.getSession();
-  if (latest.data.session?.user.id !== auth.user.id) return;
+  if (latest.data.session?.user.id !== auth.user.id || pendingDeletion(localStorage)?.userId === auth.user.id) return;
   const s: Session = { id: auth.user.id, deviceId: crypto.randomUUID(), ...profile };
   const checked = readCloud(remote, s);
   const latestLocal = localStorage.getItem(LOCAL_KEY) ?? local;
@@ -291,7 +312,12 @@ async function connectAccount(auth: AuthSession, fallback: string) {
   await syncNow();
   } finally { if (connecting === auth.user.id) connecting = null; }
 }
-export async function loginSync(provider: "google" | "github") {
+export async function loginSync(provider: "google" | "github" | "apple") {
+  if (provider === "apple") {
+    if (!APPLE_LOGIN_ENABLED) throw new Error(APPLE_LOGIN_PREPARING_MESSAGE);
+    const ready = await lifecycleRequest("capabilities");
+    if (!ready.appleReady) throw new Error("Apple 로그인 설정을 준비 중이에요. 현재는 Google·GitHub로 로그인할 수 있어요.");
+  }
   localStorage.setItem("oddk.sync.login-provider", provider);
   const native = Capacitor.isNativePlatform();
   const { data, error } = await syncClient().auth.signInWithOAuth({ provider, options: { redirectTo: native ? NATIVE_AUTH_REDIRECT : `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/todo/`, skipBrowserRedirect: native } });
@@ -303,6 +329,7 @@ export async function loginSync(provider: "google" | "github") {
 }
 export async function disconnectSync() {
   const s = session();
+  if (pendingDeletion(localStorage)) throw new Error("계정 삭제 결과를 먼저 확인해주세요.");
   if (s && cache(s).dirty) throw new Error("아직 전송하지 못한 내용이 있어요. 동기화하거나 백업한 뒤 다시 시도해주세요.");
   if (s) backup(cacheKey(s), cache(s).plan, "before-logout");
   if (s) await stopPushForLogout(s.id);
@@ -310,6 +337,67 @@ export async function disconnectSync() {
   const { error } = await syncClient().auth.signOut({ scope: "local" });
   if (error) throw error;
   localStorage.removeItem(SESSION_KEY); conflict = null; publish(INITIAL); changed();
+}
+const LIFECYCLE_ENDPOINT = "https://synxmskamifpovuziecx.supabase.co/functions/v1/account-lifecycle";
+class AccountError extends Error { constructor(message: string, readonly code: string) { super(message); } }
+async function lifecycleRequest(action: string, values: object = {}, token?: string) {
+  const response = await fetch(LIFECYCLE_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify({ action, ...values }), signal: AbortSignal.timeout(30000), cache: "no-store", redirect: "error" });
+  const data = await response.json();
+  if (!response.ok) throw new AccountError(data.error || "계정 처리를 완료하지 못했어요.", data.code ?? "server_error");
+  return data;
+}
+export function hasPendingAccountDeletion() { return !!pendingDeletion(localStorage); }
+async function finishAccountDeletion(userId: string) {
+  const { data } = await syncClient().auth.getSession();
+  // Never sign a different account out after a cross-tab account change.
+  if (data.session?.user.id === userId) {
+    const { error } = await syncClient().auth.signOut({ scope: "local" });
+    if (error && error.status !== 403 && error.status !== 401) throw error;
+  }
+  if (!data.session || data.session.user.id === userId) await clearPushBinding();
+  eraseAccountData(localStorage, userId);
+  localStorage.removeItem(DELETION_KEY); // Last: incomplete local cleanup remains retryable.
+  conflict = null; publish({ ...INITIAL, message: "계정과 계정 데이터를 삭제했어요." }); changed();
+  window.dispatchEvent(new Event("oddk-draft-change"));
+}
+export async function recoverAccountDeletion() {
+  const pending = pendingDeletion(localStorage);
+  if (!pending) return false;
+  const result = await lifecycleRequest("status", { operation: pending.operation });
+  if (result.state === "deleted") { await finishAccountDeletion(pending.userId); return true; }
+  throw new Error("아직 삭제 완료를 확인하지 못했어요. 계정 삭제 창에서 다시 시도해주세요.");
+}
+export async function deleteSyncAccount() {
+  if (busy || connecting) throw new Error("동기화를 마친 뒤 다시 시도해주세요.");
+  let pending = pendingDeletion(localStorage);
+  const { data, error } = await syncClient().auth.getSession();
+  if (pending) {
+    const result = await lifecycleRequest("status", { operation: pending.operation });
+    if (result.state === "deleted") { await finishAccountDeletion(pending.userId); return; }
+  }
+  if (error || !data.session || (pending && pending.userId !== data.session.user.id)) throw new Error("삭제한 계정으로 다시 로그인해 결과를 확인해주세요. 문의: seonyoungyoo16@gmail.com");
+  const auth = data.session;
+  const s = session();
+  if (!pending) {
+    if (!s || s.id !== auth.user.id) throw new Error("현재 계정을 다시 확인해주세요.");
+    const operation = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, "0")).join("");
+    pending = { userId: auth.user.id, operation };
+    localStorage.setItem(DELETION_KEY, JSON.stringify(pending));
+  }
+  clearTimeout(timer);
+  if (s) status(s, "error", "계정을 삭제하고 있어요. 완료까지 기다려주세요.");
+  try {
+    const result = await lifecycleRequest("delete", { operation: pending.operation, confirmation: "DELETE_ACCOUNT" }, auth.access_token);
+    if (result.state !== "deleted") throw new Error("삭제 완료를 확인하지 못했어요. 다시 확인해주세요.");
+    await finishAccountDeletion(pending.userId);
+  } catch (error) {
+    // These errors occur before the server starts deleting the account.
+    if (error instanceof AccountError && ["apple_reauthentication_required", "apple_not_configured", "invalid_request"].includes(error.code)) {
+      localStorage.removeItem(DELETION_KEY);
+      if (s) status(s, "error", error.message);
+    }
+    throw error;
+  }
 }
 export async function resolveSyncConflict(use: "local" | "cloud") {
   const s = session(); if (!s || !conflict) return;
