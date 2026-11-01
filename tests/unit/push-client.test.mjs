@@ -10,7 +10,7 @@ const js = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarg
 const keys = await createVapidKeys();
 const copy = value => JSON.parse(JSON.stringify(value));
 const id = n => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
-function harness() {
+function harness(native = false) {
   const scope = "https://example.invalid/oddk-todo/";
   const h = { user: id(1), calls: [], permission: "default", promptCount: 0, exists: false, subscribed: false, offline: false, server: { revision: 0, enabled: false, owned: false, label: null }, state: { installationId: id(3), deviceToken: "A".repeat(43), epoch: id(4), userId: null, revision: 0, enabled: false, seen: [] }, generation: 4 };
   class Channel {
@@ -40,7 +40,7 @@ function harness() {
   const navigator = { serviceWorker: { getRegistration: async value => { assert.equal(value, scope); return h.exists ? registration : undefined; }, register: async (url, options) => { h.calls.push("register-worker"); assert.equal(url, active.scriptURL); assert.equal(options.scope, scope); assert.equal(options.updateViaCache, "none"); h.exists = true; return registration; } } };
   const client = { auth: { getSession: async () => ({ data: { session: h.user ? { user: { id: h.user }, access_token: "synthetic" } : null } }) } };
   const exports = {};
-  vm.runInNewContext(js, { exports, require: () => ({ syncClient: () => client }), window: { isSecureContext: true, location: { origin: "https://example.invalid" }, Notification: notification, PushManager: {} }, navigator, Notification: notification, URL, MessageChannel: Channel, Uint8Array, atob, AbortSignal, setTimeout, clearTimeout, process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } },
+  vm.runInNewContext(js, { exports, require: name => name === "@capacitor/core" ? { Capacitor: { isNativePlatform: () => native } } : { syncClient: () => client }, window: { isSecureContext: true, location: { origin: "https://example.invalid" }, Notification: notification, PushManager: {} }, navigator, Notification: notification, URL, MessageChannel: Channel, Uint8Array, atob, AbortSignal, setTimeout, clearTimeout, process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } },
     fetch: async (_url, options) => {
       const body = JSON.parse(options.body); h.calls.push(`api:${body.action}`);
       if (h.offline) throw new Error("offline");
@@ -58,6 +58,13 @@ function harness() {
   });
   h.client = exports; h.subscription = subscription; h.registration = registration; return h;
 }
+test("native WebViews do not request unsupported web push permissions or register a worker", async () => {
+  const h = harness(true);
+  assert.equal(h.client.pushSupported(), false);
+  await assert.rejects(h.client.enablePush(h.user), /알림/);
+  assert.equal(h.promptCount, 0); assert.equal(h.exists, false);
+  assert.deepEqual(h.calls, []);
+});
 test("initial inspect and account alignment never request permission, register a worker, or subscribe", async () => {
   const h = harness(); assert.equal((await h.client.inspectPush(h.user)).enabled, false); await h.client.alignPushBinding(h.user); await h.client.clearPushBinding();
   assert.equal(h.promptCount, 0); assert.equal(h.exists, false); assert.deepEqual(h.calls, []);

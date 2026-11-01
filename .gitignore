@@ -16,6 +16,11 @@
 # next.js
 /.next/
 /out/
+/out-android/
+/out-native/
+/artifacts/android/
+/artifacts/ios/
+/artifacts/mobile/
 
 # production
 /build

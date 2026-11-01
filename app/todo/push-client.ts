@@ -1,14 +1,15 @@
 import { syncClient } from "./supabase-client";
+import { Capacitor } from "@capacitor/core";
 
 const endpoint = "https://synxmskamifpovuziecx.supabase.co/functions/v1/push-subscriptions";
 export type PushBinding = { installationId: string; deviceToken: string; epoch: string; userId: string | null; revision: number; enabled: boolean; seen: { id: string; until: number }[] };
 export type PushDevice = { installationId: string; revision: number; label: string; enabled: boolean; updatedAt: string };
 type DeviceStatus = { revision: number; enabled: boolean; owned: boolean; label: string | null };
 const scopeUrl = () => new URL(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/`, window.location.origin).href;
-export function pushSupported() { return typeof window !== "undefined" && window.isSecureContext && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
+export function pushSupported() { return !Capacitor.isNativePlatform() && typeof window !== "undefined" && window.isSecureContext && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window; }
 
 async function worker(create = false) {
-  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return null;
+  if (Capacitor.isNativePlatform() || typeof navigator === "undefined" || !("serviceWorker" in navigator)) return null;
   const scope = scopeUrl(), script = new URL("oddk-push-sw.js", scope).href;
   let registration = await navigator.serviceWorker.getRegistration(scope);
   if (registration?.scope !== scope) registration = undefined;

@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { Capacitor } from "@capacitor/core";
+import { usesLocalTaskAI } from "./native-options";
 import { HiOutlinePlus, HiOutlineXMark, HiOutlineArrowPath } from "react-icons/hi2";
 import { splitWithLocalAI } from "./local-task-ai";
 import { splitWithRemoteAI } from "./remote-task-ai";
@@ -25,7 +27,7 @@ export function TaskSplitAction({ source, disabled, onAdd, onBusyChange, onSourc
     if (submitted !== source) onSourceSnapshot(submitted);
     setBusy(true); onBusyChange(true); setError("");
     try {
-      const local = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+      const local = usesLocalTaskAI(location.hostname, Capacitor.isNativePlatform());
       const session = local ? null : (await syncClient().auth.getSession()).data.session;
       const titles = local ? await splitWithLocalAI(submitted, controller.signal, location.hostname)
         : await splitWithRemoteAI(submitted, controller.signal, session?.access_token ?? null);

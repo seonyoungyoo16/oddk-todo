@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">oddk</string>
+    <string name="title_activity_main">oddk</string>
+    <string name="package_name">com.oddk.todo</string>
+    <string name="custom_url_scheme">com.oddk.todo</string>
+</resources>

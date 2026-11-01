@@ -13,7 +13,7 @@ const key = "oddk.sync.plan.account-a";
 const localKey = "oddk.todo.v1";
 const js = ts.transpileModule(readFileSync(new URL("../../app/todo/sync-store.ts", import.meta.url), "utf8"), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
 const copy = (value) => JSON.parse(JSON.stringify(value));
-function harness({ plan = modern(), dirty = false, cached = plan, values = new Map(), connected = true } = {}) {
+function harness({ plan = modern(), dirty = false, cached = plan, values = new Map(), connected = true, native = false } = {}) {
   const auth = (id) => ({ user: { id, email: `${id}@example.invalid`, user_metadata: {}, app_metadata: { provider: "email" }, created_at: "2026-01-01" }, access_token: "synthetic-only" });
   let login = auth("account-a"), listener;
   const session = (id) => ({ id, deviceId: `device-${id}`, name: `${id}@example.invalid` });
@@ -22,19 +22,19 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
   if (cached && !values.has(key)) values.set(key, JSON.stringify({ plan: JSON.stringify(cached), version: 4, dirty }));
   const jobs = new Map(); let nextJob = 0;
   const remote = { plan: copy(plan), version: 4, updated_at: "synthetic-time" };
-  const calls = [], oauthCalls = [], privacyCalls = []; let intercept, privacyIntercept;
+  const calls = [], oauthCalls = [], privacyCalls = [], browserCalls = []; let intercept, privacyIntercept;
   let download;
   const window = new EventTarget(), document = Object.assign(new EventTarget(), { visibilityState: "visible", createElement: () => ({ click() {} }) });
   window.location = { origin: "https://example.invalid" };
   const storage = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v), removeItem: (k) => values.delete(k) };
   const client = { auth: {
-    signInWithOAuth: async (options) => { oauthCalls.push(copy(options)); return { error: null }; },
+    signInWithOAuth: async (options) => { oauthCalls.push(copy(options)); return { data: { url: "https://example.invalid/authorize" }, error: null }; },
     getSession: async () => ({ data: { session: login }, error: null }),
     onAuthStateChange: (callback) => { listener = callback; return { data: { subscription: { unsubscribe() {} } } }; },
     signOut: async () => { privacyCalls.push("signout"); login = null; listener?.("SIGNED_OUT", null); return {}; },
   } };
   const exports = {};
-  vm.runInNewContext(js, { exports, require: (name) => name.includes("json-equality") ? { sameValue } : name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } : name.includes("_shared/plan") ? { validPlan } : name === "./push-client" ? { alignPushBinding: async () => {}, clearPushBinding: async () => {}, stopPushForLogout: async () => { privacyCalls.push("block"); await privacyIntercept?.(); } } : { syncClient: () => client },
+  vm.runInNewContext(js, { exports, require: (name) => name === "@capacitor/core" ? { Capacitor: { isNativePlatform: () => native } } : name === "@capacitor/browser" ? { Browser: { open: async options => { browserCalls.push(copy(options)); } } } : name === "./native-options" ? { NATIVE_AUTH_REDIRECT: "com.oddk.todo://auth/callback" } : name.includes("json-equality") ? { sameValue } : name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } : name.includes("_shared/plan") ? { validPlan } : name === "./push-client" ? { alignPushBinding: async () => {}, clearPushBinding: async () => {}, stopPushForLogout: async () => { privacyCalls.push("block"); await privacyIntercept?.(); } } : { syncClient: () => client },
     process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } }, localStorage: storage, window, document, Event, Error, TypeError, Set, crypto, AbortSignal, Blob, URL: { createObjectURL(blob) { download = blob; return "blob:synthetic"; }, revokeObjectURL() {} },
     setTimeout: (job) => { jobs.set(++nextJob, job); return nextJob; }, clearTimeout: (id) => jobs.delete(id), setInterval: () => 0, clearInterval() {},
     fetch: async (_url, options) => {
@@ -47,7 +47,7 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
       return new Response(JSON.stringify(remote));
     },
   });
-  return { store: exports, values, remote, calls, oauthCalls, privacyCalls, set privacyIntercept(fn) { privacyIntercept = fn; }, set intercept(fn) { intercept = fn; }, async jobs() { await new Promise(setImmediate); const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
+  return { store: exports, values, remote, calls, oauthCalls, privacyCalls, browserCalls, set privacyIntercept(fn) { privacyIntercept = fn; }, set intercept(fn) { intercept = fn; }, async jobs() { await new Promise(setImmediate); const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
     async login(id) { login = id ? auth(id) : null; listener?.(id ? "SIGNED_IN" : "SIGNED_OUT", login); await this.jobs(); await new Promise(setImmediate); },
     async download() { exports.exportPlanBackup("null", true); return JSON.parse(await download.text()); }, cache() { return JSON.parse(values.get(key)); }, snapshot() { return JSON.parse(exports.getPlanSnapshot("null")); }, status() { return JSON.parse(exports.getSyncSnapshot()); } };
 }
@@ -58,8 +58,16 @@ test("both OAuth providers start with the Pages callback without changing plan c
     await h.store.loginSync(provider);
     assert.equal(h.values.get("oddk.sync.login-provider"), provider);
   }
-  assert.deepEqual(h.oauthCalls, ["google", "github"].map(provider => ({provider, options: {redirectTo: "https://example.invalid/oddk-todo/todo/"}})));
+  assert.deepEqual(h.oauthCalls, ["google", "github"].map(provider => ({provider, options: {redirectTo: "https://example.invalid/oddk-todo/todo/", skipBrowserRedirect: false}})));
   for (const [key,value] of before) assert.equal(h.values.get(key), value);
+  assert.equal(h.calls.length, 0);
+});
+test("native OAuth opens the system browser with the app callback and preserves local data", async () => {
+  const h = harness({ connected: false, native: true }); const before = new Map(h.values);
+  await h.store.loginSync("google");
+  assert.deepEqual(h.oauthCalls, [{ provider: "google", options: { redirectTo: "com.oddk.todo://auth/callback", skipBrowserRedirect: true } }]);
+  assert.deepEqual(h.browserCalls, [{ url: "https://example.invalid/authorize" }]);
+  for (const [key, value] of before) assert.equal(h.values.get(key), value);
   assert.equal(h.calls.length, 0);
 });
 
