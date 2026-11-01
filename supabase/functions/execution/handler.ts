@@ -12,7 +12,7 @@ export type ExecutionStore = {
   commit(user: string, request: ExecutionCommandRequest, hash: string, context: ServerContext, change: ExecutionChange): Promise<ExecutionState>;
   history(user: string, request: Extract<ExecutionRequest, { action: "history" }>): Promise<{ records: ExecutionRecord[]; totals: { workMs: number; breakMs: number }; now: string }>;
 };
-const origins = new Set(["https://seonyoungyoo16.github.io", "http://localhost:3000", "http://127.0.0.1:3200"]);
+const origins = new Set(["https://seonyoungyoo16.github.io", "http://localhost:3000", "http://127.0.0.1:3200", "https://localhost", "capacitor://localhost"]);
 const validVersion = (v: number) => Number.isSafeInteger(v) && v >= 0 && v < Number.MAX_SAFE_INTEGER;
 function state(value: ExecutionState): ExecutionState {
   if (!value || !validVersion(value.revision) || !isExecutionTime(value.now) || value.current !== null && (!validExecutionRecord(value.current) || value.current.endedAt !== null)) throw new Error("invalid execution state");

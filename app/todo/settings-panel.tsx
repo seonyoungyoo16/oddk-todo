@@ -25,6 +25,8 @@ import {
 } from "./sync-store";
 import type { SyncStatus } from "./sync-store";
 import { AccountHelpLinks } from "./account-help-links";
+import { DeviceReminderSettings } from "./native-reminder-settings";
+import { AIConsentSettings } from "./ai-consent-controls";
 
 const tabs = [
   { id: "general", label: "일반" },
@@ -147,17 +149,21 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: 
         </div>
       </SettingsCard>
 
-      <AccountHelpLinks />
-
       <SettingsCard title="기기 동기화">
         <div className="oddk-settingActionRow"><div className="oddk-settingCopy"><strong>저장 상태</strong><p>{sync.message}</p></div><span className="oddk-settingStatus" data-attention={sync.phase === "conflict" || sync.phase === "error"}><i aria-hidden="true" />{syncLabel}</span></div>
         <div className="oddk-settingsCardBottom"><span>할 일 · 목표 · 하루 점검</span><button type="button" className="oddk-settingTextButton" onClick={() => openSettingsDialog("sync")}>동기화 관리<HiOutlineArrowUpRight aria-hidden="true" /></button></div>
       </SettingsCard>
+      <SettingsCard title="개인정보와 계정" description="개인정보 이용 내용과 계정 삭제를 확인하세요.">
+        <AccountHelpLinks>{(sync.connected || sync.deletionPending) && <button type="button" className="oddk-deleteAccountLink" onClick={() => openSettingsDialog("delete")}>{sync.deletionPending ? "계정 삭제 결과 확인" : "계정 삭제"}</button>}</AccountHelpLinks>
+      </SettingsCard>
+      <SettingsCard title="AI 분석·동의" description="이 기기의 현재 계정에 적용하는 전송 동의를 관리해요."><AIConsentSettings /></SettingsCard>
     </div>
 
     <div role="tabpanel" id="settings-panel-data" aria-labelledby="settings-tab-data" hidden={tab !== "data"}>
       <SettingsCard title="일정 알림" description="일정을 놓치지 않도록, 사용하는 기기마다 알림을 연결하세요.">
+        <DeviceReminderSettings>
         <div className="oddk-settingActionRow"><div className="oddk-settingIdentity"><span className="oddk-settingIcon"><HiOutlineBell aria-hidden="true" /></span><div><strong>이 기기의 알림</strong><p>{sync.connected ? "연결 상태와 알림을 받을 기기를 관리해요." : "계정을 연결한 뒤 기기 알림을 설정할 수 있어요."}</p></div></div><button type="button" className="oddk-settingButton" onClick={() => openSettingsDialog(sync.connected ? "profile" : "sync")}>{sync.connected ? "알림 설정" : "로그인하고 설정"}<HiOutlineArrowUpRight aria-hidden="true" /></button></div>
+        </DeviceReminderSettings>
       </SettingsCard>
 
       <SettingsCard title="데이터 백업" description="할 일과 계획을 JSON 파일로 보관할 수 있어요.">

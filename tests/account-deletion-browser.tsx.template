@@ -1,0 +1,7 @@
+"use client";
+import { useRef } from "react";
+import { AccountDeletionDialog } from "../account-deletion-dialog";
+export default function AccountPreview() {
+  const dialog = useRef<HTMLDialogElement>(null);
+  return <main className="oddk-page"><h1>계정 삭제 화면 검증</h1><p>합성 계정 표시 전용. 영구 삭제는 제출하지 않습니다.</p><button type="button" onClick={() => dialog.current?.showModal()}>삭제 창 열기</button><AccountDeletionDialog dialogRef={dialog} account="synthetic@example.invalid" fallback={'{"tasks":[],"start":"09:00"}'} pending={false} onDeleted={() => {}} /></main>;
+}

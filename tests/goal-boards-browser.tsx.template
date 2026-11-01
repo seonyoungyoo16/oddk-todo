@@ -1,0 +1,56 @@
+"use client";
+import { useState } from "react";
+import { validPlan } from "../../supabase/functions/_shared/plan";
+import { loadPlan } from "../../supabase/functions/_shared/plan-migration";
+import { goalBoard, updateGoalBoard } from "../todo/goal-draft";
+import { editGoalBoardDraft, goalBoardTree, planGoalBoards, saveGoalBoard } from "../todo/goal-boards";
+import { parsePlanRequest } from "../../supabase/functions/plan-sync/request";
+
+const ownerKey = "oddk.goal-boards-qa.owner";
+export default function GoalBoardsQA() {
+  const [message, setMessage] = useState("준비 전");
+  const owned = () => location.hostname === "127.0.0.3" && location.port === "3200" && localStorage.getItem(ownerKey) === "goal-boards-fixture-v1";
+  function prepare() {
+    if (location.hostname !== "127.0.0.3" || location.port !== "3200" || Object.keys(localStorage).some(key => key.startsWith("oddk.") || key.includes("auth-token"))) { setMessage("REFUSED: use an empty isolated QA origin"); return; }
+    const task = (id: string, title: string) => ({ id, title, notes: "합성 검증 메모", plannedDate: "2026-10-31", startTime: null, endTime: null, endDate: null, endDayOffset: null, minutes: null, bufferMinutes: null, priority: "normal", done: false });
+    const tree = { goal: "이직 준비", groups: Array.from({ length: 8 }, (_, i) => ({ id: `original-${i}`, title: i === 0 ? "포트폴리오" : "", taskIds: i === 0 ? ["read"] : [] })) };
+    const layout = goalBoard(tree)!;
+    layout.areas[0].taskIds = ["", "read", "", "", "", "read", "", ""];
+    const plan = { schemaVersion: 5, start: "09:00", tasks: [task("read", "자료 읽기"), task("walk", "30분 걷기")], reviewsByDate: {}, goalTree: tree, mandala: layout };
+    if (!validPlan(plan)) throw Error("Invalid fixture");
+    localStorage.setItem(ownerKey, "goal-boards-fixture-v1");
+    localStorage.setItem("oddk.todo.v1", JSON.stringify(plan));
+    const draftBoard = structuredClone(layout); draftBoard.areas[1].title = "면접 준비";
+    const draft = { base: tree, value: updateGoalBoard(tree, draftBoard), board: draftBoard, baseBoard: layout, archive: layout };
+    localStorage.setItem("oddk.drafts.v1.local.goal-tree", JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), data: draft }));
+    setMessage("READY");
+  }
+  function inspect() {
+    if (!owned()) return;
+    const loaded = loadPlan(localStorage.getItem("oddk.todo.v1") ?? "null");
+    if (!loaded.ok) { setMessage(loaded.error); return; }
+    const plan = loaded.plan;
+    const workspace = JSON.parse(localStorage.getItem("oddk.drafts.v1.local.goal-boards") ?? "null")?.data;
+    setMessage(JSON.stringify({ valid: validPlan(plan), acceptedBySyncContract: parsePlanRequest(JSON.stringify({ action: "push", version: 1, plan })).ok,
+      selectedId: workspace?.selectedId, boards: planGoalBoards(plan).map(meta => ({ id: meta.id, tree: goalBoardTree(plan, meta.id), layout: goalBoard(goalBoardTree(plan, meta.id), meta.layout) })), drafts: workspace?.drafts, tasks: plan.tasks }, null, 2));
+  }
+  function conflict() {
+    if (!owned()) return;
+    const loaded = loadPlan(localStorage.getItem("oddk.todo.v1") ?? "null"); if (!loaded.ok) return;
+    const plan = loaded.plan, selectedId = JSON.parse(localStorage.getItem("oddk.drafts.v1.local.goal-boards") ?? "null")?.data?.selectedId ?? planGoalBoards(plan)[0].id;
+    const meta = planGoalBoards(plan).find(meta => meta.id === selectedId)!;
+    const board = goalBoard(goalBoardTree(plan, selectedId), meta.layout)!; board.goal = "다른 화면의 변경";
+    localStorage.setItem("oddk.todo.v1", JSON.stringify(saveGoalBoard(plan, selectedId, editGoalBoardDraft(plan, selectedId, board))));
+    setMessage("EXTERNAL_CHANGE_WRITTEN");
+  }
+  function cleanup() {
+    if (!owned()) return;
+    for (const key of Object.keys(localStorage)) if (key.startsWith("oddk.")) localStorage.removeItem(key);
+    setMessage("CLEANED");
+  }
+  return <main style={{ padding: 16 }}><div style={{ display: "flex", gap: 12 }}>
+    <button onClick={prepare}>검증 데이터 준비</button><button onClick={inspect}>저장 결과 확인</button>
+    <button onClick={conflict}>선택 목표 저장본 변경</button><button onClick={cleanup}>검증 데이터 비우기</button>
+    <a href="/todo">실제 앱 열기</a>
+  </div><pre role="status" style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>{message}</pre></main>;
+}

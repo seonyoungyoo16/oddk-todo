@@ -5,6 +5,14 @@ import { taskTitleKey } from "./task-identity.ts";
 
 export const MAX_TASK_PARAGRAPH = 2000;
 export const MAX_BATCH_TASKS = 32;
+export function prepareManualTask(text: string): { title: string; original: string } {
+  if (!text.trim() || text.length > MAX_TASK_PARAGRAPH) throw Error("할 일을 1~2000자로 적어주세요. 입력은 그대로 유지했어요.");
+  // Preserve the full text in notes when the title limit is exceeded.
+  // Never cut between the two UTF-16 units of an emoji.
+  const title = text.trim().slice(0, 120).replace(/[\uD800-\uDBFF]$/, "").trim();
+  parseTaskCandidates({ titles: [title] });
+  return { title, original: text };
+}
 export function parseTaskCandidates(value: unknown): string[] {
   if (!value || typeof value !== "object" || !("titles" in value) || !Array.isArray(value.titles) || !value.titles.length || value.titles.length > MAX_BATCH_TASKS) throw Error("나눈 할 일은 1~32개여야 해요. 원문을 조금 나눠 다시 시도해주세요.");
   return value.titles.map(title => {

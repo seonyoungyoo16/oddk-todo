@@ -161,6 +161,9 @@
 .oddk-page .oddk-composerFooter button { width:auto; height:var(--oddk-control-height); min-width:74px; gap:8px; padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); font-size:var(--oddk-font-label); }
 .oddk-page .oddk-composerFooter .oddk-stopSplit { min-width:0; padding:8px 8px; gap:var(--oddk-space-1); border:0; background:transparent; color:var(--oddk-muted); font-weight:400; }
 .oddk-page .oddk-composerFooter .oddk-stopSplit:hover { color:var(--oddk-heading); background:var(--oddk-soft); }
+.oddk-page .oddk-composerFooter .oddk-aiAnalyze { color:var(--oddk-muted); background:transparent; border-color:transparent; font-weight:400; }
+.oddk-page .oddk-composerFooter .oddk-aiAnalyze:hover { color:var(--oddk-heading); background:var(--oddk-soft); }
+.oddk-page .oddk-composerFooter .oddk-manualNote { flex-basis:100%; margin:0; color:var(--oddk-muted); font-size:var(--oddk-font-small); }
 .oddk-stopSplit > svg { width:14px; height:14px; }
 .oddk-submitSpinner { animation:oddk-submit-spin 1s linear infinite; }
 @keyframes oddk-submit-spin { to { transform:rotate(360deg); } }

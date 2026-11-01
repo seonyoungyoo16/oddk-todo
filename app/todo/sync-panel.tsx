@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { HiOutlineCloud, HiOutlineXMark, HiOutlineArrowPath, HiOutlineEnvelope, HiOutlineArrowRightOnRectangle } from "react-icons/hi2";
-import { SiGoogle, SiGithub } from "react-icons/si";
+import { SiApple, SiGoogle, SiGithub } from "react-icons/si";
+import { AccountDeletionDialog } from "./account-deletion-dialog";
+import { AppleLoginButton } from "./apple-login-button";
 import { loginSync, disconnectSync, resolveSyncConflict, exportPlanBackup, syncNow, startSync, getSyncSnapshot, getServerSyncSnapshot, subscribeSync, conflictPreview } from "./sync-store";
 import type { SyncStatus } from "./sync-store";
 import { keepFocusInDialog } from "./dialog-focus";
@@ -15,12 +17,13 @@ export function SyncPanel({ fallback }: { fallback: string }) {
   const state: SyncStatus = JSON.parse(raw);
   const dialog = useRef<HTMLDialogElement>(null);
   const profileDialog = useRef<HTMLDialogElement>(null);
+  const deletionDialog = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   useEffect(() => startSync(fallback), [fallback]);
   useEffect(() => subscribeSettingsDialog(target => {
     setMessage("");
-    const element = target === "profile" && state.connected ? profileDialog.current : dialog.current;
+    const element = target === "delete" ? deletionDialog.current : target === "profile" && state.connected ? profileDialog.current : dialog.current;
     if (element && !element.open) element.showModal();
   }), [state.connected]);
   async function perform(action: () => Promise<unknown>) {
@@ -30,11 +33,13 @@ export function SyncPanel({ fallback }: { fallback: string }) {
     finally { setBusy(false); }
   }
   const preview = state.phase === "conflict" ? conflictPreview() : null;
-  const ProviderIcon = state.provider === "google" ? SiGoogle : SiGithub;
-  const providerName = state.provider === "google" ? "Google" : state.provider === "github" ? "GitHub" : state.provider ?? "계정";
+  const ProviderIcon = state.provider === "apple" ? SiApple : state.provider === "google" ? SiGoogle : SiGithub;
+  const providerName = state.provider === "apple" ? "Apple" : state.provider === "google" ? "Google" : state.provider === "github" ? "GitHub" : state.provider ?? "계정";
   const date = (value?: string) => value ? new Date(value).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", dateStyle: "medium", timeStyle: "short" }) : "—";
   return <>
     <div className="oddk-accountFooter" data-connected={state.connected}>
+      {!state.connected && <AppleLoginButton className="oddk-accountLogin" placement="right" disabled={busy || state.deletionPending} onClick={() => void perform(() => loginSync("apple"))} />}
+      {state.deletionPending && <button type="button" className="oddk-settingTextButton" onClick={() => deletionDialog.current?.showModal()}>계정 삭제 결과 확인</button>}
       {state.connected ? <><button type="button" className="oddk-accountButton" aria-label="내 정보 보기" onClick={() => { setMessage(""); profileDialog.current?.showModal(); }}><ProviderIcon aria-hidden="true" /><span>{state.displayName || state.name}</span></button><button type="button" className="oddk-syncTrigger" onClick={() => { setMessage(""); dialog.current?.showModal(); }}><HiOutlineCloud aria-hidden="true" /><span>{state.phase === "synced" ? "동기화됨" : state.phase === "conflict" ? "충돌 확인" : state.phase === "waiting" ? "저장 대기" : state.phase === "error" ? "연결 확인" : "동기화 중"}</span></button></> : <><button type="button" className="oddk-accountLogin" disabled={busy} onClick={() => void perform(() => loginSync("google"))}><SiGoogle aria-hidden="true" /><span>Google 로그인</span></button><button type="button" className="oddk-accountLogin" disabled={busy} onClick={() => void perform(() => loginSync("github"))}><SiGithub aria-hidden="true" /><span>GitHub 로그인</span></button><small>로그인하면 다른 기기에서도 이어서 사용할 수 있어요.</small>{(message || state.phase === "error") && <small role="status">{message || state.message}</small>}</>}
     </div>
     <dialog ref={profileDialog} className="oddk-dialog oddk-profileDialog" aria-labelledby="profile-title" onKeyDown={keepFocusInDialog} onClick={(event) => { if (event.target === event.currentTarget) profileDialog.current?.close(); }}>
@@ -43,7 +48,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
         <div className="oddk-profileIdentity"><span className="oddk-providerMark"><ProviderIcon aria-hidden="true" /></span><strong>{state.displayName || state.name}</strong><span className="oddk-providerBadge">{providerName} 계정으로 로그인</span></div>
         <dl className="oddk-profileDetails"><div className="oddk-profileEmail"><dt><HiOutlineEnvelope aria-hidden="true" />이메일</dt><dd>{state.name}</dd></div><div><dt>가입일</dt><dd>{date(state.createdAt)}</dd></div><div><dt>최근 로그인</dt><dd>{date(state.lastSignInAt)}</dd></div></dl>
         {state.connected && <PushSettings key={getPlanScope()} userId={getPlanScope()} />}
-        <AccountHelpLinks />
+        <AccountHelpLinks><button type="button" className="oddk-deleteAccountLink" onClick={() => { profileDialog.current?.close(); deletionDialog.current?.showModal(); }}>계정 삭제</button></AccountHelpLinks>
         {message && <p className="oddk-syncFeedback" role="status">{message}</p>}
         <div className="oddk-profileFooter"><button type="button" className="oddk-logoutButton" disabled={busy} onClick={() => void perform(async () => { await disconnectSync(); profileDialog.current?.close(); })}><HiOutlineArrowRightOnRectangle aria-hidden="true" />{busy ? "로그아웃 중…" : "로그아웃"}</button><small>이 기기에서만 로그아웃돼요.</small></div>
       </div>
@@ -54,6 +59,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
         {state.refreshRequired && <button type="button" className="oddk-syncLogin" onClick={() => window.location.reload()}>새로고침하고 다시 연결</button>}
         {!state.connected ? <>
           <p className="oddk-syncHelp">다른 기기에서도 같은 계정으로 로그인하면 할 일·만다라트·하루 점검을 함께 볼 수 있어요.</p>
+          <AppleLoginButton className="oddk-syncLogin" disabled={busy || state.deletionPending} onClick={() => void perform(() => loginSync("apple"))} />
           <button className="oddk-syncLogin" type="button" disabled={busy} onClick={() => void perform(() => loginSync("google"))}><SiGoogle aria-hidden="true" />Google 로그인</button>
           <button className="oddk-syncLogin" type="button" disabled={busy} onClick={() => void perform(() => loginSync("github"))}><SiGithub aria-hidden="true" />GitHub 로그인</button>
           <p className="oddk-syncHelp">첫 로그인에는 이 기기의 저장된 내용을 동기화해요. 계정에 기존 데이터가 있으면 그 내용을 불러오고, 이 기기 내용은 백업해요.</p>
@@ -68,5 +74,6 @@ export function SyncPanel({ fallback }: { fallback: string }) {
         <AccountHelpLinks />
       </div>
     </dialog>
+    <AccountDeletionDialog dialogRef={deletionDialog} account={state.name} fallback={fallback} pending={!!state.deletionPending} onDeleted={() => { profileDialog.current?.close(); dialog.current?.close(); }} />
   </>;
 }

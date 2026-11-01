@@ -6,9 +6,20 @@ import { Browser } from "@capacitor/browser";
 import { createNativeAuthHandler } from "./native-options";
 import { syncClient } from "./supabase-client";
 import { startNativeUpdates } from "./native-updates";
+import { startNativeReminders, refreshNativeReminders } from "./native-reminders";
+import { useNativeReminderStatus } from "./native-reminder-settings";
+import { getPlanScope, getPlanSnapshot, hasPendingAccountDeletion, subscribePlan, subscribeSync } from "./sync-store";
 
 export function NativeRuntime() {
   const [message, setMessage] = useState("");
+  const reminders = useNativeReminderStatus();
+  useEffect(() => startNativeReminders(() => {
+    try { return { scope: getPlanScope(), raw: getPlanSnapshot(JSON.stringify({ schemaVersion: 5, start: "09:00", tasks: [], reviewsByDate: {}, goalTree: { goal: "", groups: [] } })), blocked: hasPendingAccountDeletion() }; }
+    catch { return { scope: "unreadable-session", raw: "null", blocked: true }; }
+  }, notify => {
+    const stopPlan = subscribePlan(notify), stopSync = subscribeSync(notify);
+    return () => { stopPlan(); stopSync(); };
+  }), []);
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const stopUpdates = startNativeUpdates();
@@ -46,5 +57,5 @@ export function NativeRuntime() {
     })).catch(report);
     return () => { active = false; stopUpdates(); for (const listener of listeners) void listener.remove(); };
   }, []);
-  return message ? <div className="oddk-nativeMessage" role="alert">{message}<button type="button" onClick={() => setMessage("")}>닫기</button></div> : null;
+  return <>{message && <div className="oddk-nativeMessage" role="alert">{message}<button type="button" onClick={() => setMessage("")}>닫기</button></div>}{reminders.error && <div className="oddk-nativeMessage" role="alert">{reminders.error}<button type="button" onClick={() => void refreshNativeReminders().catch(() => {})}>다시 확인</button></div>}</>;
 }

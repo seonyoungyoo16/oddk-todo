@@ -40,7 +40,7 @@ function harness(native = false) {
   const navigator = { serviceWorker: { getRegistration: async value => { assert.equal(value, scope); return h.exists ? registration : undefined; }, register: async (url, options) => { h.calls.push("register-worker"); assert.equal(url, active.scriptURL); assert.equal(options.scope, scope); assert.equal(options.updateViaCache, "none"); h.exists = true; return registration; } } };
   const client = { auth: { getSession: async () => ({ data: { session: h.user ? { user: { id: h.user }, access_token: "synthetic" } : null } }) } };
   const exports = {};
-  vm.runInNewContext(js, { exports, require: name => name === "@capacitor/core" ? { Capacitor: { isNativePlatform: () => native } } : { syncClient: () => client }, window: { isSecureContext: true, location: { origin: "https://example.invalid" }, Notification: notification, PushManager: {} }, navigator, Notification: notification, URL, MessageChannel: Channel, Uint8Array, atob, AbortSignal, setTimeout, clearTimeout, process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } },
+  vm.runInNewContext(js, { exports, require: name => name === "@capacitor/core" ? { Capacitor: { isNativePlatform: () => native } } : name === "./native-reminders" ? { disableNativeReminders: async () => { if (native) h.calls.push("native:block"); if (h.nativeBlockError) throw Error("native cancellation failed"); } } : { syncClient: () => client }, window: { isSecureContext: true, location: { origin: "https://example.invalid" }, Notification: notification, PushManager: {} }, navigator, Notification: notification, URL, MessageChannel: Channel, Uint8Array, atob, AbortSignal, setTimeout, clearTimeout, process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } },
     fetch: async (_url, options) => {
       const body = JSON.parse(options.body); h.calls.push(`api:${body.action}`);
       if (h.offline) throw new Error("offline");
@@ -64,6 +64,14 @@ test("native WebViews do not request unsupported web push permissions or registe
   await assert.rejects(h.client.enablePush(h.user), /알림/);
   assert.equal(h.promptCount, 0); assert.equal(h.exists, false);
   assert.deepEqual(h.calls, []);
+});
+test("native logout blocks local alarms and cannot finish when native cancellation fails", async () => {
+  const h = harness(true);
+  await h.client.stopPushForLogout(h.user);
+  assert.deepEqual(h.calls, ["native:block"]);
+  h.nativeBlockError = true;
+  await assert.rejects(h.client.stopPushForLogout(h.user), /native cancellation failed/);
+  assert.equal(h.promptCount, 0); assert.equal(h.exists, false);
 });
 test("initial inspect and account alignment never request permission, register a worker, or subscribe", async () => {
   const h = harness(); assert.equal((await h.client.inspectPush(h.user)).enabled, false); await h.client.alignPushBinding(h.user); await h.client.clearPushBinding();

@@ -23,7 +23,7 @@ export function useLocalDraft<T>(slot: string, initial: T, valid: (value: unknow
   if (failed?.key === key) { value = failed.value; problem = failed.message; }
   const current = useRef(value);
   useEffect(() => { current.current = value; }, [value]);
-  function setValue(action: SetStateAction<T>) {
+  const setValue = useCallback((action: SetStateAction<T>) => {
     const next = typeof action === "function" ? (action as (value: T) => T)(current.current) : action;
     current.current = next;
     try {
@@ -34,7 +34,7 @@ export function useLocalDraft<T>(slot: string, initial: T, valid: (value: unknow
       setFailed({ key, value: next, message: "초안을 기기에 저장하지 못했어요. 입력은 화면에 남아 있어요. 내용을 보관하고 재시도해주세요." });
       return false;
     }
-  }
+  }, [key, scope, slot, valid]);
   function download() {
     const payload = failed?.key === key ? JSON.stringify({ unsaved: failed.value, original: raw }) : raw ?? JSON.stringify(current.current);
     const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));

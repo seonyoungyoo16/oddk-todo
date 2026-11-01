@@ -15,6 +15,9 @@
   --oddk-selected: var(--oddk-highlight);
   --oddk-completed: #f1f2f4;
   --oddk-completed-border: #e1e4e8;
+  --oddk-disabled-surface: #e9edf2;
+  --oddk-disabled-text: #8b96a8;
+  --oddk-disabled-border: #d8dfe8;
   --oddk-success-surface: #eaf7ee;
   --oddk-success-text: #166534;
   --oddk-danger-surface: #fff0ef;
@@ -55,6 +58,7 @@
   --oddk-plan-gap: 24px;
   --oddk-plan-divider-space: 20px;
   --oddk-sidebar-width: 188px;
+  --oddk-mobile-nav-height: 76px;
   --oddk-page-max-width: 1600px;
   --oddk-page-gutter: 40px;
   --oddk-page-top-space: 32px;
@@ -74,6 +78,9 @@
 }
 
 .oddk-page[data-theme="dark"] {
+  --oddk-disabled-surface: #273243;
+  --oddk-disabled-text: #8d9bb0;
+  --oddk-disabled-border: #3b4658;
   --oddk-accent-text: #a8bfff;
   --oddk-surface: #151d2b;
   --oddk-sidebar: #111926;

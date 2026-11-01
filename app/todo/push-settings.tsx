@@ -1,10 +1,15 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Capacitor } from "@capacitor/core";
+import { DeviceReminderSettings } from "./native-reminder-settings";
 import { HiOutlineBell, HiOutlineBellSlash } from "react-icons/hi2";
 import { disablePush, enablePush, inspectPush, pushDevices, pushSupported, revokePushDevice } from "./push-client";
 import type { PushDevice } from "./push-client";
 
 export function PushSettings({ userId }: { userId: string }) {
+  return <DeviceReminderSettings><WebPushSettings userId={userId} /></DeviceReminderSettings>;
+}
+function WebPushSettings({ userId }: { userId: string }) {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [supported, setSupported] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
@@ -38,7 +43,7 @@ export function PushSettings({ userId }: { userId: string }) {
   return <section className="oddk-pushSettings" aria-labelledby="push-settings-title">
     <div className="oddk-pushHeading"><h3 id="push-settings-title"><HiOutlineBell aria-hidden="true" />일정 알림</h3><span>{enabled === null ? "확인 필요" : enabled ? "이 기기 켜짐" : "이 기기 꺼짐"}</span></div>
     <p>할 일의 알림 시각에 이 기기로 알려드려요. 기기마다 한 번씩 연결해주세요.</p>
-    {supported === false && <p>이 브라우저는 푸시 알림을 지원하지 않아요. iPhone·iPad는 홈 화면에 추가한 앱에서 확인해주세요.</p>}
+    {supported === false && <p>{Capacitor.isNativePlatform() ? "이 앱의 일정 알림은 아직 연결되지 않았어요." : "이 브라우저는 푸시 알림을 지원하지 않아요. iPhone·iPad는 홈 화면에 추가한 앱에서 확인해주세요."}</p>}
     <div className="oddk-pushActions">
       {supported && <button type="button" disabled={busy} onClick={() => void perform(enabled ? disablePush(userId) : enablePush(userId), enabled ? "이 기기 알림을 껐어요." : "이 기기에 알림을 연결했어요.")}>{enabled ? <HiOutlineBellSlash aria-hidden="true" /> : <HiOutlineBell aria-hidden="true" />}{busy ? "변경 중…" : enabled ? "이 기기 알림 끄기" : "이 기기 알림 켜기"}</button>}
       <button type="button" disabled={busy} onClick={() => void perform(refresh(), "연결 상태를 확인했어요.")}>상태 다시 확인</button>

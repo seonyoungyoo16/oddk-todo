@@ -35,6 +35,19 @@ test("verified users can only submit bounded text, with per-user throttling", as
   for (let i = 0; i < 9; i++) assert.equal((await send({ text: "운동" })).status, 200);
   assert.equal((await send({ text: "운동" })).status, 429); assert.equal(inputs.length, 10);
 });
+test("native WebView origins are allowed while foreign origins cannot use their CORS permission", async t => {
+  const base = await fixture(t, { verify: async () => "android-user", generate: async () => ["운동하기"] });
+  for (const origin of ["https://localhost", "capacitor://localhost"]) {
+  const androidHeaders = { ...headers, Origin: origin };
+  const preflight = await fetch(`${base}/split`, { method: "OPTIONS", headers: androidHeaders });
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get("access-control-allow-origin"), origin);
+  const result = await fetch(`${base}/split`, { method: "POST", headers: androidHeaders, body: JSON.stringify({ text: "운동하기" }) });
+  assert.equal(result.status, 200); assert.deepEqual(await result.json(), { titles: ["운동하기"] });
+  }
+  const foreign = await fetch(`${base}/split`, { method: "OPTIONS", headers: { Origin: "https://localhost.evil.example" } });
+  assert.equal(foreign.status, 403); assert.equal(foreign.headers.get("access-control-allow-origin"), null);
+});
 test("concurrent inference is rejected and an inference failure releases the slot", async t => {
   let release;
   const held = new Promise(resolve => { release = resolve; });
@@ -55,19 +68,19 @@ test("auth is checked against Supabase and anonymous accounts are denied", async
 });
 test("gateway builds its own model prompt and rejects incomplete model output", async () => {
   const titles = await generateTitles("운동하고 장보기", new AbortController().signal, async (url, init) => {
-    assert.equal(url, "http://127.0.0.1:11434/api/chat"); assert.equal(JSON.parse(init.body).model, "qwen3:4b-instruct-2507-q4_K_M");
+    assert.equal(url, "http://127.0.0.1:11434/api/chat"); assert.equal(JSON.parse(init.body).model, "qwen3:4b");
     return Response.json({ done: true, message: { content: '{"titles":["운동","장보기"]}' } });
   });
   assert.deepEqual(titles, ["운동", "장보기"]);
   await assert.rejects(generateTitles("운동", new AbortController().signal, async () => Response.json({ done: false })));
 });
 test("deployed client requires login, sends only text over HTTPS and preserves server errors", async () => {
-  const signal = new AbortController().signal;
+  const signal = new AbortController().signal, permit = { assertCurrent() {} };
   await assert.rejects(splitWithRemoteAI("운동", signal, null), /로그인/);
-  assert.deepEqual(await splitWithRemoteAI("운동", signal, "jwt", async (url, init) => {
+  assert.deepEqual(await splitWithRemoteAI("운동", signal, "jwt", permit, async (url, init) => {
     assert.equal(url, TASK_AI_ENDPOINT); assert.match(url, /^https:/); assert.deepEqual(JSON.parse(init.body), { text: "운동" }); assert.equal(init.headers.Authorization, "Bearer jwt");
     return Response.json({ titles: ["운동"] });
   }), ["운동"]);
-  await assert.rejects(splitWithRemoteAI("운동", signal, "jwt", async () => Response.json({ error: "다시 로그인해주세요." }, { status: 401 })), /다시 로그인/);
-  await assert.rejects(splitWithRemoteAI("운동", signal, "jwt", async () => { throw Error("offline"); }), /원문은 유지/);
+  await assert.rejects(splitWithRemoteAI("운동", signal, "jwt", permit, async () => Response.json({ error: "다시 로그인해주세요." }, { status: 401 })), /다시 로그인/);
+  await assert.rejects(splitWithRemoteAI("운동", signal, "jwt", permit, async () => { throw Error("offline"); }), /원문은 유지/);
 });

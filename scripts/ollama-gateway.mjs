@@ -5,7 +5,7 @@ import { parseTaskCandidates, MAX_TASK_PARAGRAPH } from "../app/todo/batch-tasks
 
 const project = "https://synxmskamifpovuziecx.supabase.co";
 const publishableKey = "sb_publishable_ACwZjSLbL_dU9hilmAV7CQ_FEH8AT29";
-const allowedOrigin = "https://seonyoungyoo16.github.io";
+const allowedOrigins = new Set(["https://seonyoungyoo16.github.io", "https://localhost", "capacitor://localhost"]);
 export async function authenticate(token, fetcher = fetch) {
   const response = await fetcher(`${project}/auth/v1/user`, { headers: { apikey: publishableKey, Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000), redirect: "error" });
   if (!response.ok) return null;
@@ -28,7 +28,7 @@ export function createGateway({ verify = authenticate, generate = generateTitles
     const origin = req.headers.origin;
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
-    if (origin === allowedOrigin) {
+    if (allowedOrigins.has(origin)) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Vary", "Origin");
       res.setHeader("Access-Control-Allow-Headers", "authorization, content-type");
@@ -37,7 +37,7 @@ export function createGateway({ verify = authenticate, generate = generateTitles
     const send = (status, body) => { if (!res.destroyed) { res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" }); res.end(JSON.stringify(body)); } };
     if (req.url === "/health" && req.method === "GET") return send(200, { ok: true, service: "oddk-task-ai" });
     if (req.url !== "/split") return send(404, { error: "찾을 수 없는 요청이에요." });
-    if (origin && origin !== allowedOrigin) return send(403, { error: "허용되지 않은 앱이에요." });
+    if (origin && !allowedOrigins.has(origin)) return send(403, { error: "허용되지 않은 앱이에요." });
     if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
     if (req.method !== "POST") return send(405, { error: "지원하지 않는 요청이에요." });
     const token = /^Bearer ([A-Za-z0-9._-]{20,8192})$/.exec(req.headers.authorization ?? "")?.[1];

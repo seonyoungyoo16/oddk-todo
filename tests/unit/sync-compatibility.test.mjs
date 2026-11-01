@@ -1,3 +1,4 @@
+import * as accountData from "../../app/todo/account-data.ts";
 import { sameValue } from "../../supabase/functions/_shared/json-equality.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -26,7 +27,7 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
   let download;
   const window = new EventTarget(), document = Object.assign(new EventTarget(), { visibilityState: "visible", createElement: () => ({ click() {} }) });
   window.location = { origin: "https://example.invalid" };
-  const storage = { getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v), removeItem: (k) => values.delete(k) };
+  const storage = { get length() { return values.size; }, key: i => [...values.keys()][i] ?? null, getItem: (k) => values.get(k) ?? null, setItem: (k, v) => values.set(k, v), removeItem: (k) => values.delete(k) };
   const client = { auth: {
     signInWithOAuth: async (options) => { oauthCalls.push(copy(options)); return { data: { url: "https://example.invalid/authorize" }, error: null }; },
     getSession: async () => ({ data: { session: login }, error: null }),
@@ -34,7 +35,7 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
     signOut: async () => { privacyCalls.push("signout"); login = null; listener?.("SIGNED_OUT", null); return {}; },
   } };
   const exports = {};
-  vm.runInNewContext(js, { exports, require: (name) => name === "@capacitor/core" ? { Capacitor: { isNativePlatform: () => native } } : name === "@capacitor/browser" ? { Browser: { open: async options => { browserCalls.push(copy(options)); } } } : name === "./native-options" ? { NATIVE_AUTH_REDIRECT: "com.oddk.todo://auth/callback" } : name.includes("json-equality") ? { sameValue } : name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } : name.includes("_shared/plan") ? { validPlan } : name === "./push-client" ? { alignPushBinding: async () => {}, clearPushBinding: async () => {}, stopPushForLogout: async () => { privacyCalls.push("block"); await privacyIntercept?.(); } } : { syncClient: () => client },
+  vm.runInNewContext(js, { exports, require: (name) => name === "./account-data" ? accountData : name === "@capacitor/core" ? { Capacitor: { isNativePlatform: () => native } } : name === "@capacitor/browser" ? { Browser: { open: async options => { browserCalls.push(copy(options)); } } } : name === "./native-options" ? { NATIVE_AUTH_REDIRECT: "com.oddk.todo://auth/callback" } : name.includes("json-equality") ? { sameValue } : name.includes("plan-migration") ? { loadPlan, upgradeStoredPlan, preserveMigrationBackup, preserveV6Backup } : name.includes("_shared/plan") ? { validPlan } : name === "./push-client" ? { alignPushBinding: async () => {}, clearPushBinding: async () => {}, stopPushForLogout: async () => { privacyCalls.push("block"); await privacyIntercept?.(); } } : { syncClient: () => client },
     process: { env: { NEXT_PUBLIC_BASE_PATH: "/oddk-todo" } }, localStorage: storage, window, document, Event, Error, TypeError, Set, crypto, AbortSignal, Blob, URL: { createObjectURL(blob) { download = blob; return "blob:synthetic"; }, revokeObjectURL() {} },
     setTimeout: (job) => { jobs.set(++nextJob, job); return nextJob; }, clearTimeout: (id) => jobs.delete(id), setInterval: () => 0, clearInterval() {},
     fetch: async (_url, options) => {
@@ -47,7 +48,7 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
       return new Response(JSON.stringify(remote));
     },
   });
-  return { store: exports, values, remote, calls, oauthCalls, privacyCalls, browserCalls, set privacyIntercept(fn) { privacyIntercept = fn; }, set intercept(fn) { intercept = fn; }, async jobs() { await new Promise(setImmediate); const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
+  return { storage, storageEvent: key => window.dispatchEvent(Object.assign(new Event("storage"), { key })), store: exports, values, remote, calls, oauthCalls, privacyCalls, browserCalls, set privacyIntercept(fn) { privacyIntercept = fn; }, set intercept(fn) { intercept = fn; }, async jobs() { await new Promise(setImmediate); const pending = [...jobs.values()]; jobs.clear(); for (const job of pending) await job(); await new Promise(setImmediate); },
     async login(id) { login = id ? auth(id) : null; listener?.(id ? "SIGNED_IN" : "SIGNED_OUT", login); await this.jobs(); await new Promise(setImmediate); },
     async download() { exports.exportPlanBackup("null", true); return JSON.parse(await download.text()); }, cache() { return JSON.parse(values.get(key)); }, snapshot() { return JSON.parse(exports.getPlanSnapshot("null")); }, status() { return JSON.parse(exports.getSyncSnapshot()); } };
 }
@@ -69,6 +70,89 @@ test("native OAuth opens the system browser with the app callback and preserves 
   assert.deepEqual(h.browserCalls, [{ url: "https://example.invalid/authorize" }]);
   for (const [key, value] of before) assert.equal(h.values.get(key), value);
   assert.equal(h.calls.length, 0);
+});
+
+test("Apple preparation button starts no network or OAuth flow on web or native", async () => {
+  for (const native of [false, true]) {
+    const h = harness({ native }), before = h.values.get(key);
+    h.intercept = body => body.action === "capabilities" ? Response.json({ appleReady: false }) : undefined;
+    await assert.rejects(h.store.loginSync("apple"), /연결 준비 중/);
+    assert.equal(h.oauthCalls.length, 0);
+    h.intercept = body => body.action === "capabilities" ? Response.json({ appleReady: true }) : undefined;
+    await assert.rejects(h.store.loginSync("apple"), /연결 준비 중/);
+    assert.equal(h.calls.length, 0);
+    assert.equal(h.oauthCalls.length, 0);
+    assert.equal(h.browserCalls.length, 0);
+    assert.equal(h.values.get(key), before);
+  }
+});
+test("confirmed deletion clears only the account cache/drafts after server proof", async () => {
+  const h = harness(), guest = h.values.get(localKey);
+  h.values.set("oddk.drafts.v1.account-a.goal-boards", "draft");
+  h.values.set("oddk.sync.plan.account-b", "other account");
+  h.intercept = body => body.action === "delete" ? Response.json({ state: "deleted" }) : undefined;
+  await h.store.deleteSyncAccount();
+  assert.equal(h.values.has(key), false);
+  assert.equal(h.values.has("oddk.drafts.v1.account-a.goal-boards"), false);
+  assert.equal(h.values.get("oddk.sync.plan.account-b"), "other account");
+  assert.equal(h.values.get(localKey), guest);
+  assert.equal(h.values.has(accountData.DELETION_KEY), false);
+  assert.equal(h.status().connected, false);
+});
+test("uncertain deletion pauses account writes and resumes cleanup from receipt", async () => {
+  const h = harness(), before = h.values.get(key);
+  h.intercept = body => body.action === "delete" ? Promise.reject(new TypeError("response lost")) : body.action === "status" ? Response.json({ state: "deleted" }) : undefined;
+  await assert.rejects(h.store.deleteSyncAccount(), /response lost/);
+  assert.equal(h.values.get(key), before);
+  assert.equal(h.store.hasPendingAccountDeletion(), true);
+  assert.throws(() => h.store.writePlan(h.snapshot()), /계정 삭제/);
+  const count = h.calls.length;
+  await h.store.syncNow();
+  assert.equal(h.calls.length, count);
+  await h.store.recoverAccountDeletion();
+  assert.equal(h.values.has(key), false);
+  assert.equal(h.store.hasPendingAccountDeletion(), false);
+});
+test("confirmed server deletion with failed AI receipt cleanup stays pending until durable retry succeeds", async () => {
+  for (const failure of ["throw", "silent", "readback"]) {
+    const h = harness(), guest = h.values.get(localKey), original = h.values.get(key);
+    const target = "oddk.ai-consent.v1.local.account-a";
+    h.values.set("oddk.ai-consent.v1.gateway.account-a", "stale gateway receipt"); h.values.set(target, "stale local receipt");
+    const keep = new Map([["oddk.ai-consent.v1.gateway.account-b", "other"], ["oddk.ai-consent.v1.local.local", "guest consent"]]);
+    for (const [k, value] of keep) h.values.set(k, value);
+    h.intercept = body => ["delete", "status"].includes(body.action) ? Response.json({ state: "deleted" }) : undefined;
+    const remove = h.storage.removeItem, read = h.storage.getItem;
+    h.storage.removeItem = k => { if (k === target && failure === "throw") throw Error("quota"); if (k === target && failure === "silent") return; remove(k); };
+    h.storage.getItem = k => { if (k === target && failure === "readback") throw Error("read denied"); return read(k); };
+    await assert.rejects(h.store.deleteSyncAccount(), /AI 동의 기록.*다시 확인/);
+    assert.equal(h.store.hasPendingAccountDeletion(), true); assert.equal(h.status().deletionPending, true);
+    assert.doesNotMatch(h.status().message, /계정과 계정 데이터를 삭제했어요/);
+    assert.equal(h.values.get(key), original); assert.equal(h.values.get(localKey), guest);
+    for (const [k, value] of keep) assert.equal(h.values.get(k), value);
+    h.storage.removeItem = remove; h.storage.getItem = read;
+    await h.store.recoverAccountDeletion();
+    assert.equal(h.store.hasPendingAccountDeletion(), false); assert.equal(h.values.has(target), false); assert.equal(h.values.has(key), false);
+    assert.match(h.status().message, /계정과 계정 데이터를 삭제했어요/);
+    assert.equal(h.values.get(localKey), guest); for (const [k, value] of keep) assert.equal(h.values.get(k), value);
+    assert.equal(h.calls.filter(call => call.action === "delete").length, 1, "recovery checks the receipt, it does not issue a second deletion");
+  }
+});
+test("Apple reauthentication failure preserves account and releases deletion pause", async () => {
+  const h = harness(), before = h.values.get(key);
+  h.intercept = body => body.action === "delete" ? Response.json({ error: "Apple로 다시 로그인", code: "apple_reauthentication_required" }, { status: 409 }) : undefined;
+  await assert.rejects(h.store.deleteSyncAccount(), /Apple/);
+  assert.equal(h.values.get(key), before);
+  assert.equal(h.store.hasPendingAccountDeletion(), false);
+  assert.equal(h.privacyCalls.includes("signout"), false);
+});
+test("another tab's deletion marker is visible and pauses writes before the next sync", async () => {
+  const h = harness(); h.store.startSync(JSON.stringify(modern())); await h.jobs();
+  const before = h.values.get(key);
+  h.values.set(accountData.DELETION_KEY, JSON.stringify({ userId: "account-a", operation: "c".repeat(64) }));
+  h.storageEvent(accountData.DELETION_KEY);
+  assert.equal(h.status().deletionPending, true);
+  assert.throws(() => h.store.writePlan(h.snapshot()), /계정 삭제/);
+  assert.equal(h.values.get(key), before);
 });
 
 test("approved account replan confirms exact target once and recovers lost response by pull", async () => {

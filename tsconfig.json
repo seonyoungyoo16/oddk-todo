@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -20,7 +24,9 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ]
     }
   },
   "include": [
@@ -31,5 +37,17 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "supabase/functions/plan-sync/account.ts", "supabase/functions/travel-lookup/index.ts", "supabase/functions/task-maintenance/index.ts", "supabase/functions/push-subscriptions/index.ts", "supabase/functions/push-worker/index.ts", "supabase/functions/push-worker/web-push.ts", "supabase/functions/push-receipt/index.ts", "supabase/functions/execution/index.ts"]
+  "exclude": [
+    "node_modules",
+    "supabase/functions/plan-sync/account.ts",
+    "supabase/functions/travel-lookup/index.ts",
+    "supabase/functions/task-maintenance/index.ts",
+    "supabase/functions/push-subscriptions/index.ts",
+    "supabase/functions/push-worker/index.ts",
+    "supabase/functions/push-worker/web-push.ts",
+    "supabase/functions/push-receipt/index.ts",
+    "supabase/functions/execution/index.ts",
+    "supabase/functions/account-lifecycle/index.ts",
+    "supabase/functions/account-lifecycle/apple.ts"
+  ]
 }

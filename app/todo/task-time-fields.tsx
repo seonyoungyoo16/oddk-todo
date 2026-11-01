@@ -4,6 +4,7 @@ import { parseTaskTimeDraft } from "./task-time";
 type TaskTimeFieldsProps = {
   work: string;
   buffer: string;
+  timeRange?: string;
   onWorkChange: (value: string) => void;
   onBufferChange: (value: string) => void;
 };
@@ -11,6 +12,7 @@ type TaskTimeFieldsProps = {
 export function TaskTimeFields({
   work,
   buffer,
+  timeRange,
   onWorkChange,
   onBufferChange,
 }: TaskTimeFieldsProps) {
@@ -78,7 +80,8 @@ export function TaskTimeFields({
         <span>
           {draft.minutes === null
             ? "작업 시간과 여유 시간을 입력해주세요."
-            : `총 ${draft.minutes}분 · 작업 ${Number(work)}분 + 여유 ${Number(buffer)}분`}
+            : `총 ${draft.minutes}분 ${timeRange ? "=" : "·"} 작업 ${Number(work)}분 + 여유 ${Number(buffer)}분`}
+          {timeRange && <small>{timeRange}</small>}
         </span>
       </output>
       <p

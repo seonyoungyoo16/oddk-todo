@@ -1,0 +1,19 @@
+.oddk-appleLogin { background: #151515; color: #fff; border-color: #151515; min-height: 44px; }
+.oddk-appleLogin:hover { background: #303030; color: #fff; }
+.oddk-appleLoginWrap { display: block; position: relative; width: 100%; }
+.oddk-appleLoginWrap .oddk-appleLogin { width: 100%; }
+.oddk-appleLogin[aria-disabled="true"], .oddk-appleLogin[aria-disabled="true"]:hover { background: var(--oddk-soft); color: var(--oddk-disabled-text); border-color: var(--oddk-border); cursor: not-allowed; opacity: 1; }
+.oddk-loginTooltip { position: absolute; z-index: 20; top: 50%; left: calc(100% + 6px); transform: translateY(-50%); padding: 6px 9px; border: 1px solid var(--oddk-border); border-radius: var(--oddk-radius-control); background: var(--oddk-soft); color: var(--oddk-muted); font-size: 12px; font-weight: 400; line-height: 1.5; white-space: nowrap; box-shadow: none; }
+.oddk-loginTooltip::before { content: ""; position: absolute; width: 6px; height: 6px; top: calc(50% - 3px); left: -4px; transform: rotate(45deg); background: inherit; border-left: 1px solid var(--oddk-border); border-bottom: 1px solid var(--oddk-border); }
+.oddk-appleLoginWrap[data-placement="bottom"] .oddk-loginTooltip { display: table; position: relative; top: auto; left: auto; transform: none; margin: 6px auto 0; }
+.oddk-appleLoginWrap[data-placement="bottom"] .oddk-loginTooltip::before { top: -4px; left: calc(50% - 3px); border-bottom: 0; border-top: 1px solid var(--oddk-border); }
+.oddk-loginTooltip[hidden] { display: none; }
+.oddk-accountLinks { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; font-size: 13px; }
+.oddk-deleteAccountLink { border: 0; background: transparent; color: var(--oddk-danger-text); text-decoration: underline; cursor: pointer; padding: 8px 0; }
+.oddk-dangerButton { background: var(--oddk-danger-surface); color: var(--oddk-danger-text); border: 1px solid var(--oddk-danger-text); border-radius: 10px; padding: 10px 16px; cursor: pointer; }
+.oddk-dangerButton:disabled { opacity: .45; cursor: default; }
+.oddk-deletionAccount { font-weight: 650; overflow-wrap: anywhere; }
+.oddk-accountDeletion p { font-size: 14px; line-height: 1.7; margin: 0; }
+.oddk-accountDeletion .oddk-dialogForm { display: grid; gap: 18px; }
+.oddk-accountDeletion .oddk-dialogHeader { margin-bottom: 0; }
+.oddk-accountDeletion .oddk-dialogActions { flex-wrap: wrap; }
