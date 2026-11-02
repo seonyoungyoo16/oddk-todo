@@ -19,7 +19,7 @@ function components(state) {
     const compiledModule = { exports: {} }, realRequire = createRequire(file);
     cache.set(file, compiledModule.exports);
     const compiled = ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
-    const require = spec => spec === "./sync-store" ? store : spec === "./account-help-links" ? load(resolve(dirname(file), "account-help-links.tsx")) : spec.startsWith(".") ? boundary : realRequire(spec);
+    const require = spec => spec === "./sync-store" ? store : spec === "./native-reminder-settings" ? { DeviceReminderSettings: () => null, useNativeReminderStatus: () => ({ native: false }) } : spec === "./account-help-links" ? load(resolve(dirname(file), "account-help-links.tsx")) : spec.startsWith(".") ? boundary : realRequire(spec);
     new Function("require", "module", "exports", compiled)(require, compiledModule, compiledModule.exports);
     return compiledModule.exports;
   }

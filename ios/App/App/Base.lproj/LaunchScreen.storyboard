@@ -16,16 +16,18 @@
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="oddk" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="oddk-label">
-                                <rect key="frame" x="87.5" y="300" width="200" height="67"/>
-                                <fontDescription key="fontDescription" type="boldSystem" pointSize="40"/>
-                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                            </label>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="LaunchLogo" translatesAutoresizingMaskIntoConstraints="NO" id="oddk-launch-logo">
+                                <rect key="frame" x="97.5" y="243.5" width="180" height="180"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="180" id="oddk-logo-width"/>
+                                    <constraint firstAttribute="height" constant="180" id="oddk-logo-height"/>
+                                </constraints>
+                            </imageView>
                         </subviews>
-                        <color key="backgroundColor" red="0.0" green="0.4" blue="0.8980392157" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <color key="backgroundColor" red="0.1411764706" green="0.3294117647" blue="0.9019607843" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="oddk-label" firstAttribute="centerX" secondItem="snD-IY-ifK" secondAttribute="centerX" id="oddk-center-x"/>
-                            <constraint firstItem="oddk-label" firstAttribute="centerY" secondItem="snD-IY-ifK" secondAttribute="centerY" id="oddk-center-y"/>
+                            <constraint firstItem="oddk-launch-logo" firstAttribute="centerX" secondItem="snD-IY-ifK" secondAttribute="centerX" id="oddk-center-x"/>
+                            <constraint firstItem="oddk-launch-logo" firstAttribute="centerY" secondItem="snD-IY-ifK" secondAttribute="centerY" id="oddk-center-y"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -35,7 +37,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="Splash" width="1366" height="1366"/>
+        <image name="LaunchLogo" width="1024" height="1024"/>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>

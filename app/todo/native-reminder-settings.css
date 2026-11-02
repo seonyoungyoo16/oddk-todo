@@ -1,0 +1,14 @@
+.oddk-deviceReminder { font:inherit; color:var(--oddk-heading); }
+.oddk-deviceReminderRow { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:44px; }
+.oddk-deviceReminderLabel { font-weight:600; }
+.oddk-deviceReminderControl { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.oddk-deviceReminderStatus { color:var(--oddk-muted); font-size:14px; line-height:1.5; }
+.oddk-page .oddk-deviceReminderSwitch { display:inline-flex; align-items:center; justify-content:flex-start; width:52px; min-width:52px; height:44px; min-height:44px; padding:8px 4px; border:0; border-radius:0; background:transparent; color:inherit; position:relative; box-shadow:none; cursor:pointer; }
+.oddk-deviceReminderSwitch::before { content:""; position:absolute; inset:8px 0; background:var(--oddk-border); border-radius:999px; }
+.oddk-deviceReminderThumb { position:relative; z-index:1; width:20px; height:20px; border-radius:50%; background:var(--oddk-surface); transition:transform 120ms ease; }
+.oddk-deviceReminderSwitch[aria-checked="true"]::before { background:var(--oddk-brand); }
+.oddk-deviceReminderSwitch[aria-checked="true"] .oddk-deviceReminderThumb { transform:translateX(24px); }
+.oddk-page .oddk-deviceReminderSwitch:disabled { opacity:.5; cursor:default; background:transparent; }
+.oddk-deviceReminderSwitch:focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; border-radius:8px; }
+.oddk-deviceReminderError { margin:8px 0 0; color:var(--oddk-danger-text); font-size:14px; line-height:1.6; overflow-wrap:anywhere; }
+@media (prefers-reduced-motion:reduce) { .oddk-deviceReminderThumb { transition:none; } }

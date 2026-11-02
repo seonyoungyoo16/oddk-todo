@@ -5,17 +5,19 @@ import { DialogHeader } from "./ui/dialog-header";
 import { keepFocusInDialog } from "./dialog-focus";
 import { sameValue } from "./json-equality";
 import { activityHoursValue } from "./activity-hours-model";
-import { HiOutlinePencilSquare } from "react-icons/hi2";
+import { HiOutlineAdjustmentsHorizontal, HiOutlinePencilSquare } from "react-icons/hi2";
 
-export function ActivityHours({ date, saved, onSave }: { date: string; saved?: Availability; onSave: (value: Availability, expected?: Availability) => boolean }) {
+export function ActivityHours({ date, saved, onSave, inTools = false }: { date: string; saved?: Availability; onSave: (value: Availability, expected?: Availability) => boolean; inTools?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null), opener = useRef<HTMLButtonElement>(null), first = useRef<HTMLInputElement>(null);
   const [start, setStart] = useState(""), [end, setEnd] = useState(""), [error, setError] = useState("");
   const [base, setBase] = useState<Availability | undefined>(undefined);
   const parsed = activityHoursValue(start, end, saved?.fixed ?? []);
-  return <>
+  const bar =
     <div className="oddk-activityHoursBar"><span>활동 시간 <strong>{saved ? `${saved.start}–${saved.end}` : "미설정"}</strong></span>
       <button ref={opener} type="button" aria-label={`활동 시간 ${saved ? "변경" : "설정"}`} onClick={() => { setStart(saved?.start ?? ""); setEnd(saved?.end === "24:00" ? "00:00" : saved?.end ?? ""); setBase(saved); setError(""); dialog.current?.showModal(); first.current?.focus(); }}><HiOutlinePencilSquare className="oddk-activityHoursIcon" aria-hidden="true" /><span>활동 시간 {saved ? "변경" : "설정"}</span></button>
-    </div>
+    </div>;
+  return <>
+    {inTools ? <details className="oddk-planTools"><summary><HiOutlineAdjustmentsHorizontal aria-hidden="true" />계획도구</summary><div className="oddk-workspacePopover oddk-planToolsPopover"><h2>오늘의 계획 설정</h2>{bar}</div></details> : bar}
     <dialog ref={dialog} className="oddk-dialog oddk-activityHoursDialog" aria-labelledby="activity-hours-title" onKeyDown={keepFocusInDialog} onClose={() => opener.current?.focus()} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
       <form className="oddk-dialogForm" onSubmit={event => {
         event.preventDefault();

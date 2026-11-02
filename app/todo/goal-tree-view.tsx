@@ -8,7 +8,7 @@ import type { GoalDraft } from "./goal-draft";
 import { alignGoalDraft, editGoalBoardDraft, emptyGoalWorkspace, goalBoardTree, goalDraftChanged, goalDraftConflict, planGoalBoards, validGoalWorkspace, previewGoalDeletion, type GoalDeletion } from "./goal-boards";
 import { sameValue } from "./json-equality";
 import { useLocalDraft, DraftFeedback } from "./use-local-draft";
-import { MandalaView } from "./planning-views";
+import { GoalManagementMenu, MandalaView } from "./planning-views";
 import { GoalDeleteDialog } from "./goal-delete-dialog";
 
 const validDraft = (value: unknown): value is GoalDraft | null => value === null || validGoalDraft(value);
@@ -69,22 +69,22 @@ export function GoalTreeView({ plan, ready, onSave, onAdd, onDelete, onEdit }: P
   }
   const toolbar = <>
     <div className="oddk-goalSwitcher">
-      {selected && <label><span>목표 전환</span><select aria-label="목표 전환" value={selected.id} disabled={!ready || !local.hydrated} onChange={event => { const id = event.target.value; local.set(current => ({ ...current, selectedId: id })); }}>
+      {selected && <label><span className="oddk-srOnly">목표 전환</span><select aria-label="목표 전환" value={selected.id} disabled={!ready || !local.hydrated} onChange={event => { const id = event.target.value; local.set(current => ({ ...current, selectedId: id })); }}>
         {boards.map((meta, index) => <option key={meta.id} value={meta.id}>{drafts[meta.id]?.value.goal.trim() || meta.goal.trim() || `새 목표 ${index + 1}`}</option>)}
       </select></label>}
-      <button type="button" className="oddk-goalAdd" disabled={!ready || !local.hydrated || Boolean(local.problem)} onClick={() => {
+      <button type="button" className="oddk-goalAdd" aria-label="새 목표 추가" title="새 목표 추가" disabled={!ready || !local.hydrated || Boolean(local.problem)} onClick={() => {
         const id = crypto.randomUUID(), error = onAdd(id);
         if (error) { setErrors(current => ({ ...current, [selected?.id ?? "add"]: error })); return; }
         local.set(current => ({ ...current, selectedId: id }));
-      }}><HiOutlinePlus aria-hidden="true" />새 목표 추가</button>
-      {selected && <button type="button" className="oddk-goalDelete" disabled={!ready || !local.hydrated || !legacy.hydrated || Boolean(local.problem) || Boolean(legacy.problem)} onClick={() => {
-        try { setDeleting({ snapshot: previewGoalDeletion(plan, selected.id), title: tree.goal.trim() || "이름 없는 목표", dirty }); }
-        catch (error) { setErrors(current => ({ ...current, [selected.id]: (error as Error).message })); }
-      }}><HiOutlineTrash aria-hidden="true" />목표 삭제</button>}
+      }}><HiOutlinePlus aria-hidden="true" /><span>새 목표</span></button>
     </div>
   </>;
+  const management = selected && <button type="button" className="oddk-goalDelete" aria-label="현재 목표 삭제" disabled={!ready || !local.hydrated || !legacy.hydrated || Boolean(local.problem) || Boolean(legacy.problem)} onClick={() => {
+    try { setDeleting({ snapshot: previewGoalDeletion(plan, selected.id), title: tree.goal.trim() || "이름 없는 목표", dirty }); }
+    catch (error) { setErrors(current => ({ ...current, [selected.id]: (error as Error).message })); }
+  }}><HiOutlineTrash aria-hidden="true" />목표 삭제</button>;
 
-  return <section className="oddk-mandalaGoals" aria-label="만다라트 8×8 목표추적">
+  return <section className="oddk-mandalaGoals" aria-label="만다라트 목표추적">
     <DraftFeedback draft={local} /><DraftFeedback draft={legacy} />
     {conflict && draft && <section className="oddk-draftConflict" role="alert"><strong>다른 화면에서 이 목표가 바뀌었어요.</strong><p>저장본: {saved.goal || "이름 없음"} / 내 초안: {tree.goal || "이름 없음"}</p>
       <button type="button" onClick={() => { backupSelectedDraft(); updateDraft({ base: saved, value: saved, board: goalBoard(saved, selected?.layout) ?? undefined, baseBoard: goalBoard(saved, selected?.layout) ?? undefined, ...(plan.mandala ? { archive: plan.mandala } : {}) }); }}>초안 백업 후 저장본 사용</button>
@@ -92,8 +92,8 @@ export function GoalTreeView({ plan, ready, onSave, onAdd, onDelete, onEdit }: P
     </section>}
     {missing.length > 0 && <p role="alert">삭제된 할 일 연결 {missing.length}개가 있어요. 해당 칸에서 연결을 해제하거나 다른 할 일을 선택해주세요.</p>}
     {error && <p role="alert" className="oddk-mandalaFeedback">{error} <button type="button" onClick={() => { setErrors(current => ({ ...current, [selected?.id ?? "add"]: "" })); setRetry(value => value + 1); }}>다시 시도</button></p>}
-    {selected && board ? <MandalaView key={selected.id} tasks={plan.tasks} draft={board} toolbar={toolbar}
-      onChange={value => { updateDraft(editGoalBoardDraft(plan, selected.id, value, draft)); setErrors(current => current[selected.id] ? { ...current, [selected?.id ?? "add"]: "" } : current); }} onEdit={onEdit} /> : <><div className="oddk-mandalaToolbar">{toolbar}</div>{selected ? <p role="alert">기존 목표가 세부목표 8개 또는 목표별 실행 8개를 넘어 모두 표시할 수 없어요. 기존 내용은 그대로 보관돼요.</p> : <div className="oddk-goalEmpty"><h2>아직 목표가 없어요</h2><p>새 목표를 추가해 시작해보세요.</p>{legacy.value && goalDraftChanged(legacy.value) && <button type="button" className="oddk-goalAdd" disabled={!ready || Boolean(legacy.problem)} onClick={() => { const error = onAdd("default"); if (error) setErrors(current => ({ ...current, add: error })); else local.set(current => ({ ...current, selectedId: "default" })); }}>이전 목표 초안 복구</button>}</div>}</>}
+    {selected && board ? <MandalaView key={selected.id} tasks={plan.tasks} draft={board} toolbar={toolbar} management={management}
+      onChange={value => { updateDraft(editGoalBoardDraft(plan, selected.id, value, draft)); setErrors(current => current[selected.id] ? { ...current, [selected?.id ?? "add"]: "" } : current); }} onEdit={onEdit} /> : <><div className="oddk-mandalaToolbar">{toolbar}{selected && <GoalManagementMenu>{management}</GoalManagementMenu>}</div>{selected ? <p role="alert">기존 목표가 세부목표 8개 또는 목표별 실행 8개를 넘어 모두 표시할 수 없어요. 기존 내용은 그대로 보관돼요.</p> : <div className="oddk-goalEmpty"><h2>아직 목표가 없어요</h2><p>새 목표를 추가해 시작해보세요.</p>{legacy.value && goalDraftChanged(legacy.value) && <button type="button" className="oddk-goalAdd" disabled={!ready || Boolean(legacy.problem)} onClick={() => { const error = onAdd("default"); if (error) setErrors(current => ({ ...current, add: error })); else local.set(current => ({ ...current, selectedId: "default" })); }}>이전 목표 초안 복구</button>}</div>}</>}
     {deleting && <GoalDeleteDialog title={deleting.title} dirty={deleting.dirty} onCancel={() => setDeleting(null)} onConfirm={() => {
       const error = onDelete(deleting.snapshot);
       if (error) return error;

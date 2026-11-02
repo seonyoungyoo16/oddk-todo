@@ -3,7 +3,7 @@ import { AutoTextarea } from "./auto-textarea";
 import { sortTasks, taskImportance } from "./task-order";
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
-import { HiOutlineArrowRight, HiOutlineXMark } from "react-icons/hi2";
+import { HiOutlineArrowPath, HiOutlineArrowRight, HiOutlineEllipsisHorizontal, HiOutlineXMark } from "react-icons/hi2";
 
 import type { Task, Mandala } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, validMandala } from "../../supabase/functions/_shared/plan";
@@ -16,7 +16,7 @@ export function safeMandala(value: Mandala | undefined): Mandala {
 const positions = [0, 1, 2, 3, 5, 6, 7, 8];
 const validTime = hasTaskTime;
 const labels = { high: "높음", normal: "보통", low: "낮음" };
-const compactMandalaQuery = "(max-width: 899px)";
+const compactMandalaQuery = "(max-width: 1099px)";
 function subscribeCompactMandala(notify: () => void) {
   const media = window.matchMedia(compactMandalaQuery);
   media.addEventListener("change", notify);
@@ -25,7 +25,22 @@ function subscribeCompactMandala(notify: () => void) {
 const compactMandalaSnapshot = () => window.matchMedia(compactMandalaQuery).matches;
 const desktopMandalaSnapshot = () => false;
 
-export function MandalaView({ tasks, draft, toolbar, onChange, onEdit }: { tasks: Task[]; draft: Mandala; toolbar?: ReactNode; onChange: (value: Mandala) => void; onEdit: (task: Task) => void }) {
+export function GoalManagementMenu({ children, onReset }: { children?: ReactNode; onReset?: () => void }) {
+  return <details className="oddk-goalManagement" onKeyDown={event => {
+    if (event.key !== "Escape") return;
+    event.preventDefault(); event.currentTarget.open = false;
+    event.currentTarget.querySelector("summary")?.focus({ preventScroll: true });
+  }} onClickCapture={event => {
+    if (!(event.target as HTMLElement).closest("button")) return;
+    event.currentTarget.open = false;
+    event.currentTarget.querySelector("summary")?.focus({ preventScroll: true });
+  }}>
+    <summary aria-label="목표 관리" title="목표 관리"><HiOutlineEllipsisHorizontal aria-hidden="true" /></summary>
+    <div className="oddk-goalManagementPopover"><h3>목표 관리</h3>{children}{onReset && <button className="oddk-mandalaReset" type="button" aria-label="현재 목표 전체초기화" onClick={onReset}><HiOutlineArrowPath aria-hidden="true" />전체 초기화</button>}<p>현재 선택한 목표에만 적용해요.</p></div>
+  </details>;
+}
+
+export function MandalaView({ tasks, draft, toolbar, management, onChange, onEdit }: { tasks: Task[]; draft: Mandala; toolbar?: ReactNode; management?: ReactNode; onChange: (value: Mandala) => void; onEdit: (task: Task) => void }) {
   const compact = useSyncExternalStore(subscribeCompactMandala, compactMandalaSnapshot, desktopMandalaSnapshot);
   const [activeArea, setActiveArea] = useState<number | null>(null);
   const [editingName, setEditingName] = useState<"core" | number | null>(null);
@@ -64,7 +79,7 @@ export function MandalaView({ tasks, draft, toolbar, onChange, onEdit }: { tasks
       const main = element.closest("main"), number = (value: string | undefined) => Number.parseFloat(value ?? "0") || 0;
       const reserved = number(getComputedStyle(canvas).paddingBottom) + (hint?.offsetHeight ?? 0) + (hint ? number(getComputedStyle(hint).marginTop) : 0) + (main ? number(getComputedStyle(main).paddingBottom) : 0) + 8;
       const available = Math.max(240, Math.floor(window.innerHeight - element.getBoundingClientRect().top - reserved));
-      setFitHeight(window.innerWidth >= 900 ? available : null);
+      setFitHeight(window.innerWidth >= 1100 ? available : null);
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         if (element.clientWidth === previousWidth && element.scrollWidth === previousTotal) return;
@@ -152,13 +167,13 @@ export function MandalaView({ tasks, draft, toolbar, onChange, onEdit }: { tasks
     <div>
       <header className="oddk-mandalaToolbar">
         {toolbar}
-        <div className="oddk-viewActions oddk-mandalaActions"><button className="oddk-mandalaReset" type="button" onClick={() => resetDialog.current?.showModal()}>전체초기화</button></div>
+        <GoalManagementMenu onReset={() => resetDialog.current?.showModal()}>{management}</GoalManagementMenu>
       </header>
       {compact ? <div className="oddk-mandalaCanvas oddk-mandalaCompact" data-layout="compact">
-        <div className="oddk-mandalaCompactHeader">
+        <div className="oddk-mandalaCompactHeader" data-overview={selectedArea === null}>
           {selectedArea !== null && <button className="oddk-mandalaBack" type="button" onClick={showOverview}>← 핵심목표로</button>}
-          <span className="oddk-mandalaLevel">{selectedArea === null ? "핵심목표" : `세부목표 ${selectedArea + 1}`}</span>
-          <h3 ref={compactHeading} tabIndex={-1}>{selectedArea === null ? draft.goal.trim() || "핵심목표를 입력해주세요" : draft.areas[selectedArea].title}</h3>
+          {selectedArea !== null && <span className="oddk-mandalaLevel">세부목표 {selectedArea + 1}</span>}
+          <h3 ref={compactHeading} tabIndex={-1} className={selectedArea === null ? "oddk-srOnly" : undefined}>{selectedArea === null ? "핵심 목표와 세부 목표" : draft.areas[selectedArea].title}</h3>
           {!hasGoal && <p id={`${statusId}-core-guide`}>핵심목표를 입력하면 세부목표를 추가할 수 있어요.</p>}
         </div>
         <div className="oddk-mandalaCompactGrid" data-level={selectedArea === null ? "overview" : "area"} role="group" aria-label={selectedArea === null ? "핵심 목표와 세부 목표 9칸" : `${draft.areas[selectedArea].title} 실행 계획 9칸`}>

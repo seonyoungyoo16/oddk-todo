@@ -1,14 +1,19 @@
-.oddk-page .oddk-goalDelete { min-height:var(--oddk-control-height); gap:8px; padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-danger-text); font-size:var(--oddk-font-label); }
+.oddk-page .oddk-goalDelete { min-height:var(--oddk-control-height); gap:8px; padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-danger-text); font-size:var(--goal-font-body,16px); }
 .oddk-goalDelete > svg { width:20px; height:20px; }
 .oddk-page .oddk-goalDelete:disabled { color:var(--oddk-disabled-text); cursor:not-allowed; }
 .oddk-goalEmpty { padding:48px 16px; text-align:center; }
-.oddk-goalEmpty h2 { margin:0 0 8px; font-size:20px; font-weight:600; }
+.oddk-goalEmpty h2 { margin:0 0 8px; font-size:18px; font-weight:600; }
 .oddk-goalEmpty p { margin:0; color:var(--oddk-muted); font-size:14px; }
 .oddk-page .oddk-goalDeleteDialog { width:min(600px,calc(100% - 32px)); overflow:hidden; }
 .oddk-goalDeleteDialog .oddk-dialogForm { display:flex; flex-direction:column; max-height:calc(100dvh - 50px); padding:0; }
 .oddk-goalDeleteDialog .oddk-dialogHeader { flex-shrink:0; padding:20px 24px; margin:0; }
-.oddk-goalDeleteBody { min-height:0; overflow:auto; padding:0 24px 24px; font-size:14px; line-height:1.6; }
-.oddk-goalDeleteBody > strong { display:block; margin:0 0 16px; overflow-wrap:anywhere; font-size:16px; font-weight:600; }
+.oddk-goalDeleteBody { min-height:0; overflow:auto; padding:0 24px 24px; font-size:16px; line-height:1.6; }
+.oddk-goalDeleteBody > strong { display:block; margin:0 0 16px; overflow-wrap:anywhere; font-size:20px; font-weight:600; }
 .oddk-goalDeleteBody > p { margin:8px 0 0; }
 .oddk-goalDeleteDialog .oddk-dialogActions { flex-shrink:0; margin:0; padding:16px 24px; }
 @media(max-width:480px) { .oddk-goalDeleteDialog .oddk-dialogHeader { padding:16px; } .oddk-goalDeleteBody { padding:0 16px 20px; } .oddk-goalDeleteDialog .oddk-dialogActions { padding:16px; } }
+
+.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalDelete { flex:0 0 44px; width:44px; min-width:44px; height:44px; padding:10px; gap:0; }
+.oddk-page .oddk-mandalaGoals .oddk-goalDeleteDialog .oddk-dialogHeader h2 { font-size:18px; font-weight:600; line-height:1.5; }
+.oddk-page .oddk-mandalaGoals .oddk-goalDeleteDialog .oddk-dialogActions > button { font-size:16px; line-height:1.5; }
+.oddk-page .oddk-mandalaGoals .oddk-goalEmpty p { font-size:14px; line-height:1.6; }

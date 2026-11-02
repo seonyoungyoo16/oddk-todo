@@ -1,0 +1,40 @@
+/* Busy/result/error share a fixed dialog and a single body scroll area. */
+.oddk-page .oddk-dialog.oddk-splitReview { box-sizing:border-box; width:min(640px,calc(100vw - 48px)); height:min(696px,calc(100dvh - 64px)); max-width:none; max-height:none; margin:auto; padding:0; overflow:hidden; border:1px solid var(--oddk-border); border-radius:14px; }
+.oddk-page .oddk-splitReview > .oddk-splitFrame { display:grid; grid-template-rows:auto minmax(0,1fr) auto; height:100%; max-height:none; padding:0; }
+.oddk-page .oddk-splitReview .oddk-splitHeader { min-height:80px; margin:0; padding:16px 24px; gap:12px; border-bottom:1px solid var(--oddk-border); }
+.oddk-page .oddk-splitHeader h2 { font-size:18px; line-height:1.45; font-weight:600; }
+.oddk-page .oddk-splitHeader > button { flex:0 0 44px; width:44px; min-height:44px; padding:10px; }
+.oddk-splitBody { min-height:0; overflow-y:auto; overscroll-behavior:contain; scrollbar-gutter:stable; padding:24px; }
+.oddk-page .oddk-splitReview .oddk-splitOriginal { margin:0 0 24px; padding:0 14px; border:1px solid var(--oddk-border); border-radius:8px; background:var(--oddk-soft); }
+.oddk-splitOriginal > summary { display:flex; align-items:center; min-height:44px; font-size:14px; color:var(--oddk-muted); }
+.oddk-splitOriginal > p { padding-bottom:14px; margin:0; font-size:14px; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; color:var(--oddk-muted); }
+.oddk-splitPhase { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:260px; gap:10px; padding:24px 0; text-align:center; }
+.oddk-splitPhase h3 { margin:0; font-size:18px; font-weight:600; line-height:1.55; }
+.oddk-splitPhase p { margin:0; color:var(--oddk-muted); font-size:14px; line-height:1.65; overflow-wrap:anywhere; }
+.oddk-splitBusySymbol { display:grid; place-items:center; width:56px; height:56px; margin-bottom:12px; border-radius:50%; background:var(--oddk-highlight); color:var(--oddk-accent-text); }
+.oddk-splitBusySymbol > svg { width:28px; height:28px; animation:oddk-split-spin 1.2s linear infinite; }
+.oddk-splitResultHeading { display:grid; gap:6px; margin-bottom:16px; }
+.oddk-splitResultHeading h3 { margin:0; font-size:16px; font-weight:600; }
+.oddk-splitResultHeading p { margin:0; color:var(--oddk-muted); font-size:14px; line-height:1.6; }
+.oddk-page .oddk-splitReview .oddk-splitCandidates { display:grid; gap:10px; max-height:none; overflow:visible; margin:0; padding:0; list-style:none; }
+.oddk-page .oddk-splitReview .oddk-splitCandidates > li { display:flex; align-items:center; gap:8px; min-height:66px; padding:8px; border:1px solid var(--oddk-border); border-radius:8px; background:var(--oddk-surface); }
+.oddk-splitNumber { flex:0 0 24px; width:24px; text-align:center; color:var(--oddk-muted); font-size:14px; }
+.oddk-page .oddk-splitCandidates textarea { min-height:44px; max-height:132px; padding:10px 0; border:0; border-radius:0; background:transparent; font-size:16px; line-height:24px; overflow-y:auto; }
+.oddk-page .oddk-splitCandidates button { width:44px; min-height:44px; padding:10px; color:var(--oddk-muted); }
+.oddk-splitEmpty { padding:24px 0; color:var(--oddk-muted); font-size:16px; line-height:1.7; }
+.oddk-page .oddk-splitReview .oddk-splitFooter { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; margin:0; padding:16px 24px 20px; border-top:1px solid var(--oddk-border); background:var(--oddk-surface); }
+.oddk-page .oddk-splitFooter > button { min-width:0; min-height:48px; margin:0; padding:10px 8px; font-size:16px; line-height:1.5; }
+.oddk-page .oddk-splitFooter > button:disabled { color:var(--oddk-disabled-text); background:var(--oddk-disabled-surface); border-color:var(--oddk-disabled-border); cursor:not-allowed; }
+.oddk-page .oddk-aiAnalyze[aria-disabled="true"] { opacity:.5; cursor:not-allowed; }
+@keyframes oddk-split-spin { to { transform:rotate(360deg); } }
+@media(prefers-reduced-motion:reduce) { .oddk-splitBusySymbol > svg { animation:none; } }
+@media(max-width:600px) {
+  .oddk-page .oddk-dialog.oddk-splitReview { inset:0; width:100%; height:100dvh; margin:0; border:0; border-radius:0; }
+  .oddk-page .oddk-splitReview .oddk-splitHeader { min-height:76px; padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px; }
+  .oddk-splitBody { padding:20px 16px; }
+  .oddk-page .oddk-splitReview .oddk-splitOriginal { margin-bottom:20px; }
+  .oddk-splitPhase { min-height:290px; }
+  .oddk-page .oddk-splitReview .oddk-splitCandidates > li { gap:6px; padding:8px 6px; }
+  .oddk-page .oddk-splitReview .oddk-splitFooter { gap:8px; padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px)); }
+  .oddk-page .oddk-splitFooter > button { font-size:14px; }
+}

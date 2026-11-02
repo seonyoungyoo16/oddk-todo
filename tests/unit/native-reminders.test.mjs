@@ -14,14 +14,15 @@ function harness() {
   const port = {
     readBinding: async () => { if (h.corruptBinding) throw Error("corrupt binding"); return h.binding; },
     writeBinding: async value => { if (h.storageFailure) throw Error("storage full"); h.calls.push("persist"); h.binding = structuredClone(value); },
-    checkPermissions: async () => ({ display: h.permission }),
+    checkPermissions: async () => { if (h.checkGate) await h.checkGate.promise; return { display: h.permission }; },
     requestPermissions: async () => { h.promptCount++; if (h.permissionGate) await h.permissionGate.promise; h.permission = h.nextPermission ?? "granted"; return { display: h.permission }; },
     getPending: async () => ({ notifications: structuredClone(h.pending) }),
     getDeliveredNotifications: async () => ({ notifications: structuredClone(h.delivered) }),
-    cancel: async ({ notifications }) => { h.calls.push("cancel"); if (h.cancelFailure) throw Error("cancel unavailable"); const ids = new Set(notifications.map(n => n.id)); h.pending = h.pending.filter(n => !ids.has(n.id)); },
+    cancel: async ({ notifications }) => { h.calls.push("cancel"); if (h.cancelFailure) throw Error("cancel unavailable"); if (h.silentCancel) return; const ids = new Set(notifications.map(n => n.id)); h.pending = h.pending.filter(n => !ids.has(n.id)); },
     removeDeliveredNotifications: async ({ notifications }) => { h.calls.push("removeDelivered"); const ids = new Set(notifications.map(n => n.id)); h.delivered = h.delivered.filter(n => !ids.has(n.id)); },
     schedule: async ({ notifications }) => {
       h.calls.push("schedule"); if (h.scheduleGate) { h.enteredSchedule.resolve(); await h.scheduleGate.promise; }
+      if (h.silentSchedule) return;
       for (const item of notifications) { h.pending = h.pending.filter(n => n.id !== item.id); h.pending.push(structuredClone(item)); if (h.partialFailure) throw Error("native partial failure"); }
     },
   };
@@ -130,4 +131,77 @@ test("explicit opt-out persists across restart and never cancels another feature
   assert.equal(h.binding.enabled, false); assert.deepEqual(h.pending.map(n => n.id), [1]); assert.deepEqual(h.delivered.map(n => n.id), [1]);
   await h.refresh(); assert.equal(h.pending.length, 1); assert.equal(h.states.at(-1).enabled, false);
   assert.equal(reminderExtra(h.pending[0]), null);
+});
+
+test("initial state stays checking until permissions and persisted settings reconcile", async () => {
+  const h = harness(); h.checkGate = deferred();
+  const reading = h.refresh();
+  assert.equal(h.states.at(-1).phase, "checking");
+  assert.equal(h.states.at(-1).enabled, false);
+  h.checkGate.resolve(); await reading;
+  assert.equal(h.states.at(-1).phase, "ready");
+  assert.equal(h.states.at(-1).enabled, false);
+  assert.equal(h.promptCount, 0);
+});
+
+test("ON stays unconfirmed through permission and scheduling, and denial is a reported OFF error", async () => {
+  const h = harness(); h.permissionGate = deferred();
+  const enabling = h.enable();
+  assert.equal(h.states.at(-1).phase, "changing");
+  assert.equal(h.states.at(-1).enabled, false);
+  h.permissionGate.resolve(); await enabling;
+  assert.equal(h.states.at(-1).phase, "ready");
+  assert.equal(h.states.at(-1).enabled, true);
+  h.nextPermission = "denied";
+  await assert.rejects(h.enable(), /iPhone 설정/);
+  assert.equal(h.states.at(-1).permission, "denied");
+  assert.equal(h.states.at(-1).enabled, false);
+  assert.equal(h.states.at(-1).phase, "error");
+  assert.equal(h.pending.length, 0);
+});
+
+test("failed OFF persists opt-out but cannot report confirmed OFF while owned alarms remain", async () => {
+  const h = harness(); await h.enable(); h.cancelFailure = true;
+  await assert.rejects(h.controller.disable());
+  assert.equal(h.binding.enabled, false);
+  assert.equal(h.pending.length, 1);
+  assert.equal(h.states.at(-1).phase, "error");
+  assert.equal(h.states.at(-1).cleanupPending, true);
+  assert.equal(h.states.at(-1).enabled, false);
+  h.cancelFailure = false; await h.controller.disable();
+  assert.equal(h.states.at(-1).phase, "ready");
+  assert.equal(h.states.at(-1).cleanupPending, false);
+  assert.equal(h.pending.length, 0);
+  await h.refresh(); assert.equal(h.pending.length, 0);
+});
+
+test("persist failure during OFF is retryable and cannot leave a false confirmed ON/OFF", async () => {
+  const h = harness(); await h.enable(); h.storageFailure = true;
+  await assert.rejects(h.controller.disable());
+  assert.equal(h.binding.enabled, true);
+  assert.equal(h.states.at(-1).phase, "error");
+  assert.equal(h.states.at(-1).cleanupPending, true);
+  h.storageFailure = false; await h.controller.disable();
+  assert.equal(h.binding.enabled, false);
+  assert.equal(h.pending.length, 0);
+});
+
+test("scope change clears the previous ON snapshot before any awaited native calls", async () => {
+  const h = harness(); await h.enable(); h.checkGate = deferred();
+  h.source = { ...h.source, scope: "account-b" };
+  const refreshing = h.refresh();
+  assert.equal(h.states.at(-1).phase, "checking");
+  assert.equal(h.states.at(-1).enabled, false);
+  h.checkGate.resolve(); await refreshing;
+  assert.equal(h.states.at(-1).phase, "ready");
+  assert.equal(h.states.at(-1).enabled, false);
+});
+
+test("successful native calls without matching pending results cannot report ON/OFF success", async () => {
+  const h = harness(); h.silentSchedule = true;
+  await assert.rejects(h.enable(), /예약을 확인/);
+  assert.equal(h.states.at(-1).phase, "error"); assert.equal(h.states.at(-1).enabled, false);
+  h.silentSchedule = false; await h.enable(); h.silentCancel = true;
+  await assert.rejects(h.controller.disable());
+  assert.equal(h.states.at(-1).phase, "error"); assert.equal(h.states.at(-1).cleanupPending, true);
 });

@@ -17,8 +17,8 @@
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#0066E5</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/oddk_launcher</item>
+        <item name="windowSplashScreenBackground">#2454E6</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/oddk_launch_logo</item>
         <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

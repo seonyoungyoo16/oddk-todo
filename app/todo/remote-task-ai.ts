@@ -1,4 +1,5 @@
-import { parseTaskCandidates, MAX_TASK_PARAGRAPH } from "./batch-tasks.ts";
+import { MAX_TASK_PARAGRAPH } from "./batch-tasks.ts";
+import { parseTaskAIOutput } from "./task-ai-output.ts";
 import type { AIRequestPermit } from "./ai-consent.ts";
 import { AI_GATEWAY_ENDPOINT } from "./ai-policy.ts";
 
@@ -14,7 +15,7 @@ export async function splitWithRemoteAI(text: string, signal: AbortSignal, token
     if (raw.length > 80000) throw Error("AI 응답이 너무 길어요. 원문을 나눠 다시 시도해주세요.");
     const body = JSON.parse(raw);
     if (!response.ok) throw Error(typeof body?.error === "string" ? body.error : "AI 연결을 확인해주세요. 원문은 유지했어요.");
-    return parseTaskCandidates(body);
+    return parseTaskAIOutput(text, body);
   } catch (error) {
     if (signal.aborted) throw error;
     if (error instanceof Error && /[가-힣]/.test(error.message)) throw error;

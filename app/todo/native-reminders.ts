@@ -7,15 +7,20 @@ import type { ReminderBinding, ReminderState } from "./native-reminder-controlle
 import type { ReminderSource } from "./native-reminder-model";
 
 const BINDING_KEY = "oddk.native-reminders.v1";
-type Status = ReminderState & { native: boolean; available: boolean };
+export type NativeReminderStatus = ReminderState & { native: boolean; available: boolean };
+type Status = NativeReminderStatus;
 const initial: Status = { ...EMPTY_REMINDER_STATE, native: false, available: false };
 const serverSnapshot = JSON.stringify(initial);
 let snapshot = serverSnapshot;
+let changing = false;
+let controllerState = EMPTY_REMINDER_STATE;
 let readSource: () => ReminderSource = () => ({ scope: "unreadable-session", raw: "null", blocked: true });
 const listeners = new Set<() => void>();
 export function nativeReminderSupported() { return Capacitor.getPlatform() === "ios" && Capacitor.isPluginAvailable("LocalNotifications"); }
 function publish(state: ReminderState) {
-  snapshot = JSON.stringify({ ...state, native: Capacitor.getPlatform() === "ios", available: nativeReminderSupported() });
+  controllerState = state;
+  const platform = Capacitor.getPlatform();
+  snapshot = JSON.stringify({ ...state, phase: changing && state.phase !== "error" ? "changing" : state.phase, native: platform === "ios" || platform === "android", available: nativeReminderSupported() });
   listeners.forEach(notify => notify());
 }
 export const subscribeNativeReminders = (notify: () => void) => { listeners.add(notify); return () => { listeners.delete(notify); }; };
@@ -39,11 +44,16 @@ const controller = createNativeReminderController({
   writeBinding: async binding => { await Preferences.set({ key: BINDING_KEY, value: JSON.stringify(binding) }); },
 }, () => readSource(), publish);
 export async function refreshNativeReminders() { if (nativeReminderSupported()) await controller.refresh(); }
-export async function enableNativeReminders() { if (!nativeReminderSupported()) throw Error("알림 기능이 포함된 최신 iPhone 앱을 설치해주세요."); await controller.enable(); }
-export async function disableNativeReminders() { if (nativeReminderSupported()) await controller.disable(); }
+async function change(work: () => Promise<void>) {
+  if (changing) throw Error("알림을 변경 중이에요. 잠시 기다려주세요.");
+  changing = true;
+  try { await work(); } finally { changing = false; publish(controllerState); }
+}
+export async function enableNativeReminders() { if (!nativeReminderSupported()) throw Error("알림 기능이 포함된 최신 iPhone 앱을 설치해주세요."); await change(controller.enable); }
+export async function disableNativeReminders() { if (nativeReminderSupported()) await change(controller.disable); }
 
 export function startNativeReminders(read: () => ReminderSource, subscribe: (notify: () => void) => () => void) {
-  publish(EMPTY_REMINDER_STATE);
+  publish({ ...EMPTY_REMINDER_STATE, phase: nativeReminderSupported() ? "checking" : "ready" });
   if (!nativeReminderSupported()) return () => {};
   readSource = read;
   let active = true;

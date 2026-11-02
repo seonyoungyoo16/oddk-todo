@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Reuse approved art; inset within the system splash's 288dp/192dp safe area. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:width="192dp" android:height="192dp" android:gravity="center"
+        android:drawable="@drawable/oddk_launcher" />
+</layer-list>

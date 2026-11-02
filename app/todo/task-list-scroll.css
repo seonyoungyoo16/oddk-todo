@@ -1,0 +1,18 @@
+/* Only the list body scrolls: composer, filters and status tabs remain outside. */
+.oddk-page .oddk-taskListScroll {
+  min-width:0;
+  max-width:100%;
+  max-height:min(55dvh,640px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  scrollbar-width:auto;
+  scrollbar-color:var(--oddk-muted) var(--oddk-soft);
+  scroll-padding-block:8px calc(var(--shared-shell-nav-size,0px) + var(--bottom-timer-size,0px) + var(--bottom-selection-size,0px) + 16px);
+}
+.oddk-page .oddk-taskListScroll:focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; }
+.oddk-page .oddk-taskListScroll::-webkit-scrollbar { width:10px; }
+.oddk-page .oddk-taskListScroll::-webkit-scrollbar-track { background:var(--oddk-soft); }
+.oddk-page .oddk-taskListScroll::-webkit-scrollbar-thumb { border:2px solid var(--oddk-soft); border-radius:6px; background:var(--oddk-muted); }
+.oddk-page .oddk-taskListScroll .oddk-task { min-width:0; max-width:100%; }
+.oddk-page .oddk-classificationFilters > .oddk-statusFilter { display:grid; gap:8px; width:min(100%,180px); margin-bottom:12px; font-size:16px; }
+.oddk-statusFilter > select { min-width:0; width:100%; min-height:44px; padding:8px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:inherit; font:inherit; }

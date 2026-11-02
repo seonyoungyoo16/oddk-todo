@@ -40,6 +40,19 @@ export function buildWeeklyTimetable(plan: Plan, date: string, visibleTasks = pl
   });
 }
 
+/** Limit only the view; never rewrite tasks, recurrence, or date-specific drafts. */
+export function buildTimetableDays(plan: Plan, date: string, visibleTasks = plan.tasks, nativeToday = false) {
+  const days = buildWeeklyTimetable(plan, date, visibleTasks);
+  return nativeToday ? days.filter(day => day.date === date) : days;
+}
+
+export function todayTimetableMoveDelta(task: Pick<Task, "plannedDate" | "startTime">, date: string, visibleStart: number, delta: number) {
+  if (!isPlanDate(task.plannedDate) || !isClock(task.startTime) || !isPlanDate(date) || !Number.isFinite(visibleStart) || !Number.isFinite(delta)) throw Error("이동할 시각을 확인해주세요.");
+  const originalStart = Number(task.startTime.slice(0, 2)) * 60 + Number(task.startTime.slice(3));
+  const targetStart = Math.max(0, Math.min(1439, visibleStart + delta));
+  return (dateOrdinal(date) - dateOrdinal(task.plannedDate)) * 1440 + targetStart - originalStart;
+}
+
 export type TimetablePlacementDuration = { minutes: number; bufferMinutes: number };
 
 export function previewTimetablePlacement(plan: Plan, taskId: string, date: string, time: string, duration?: TimetablePlacementDuration) {

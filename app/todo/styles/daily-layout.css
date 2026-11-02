@@ -27,3 +27,15 @@
   .oddk-paneSwitch button:last-child { order:1; border-radius:var(--oddk-radius-control) 0 0 var(--oddk-radius-control); }
   .oddk-paneSwitch [aria-pressed="true"] { border-color:var(--oddk-border); color:var(--oddk-accent-text); font-weight:600; }
 }
+
+/* CONTENT07: retain this file as the sole owner of its frame/layout rules. */
+.oddk-page .oddk-dailyControls .oddk-paneSwitch { display:flex; gap:0; margin:0; width:min(100%,240px); }
+.oddk-page .oddk-dailyControls .oddk-paneSwitch > button { order:0; width:50%; min-width:0; min-height:44px; padding:8px; border:1px solid var(--oddk-border); border-radius:0; background:var(--oddk-surface); color:var(--oddk-muted); font-size:14px; white-space:nowrap; }
+.oddk-page .oddk-dailyControls .oddk-paneSwitch > button:first-child { border-radius:var(--oddk-radius-control) 0 0 var(--oddk-radius-control); }
+.oddk-page .oddk-dailyControls .oddk-paneSwitch > button:last-child { border-left:0; border-radius:0 var(--oddk-radius-control) var(--oddk-radius-control) 0; }
+.oddk-page .oddk-dailyControls .oddk-paneSwitch > button[aria-pressed="true"] { color:var(--oddk-accent-text); background:var(--oddk-highlight); font-weight:600; }
+.oddk-dailyControls .oddk-paneSwitch svg { width:16px; height:16px; flex-shrink:0; }
+@media(min-width:1100px) { .oddk-page .oddk-dailyControls .oddk-paneSwitch { visibility:hidden; pointer-events:none; } }
+@media(max-width:480px) {
+  .oddk-dailyControls .oddk-paneSwitch svg { display:none; }
+}

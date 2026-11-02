@@ -1,7 +1,8 @@
 import http from "node:http";
 import { pathToFileURL } from "node:url";
 import { taskSplitRequest } from "../app/todo/local-task-ai.ts";
-import { parseTaskCandidates, MAX_TASK_PARAGRAPH } from "../app/todo/batch-tasks.ts";
+import { MAX_TASK_PARAGRAPH } from "../app/todo/batch-tasks.ts";
+import { parseTaskAIOutput } from "../app/todo/task-ai-output.ts";
 
 const project = "https://synxmskamifpovuziecx.supabase.co";
 const publishableKey = "sb_publishable_ACwZjSLbL_dU9hilmAV7CQ_FEH8AT29";
@@ -19,7 +20,7 @@ export async function generateTitles(text, signal, fetcher = fetch) {
   if (raw.length > 80000) throw Error("응답 크기 초과");
   const data = JSON.parse(raw);
   if (data.done !== true || data.done_reason === "length" || typeof data.message?.content !== "string") throw Error("분리 미완료");
-  return parseTaskCandidates(JSON.parse(data.message.content));
+  return parseTaskAIOutput(text, JSON.parse(data.message.content));
 }
 export function createGateway({ verify = authenticate, generate = generateTitles, now = Date.now } = {}) {
   const users = new Map();
