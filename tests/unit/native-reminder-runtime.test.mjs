@@ -14,7 +14,7 @@ function harness(platform = "ios", available = true) {
   const h = { source: { scope: "local", blocked: false, raw: JSON.stringify({ schemaVersion: 6, tasks: [task], start: "09:00", reviewsByDate: {}, goalTree: { goal: "", groups: [] } }) }, pending: [], delivered: [], preferences: new Map(), listeners: new Map(), events: new Map(), timers: new Map(), prompts: 0, apiCalls: 0, navigation: [], removed: 0, subscriptions: 0 };
   const notifications = {
     checkPermissions: async () => { h.apiCalls++; return { display: "granted" }; },
-    requestPermissions: async () => { h.prompts++; return { display: "granted" }; },
+    requestPermissions: async () => { h.prompts++; if (h.permissionGate) await h.permissionGate; return { display: "granted" }; },
     getPending: async () => ({ notifications: structuredClone(h.pending) }),
     getDeliveredNotifications: async () => ({ notifications: structuredClone(h.delivered) }),
     schedule: async ({ notifications }) => { h.pending.push(...structuredClone(notifications)); },
@@ -65,7 +65,7 @@ test("web, Android, and an older iPhone shell never call native notification API
     const h = harness(platform, available), stop = h.start();
     await h.api.refreshNativeReminders(); await h.api.disableNativeReminders();
     assert.equal(h.prompts, 0); assert.equal(h.apiCalls, 0); assert.equal(h.listeners.size, 0); assert.equal(h.preferences.size, 0);
-    const state = JSON.parse(h.api.getNativeReminderSnapshot()); assert.equal(state.native, platform === "ios"); assert.equal(state.available, false);
+    const state = JSON.parse(h.api.getNativeReminderSnapshot()); assert.equal(state.native, platform === "ios" || platform === "android"); assert.equal(state.available, false); assert.equal(state.phase, "ready");
     stop();
   }
 });
@@ -75,4 +75,27 @@ test("a relaunch restores the native opt-in without prompting and an empty new p
   const stopNext = next.start(); await next.api.refreshNativeReminders(); assert.equal(next.pending.length, 1); assert.equal(next.prompts, 0); stopNext();
   const empty = harness(); const p = JSON.parse(empty.source.raw); p.tasks = []; p.schemaVersion = 5; empty.source.raw = JSON.stringify(p);
   const stopEmpty = empty.start(); await empty.api.enableNativeReminders(); assert.equal(empty.pending.length, 0); assert.equal(JSON.parse(empty.api.getNativeReminderSnapshot()).enabled, true); stopEmpty();
+});
+
+test("shared adapter rejects cross-entry duplicate mutations while the OS permission request is pending", async () => {
+  const h = harness(); const stop = h.start(); await h.api.refreshNativeReminders();
+  let release; h.permissionGate = new Promise(resolve => { release = resolve; });
+  const first = h.api.enableNativeReminders();
+  await assert.rejects(h.api.enableNativeReminders(), /변경 중/);
+  assert.equal(h.prompts, 1);
+  release(); await first;
+  assert.equal(JSON.parse(h.api.getNativeReminderSnapshot()).enabled, true);
+  stop();
+});
+
+test("Android native exposes compact unsupported native state without calling any notification or preference API", async () => {
+  const h = harness("android"), stop = h.start();
+  const state = JSON.parse(h.api.getNativeReminderSnapshot());
+  assert.equal(state.native, true); assert.equal(state.available, false);
+  assert.equal(state.enabled, false); assert.equal(state.phase, "ready");
+  await assert.rejects(h.api.enableNativeReminders());
+  await h.api.disableNativeReminders(); await h.api.refreshNativeReminders();
+  assert.equal(h.prompts, 0); assert.equal(h.apiCalls, 0); assert.equal(h.pending.length, 0);
+  assert.equal(h.preferences.size, 0); assert.equal(h.listeners.size, 0);
+  stop();
 });

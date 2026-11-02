@@ -25,7 +25,7 @@ import {
 } from "./sync-store";
 import type { SyncStatus } from "./sync-store";
 import { AccountHelpLinks } from "./account-help-links";
-import { DeviceReminderSettings } from "./native-reminder-settings";
+import { DeviceReminderSettings, useNativeReminderStatus } from "./native-reminder-settings";
 import { AIConsentSettings } from "./ai-consent-controls";
 
 const tabs = [
@@ -37,16 +37,16 @@ const tabs = [
 type SettingsTab = (typeof tabs)[number]["id"];
 
 function SettingsCard({ title, description, children, className = "" }: {
-  title: string;
+  title?: string;
   description?: string;
   children: ReactNode;
   className?: string;
 }) {
   return <section className={`oddk-settingsCard ${className}`}>
-    <header className="oddk-settingsCardHeading">
-      <h2>{title}</h2>
+    {(title || description) && <header className="oddk-settingsCardHeading">
+      {title && <h2>{title}</h2>}
       {description && <p>{description}</p>}
-    </header>
+    </header>}
     {children}
   </section>;
 }
@@ -63,6 +63,7 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: 
   const tabButtons = useRef<Array<HTMLButtonElement | null>>([]);
   const raw = useSyncExternalStore(subscribeSync, getSyncSnapshot, getServerSyncSnapshot);
   const sync: SyncStatus = JSON.parse(raw);
+  const nativeReminder = useNativeReminderStatus().native;
   const syncLabel = !sync.connected ? "이 기기에 저장 중" : {
     local: "이 기기에 저장 중",
     syncing: "동기화 중",
@@ -160,7 +161,7 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: 
     </div>
 
     <div role="tabpanel" id="settings-panel-data" aria-labelledby="settings-tab-data" hidden={tab !== "data"}>
-      <SettingsCard title="일정 알림" description="일정을 놓치지 않도록, 사용하는 기기마다 알림을 연결하세요.">
+      <SettingsCard title={nativeReminder ? undefined : "일정 알림"} description={nativeReminder ? undefined : "일정을 놓치지 않도록, 사용하는 기기마다 알림을 연결하세요."}>
         <DeviceReminderSettings>
         <div className="oddk-settingActionRow"><div className="oddk-settingIdentity"><span className="oddk-settingIcon"><HiOutlineBell aria-hidden="true" /></span><div><strong>이 기기의 알림</strong><p>{sync.connected ? "연결 상태와 알림을 받을 기기를 관리해요." : "계정을 연결한 뒤 기기 알림을 설정할 수 있어요."}</p></div></div><button type="button" className="oddk-settingButton" onClick={() => openSettingsDialog(sync.connected ? "profile" : "sync")}>{sync.connected ? "알림 설정" : "로그인하고 설정"}<HiOutlineArrowUpRight aria-hidden="true" /></button></div>
         </DeviceReminderSettings>

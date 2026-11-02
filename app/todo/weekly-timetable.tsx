@@ -6,19 +6,19 @@ import { isPlanDate } from "../../supabase/functions/_shared/plan";
 import { dayLabel, shiftDate } from "./calendar-range";
 import { clockLabel } from "./timeline";
 import { TimelineScroll, TimelineTask } from "./timeline-task";
-import { buildWeeklyTimetable, timetablePastels, timetableTone } from "./weekly-timetable-model";
+import { buildTimetableDays, todayTimetableMoveDelta, timetablePastels, timetableTone } from "./weekly-timetable-model";
 import { TimetableAddDialog } from "./timetable-add-dialog";
 import type { NewTimetableTaskPreview } from "./timetable-add-dialog";
 import { timetableTaskDragType, timetableDropMinute } from "./timetable-drag";
 import type { PlanningIssue } from "./planning-alert-model";
 import { TimetableDetails } from "./timetable-details";
 
-type Props = { plan: Plan; tasks: Task[]; date: string; today: string; onSelectDate: (date: string) => void; onEdit: (task: Task) => void; onMove: (task: Task, delta: number, days?: number) => void; onResize: (task: Task, minutes: number) => void; onPlace?: (id: string, date: string, time: string) => void; onCreate: (preview: NewTimetableTaskPreview) => string | null; newTaskContext?: { categoryId: string | null; tagIds: string[] }; highlightedIssues?: PlanningIssue[]; focusTaskId?: string };
+type Props = { plan: Plan; tasks: Task[]; date: string; today: string; nativeToday?: string; onSelectDate: (date: string) => void; onEdit: (task: Task) => void; onMove: (task: Task, delta: number, days?: number) => void; onResize: (task: Task, minutes: number) => void; onPlace?: (id: string, date: string, time: string) => void; onCreate: (preview: NewTimetableTaskPreview) => string | null; newTaskContext?: { categoryId: string | null; tagIds: string[] }; highlightedIssues?: PlanningIssue[]; focusTaskId?: string };
 const pixelsPerMinute = 1;
 const weekdays = ["월", "화", "수", "목", "금", "토", "일"];
 const shortDate = (date: string) => date.slice(5).replace("-", ".");
 
-export function WeeklyTimetable({ plan, tasks, date, today, onSelectDate, onEdit, onMove, onResize, onPlace, onCreate, newTaskContext, highlightedIssues = [], focusTaskId }: Props) {
+export function WeeklyTimetable({ plan, tasks, date, today, nativeToday = "", onSelectDate, onEdit, onMove, onResize, onPlace, onCreate, newTaskContext, highlightedIssues = [], focusTaskId }: Props) {
   const [offset, setOffset] = useState(0);
   const [adding, setAdding] = useState<{ date: string; time: string } | null>(null);
   const [inspected, setInspected] = useState<{ id: string; date: string } | null>(null);
@@ -30,8 +30,10 @@ export function WeeklyTimetable({ plan, tasks, date, today, onSelectDate, onEdit
     document.addEventListener("drop", clear);
     return () => { document.removeEventListener("dragend", clear); document.removeEventListener("drop", clear); };
   }, []);
-  const anchor = shiftDate(date, offset * 7) ?? date;
-  const days = useMemo(() => buildWeeklyTimetable(plan, anchor, tasks), [plan, anchor, tasks]);
+  const native = isPlanDate(nativeToday);
+  const anchor = native ? nativeToday : shiftDate(date, offset * 7) ?? date;
+  const selectedDate = native ? nativeToday : date;
+  const days = useMemo(() => buildTimetableDays(plan, anchor, tasks, native), [plan, anchor, tasks, native]);
   const inspectedDay = days.find(day => day.date === inspected?.date);
   const inspectedTask = inspectedDay?.tasks.find(task => task.id === inspected?.id);
   function inspect(id: string, date: string) {
@@ -42,19 +44,19 @@ export function WeeklyTimetable({ plan, tasks, date, today, onSelectDate, onEdit
     setInspected(null);
     if (inspectionOpener.current?.getClientRects().length) inspectionOpener.current.focus({ preventScroll: true });
   }
-  const initialMinute = days.find(day => day.date === date)?.tasks.find(task => task.id === focusTaskId)?.start ?? Math.min(540, ...(days.find(day => day.date === date)?.tasks ?? []).map(task => task.start));
+  const initialMinute = days.find(day => day.date === selectedDate)?.tasks.find(task => task.id === focusTaskId)?.start ?? Math.min(540, ...(days.find(day => day.date === selectedDate)?.tasks ?? []).map(task => task.start));
   const shortTasks = days.flatMap(day => day.tasks.filter(task => task.segmentMinutes < 20 || task.segmentWork < 16).map(task => ({ date: day.date, task })));
   if (!days.length) return <p>시간표를 불러오고 있어요.</p>;
 
-  return <section className="oddk-weekTable" aria-label="주간 시간표">
-    <header className="oddk-weekToolbar"><div><h2 id="rhythm-title">주간 시간표</h2><p>{shortDate(days[0].date)} – {shortDate(days.at(-1)!.date)}</p></div><nav aria-label="시간표 주 이동"><button type="button" aria-label="이전 주" disabled={!shiftDate(anchor, -7)} onClick={() => setOffset(value => value - 1)}><HiOutlineChevronLeft aria-hidden="true" /></button><button type="button" onClick={() => { setOffset(0); if (isPlanDate(today)) onSelectDate(today); }}>오늘</button><button type="button" aria-label="다음 주" disabled={!shiftDate(anchor, 7)} onClick={() => setOffset(value => value + 1)}><HiOutlineChevronRight aria-hidden="true" /></button></nav></header>
+  return <section className="oddk-weekTable" data-native-today={native || undefined} aria-label={native ? "오늘 시간표" : "주간 시간표"}>
+    <header className="oddk-weekToolbar"><div><h2 id="rhythm-title">{native ? "오늘 시간표" : "주간 시간표"}</h2><p>{native ? dayLabel(nativeToday) : `${shortDate(days[0].date)} – ${shortDate(days.at(-1)!.date)}`}</p></div>{!native && <nav aria-label="시간표 주 이동"><button type="button" aria-label="이전 주" disabled={!shiftDate(anchor, -7)} onClick={() => setOffset(value => value - 1)}><HiOutlineChevronLeft aria-hidden="true" /></button><button type="button" onClick={() => { setOffset(0); if (isPlanDate(today)) onSelectDate(today); }}>오늘</button><button type="button" aria-label="다음 주" disabled={!shiftDate(anchor, 7)} onClick={() => setOffset(value => value + 1)}><HiOutlineChevronRight aria-hidden="true" /></button></nav>}</header>
     <div className="oddk-weekMeta"><span className="oddk-pastelLegend"><i /><i /><i /><span>작업 + 여유</span></span><span className="oddk-weekAddHint">빈 칸에서 추가 · 목록에서 끌어 놓기</span></div>
-    <TimelineScroll key={anchor} initialMinute={initialMinute} pixelsPerMinute={pixelsPerMinute} initialDay={Math.max(0, days.findIndex(day => day.date === date))} label="요일별 주간 시간표. 일정 클릭으로 수정, 드래그로 시간 이동, 아래쪽 드래그로 소요시간 조절, 빈 시간 클릭으로 할 일 추가.">
+    <TimelineScroll key={anchor} initialMinute={initialMinute} pixelsPerMinute={pixelsPerMinute} initialDay={native ? 0 : Math.max(0, days.findIndex(day => day.date === date))} label={native ? "오늘 시간표. 일정 클릭으로 상세 보기, 오늘 안에서 드래그로 시간 이동, 아래쪽 드래그로 소요시간 조절, 빈 시간 클릭으로 할 일 추가." : "요일별 주간 시간표. 일정 클릭으로 수정, 드래그로 시간 이동, 아래쪽 드래그로 소요시간 조절, 빈 시간 클릭으로 할 일 추가."}>
       <div className="oddk-weekCanvas">
-        <div className="oddk-weekHeader"><span className="oddk-weekCorner" aria-hidden="true" />{days.map((day, index) => <button key={day.date} type="button" data-today={day.date === today} data-selected={day.date === date} aria-label={`${dayLabel(day.date)} 할 일 보기`} aria-current={day.date === date ? "date" : undefined} onClick={() => onSelectDate(day.date)}><span>{weekdays[index]}</span><strong>{Number(day.date.slice(-2))}</strong></button>)}</div>
+        <div className="oddk-weekHeader"><span className="oddk-weekCorner" aria-hidden="true" />{days.map((day, index) => native ? <span className="oddk-weekTodayHeading" key={day.date}>{dayLabel(day.date)}</span> : <button key={day.date} type="button" data-today={day.date === today} data-selected={day.date === date} aria-label={`${dayLabel(day.date)} 할 일 보기`} aria-current={day.date === date ? "date" : undefined} onClick={() => onSelectDate(day.date)}><span>{weekdays[index]}</span><strong>{Number(day.date.slice(-2))}</strong></button>)}</div>
         <div className="oddk-weekBody" style={{ height: 1440 * pixelsPerMinute }}>
           <div className="oddk-weekTimes" aria-hidden="true">{Array.from({ length: 24 }, (_, hour) => <time key={hour} style={{ top: hour * 60 * pixelsPerMinute }}>{String(hour).padStart(2, "0")}</time>)}</div>
-          <div className="oddk-weekColumns">{days.map(day => <div key={day.date} className="oddk-weekColumn" data-date={day.date} data-timetable-date={onPlace ? day.date : undefined} data-pixels-per-minute={pixelsPerMinute} data-selected={day.date === date}
+          <div className="oddk-weekColumns">{days.map(day => <div key={day.date} className="oddk-weekColumn" data-date={day.date} data-timetable-date={onPlace ? day.date : undefined} data-pixels-per-minute={pixelsPerMinute} data-selected={day.date === selectedDate}
             onDragOver={event => {
               if (!onPlace || !event.dataTransfer.types.includes(timetableTaskDragType)) return;
               event.preventDefault(); event.dataTransfer.dropEffect = "move";
@@ -80,7 +82,7 @@ export function WeeklyTimetable({ plan, tasks, date, today, onSelectDate, onEdit
               const tone = timetablePastels[timetableTone(task)];
               const issue = day.date === date ? highlightedIssues.find(issue => issue.id === task.id) : undefined;
               const description = `${dayLabel(day.date)}, ${task.title}, ${clockLabel(task.start)}부터 ${clockLabel(task.end)}, 작업 ${task.segmentWork}분, 여유 ${task.segmentBuffer}분${task.continuesBefore ? ", 전날부터 이어짐" : ""}${task.continuesAfter ? ", 다음 날 계속" : ""}${task.conflict ? ", 시간 겹침" : ""}`;
-              return <TimelineTask key={task.id} taskId={task.id} highlighted={Boolean(issue)} title={task.title} notes={task.notes} description={description + (issue ? `, ${issue.reasons.join(" · ")}` : "")} start={task.start} end={task.end} pixelsPerMinute={pixelsPerMinute} conflict={task.conflict} selected={inspected?.id === task.id && inspected.date === day.date} actionLabel="클릭하여 상세 보기" onEdit={() => inspect(task.id, day.date)} sourceDate={day.date} onMove={(delta, dayOffset) => onMove(task, delta, dayOffset)} duration={!task.continuesAfter ? { minutes: task.minutes!, bufferMinutes: task.bufferMinutes! } : undefined} onResize={minutes => onResize(task, minutes)} style={{ top: task.start * pixelsPerMinute, height: task.segmentMinutes * pixelsPerMinute, left: `${task.lane / task.columns * 100}%`, width: `${100 / task.columns}%`, "--tt-fill": tone.fill, "--tt-ink": tone.ink, "--tt-dark-fill": tone.darkFill, "--tt-dark-ink": tone.darkInk } as CSSProperties}>
+              return <TimelineTask key={task.id} taskId={task.id} highlighted={Boolean(issue)} title={task.title} notes={task.notes} description={description + (issue ? `, ${issue.reasons.join(" · ")}` : "")} start={task.start} end={task.end} pixelsPerMinute={pixelsPerMinute} conflict={task.conflict} selected={inspected?.id === task.id && inspected.date === day.date} actionLabel="클릭하여 상세 보기" onEdit={() => inspect(task.id, day.date)} sourceDate={day.date} onMove={(delta, dayOffset) => { if (native) { if (!dayOffset) onMove(task, todayTimetableMoveDelta(task, day.date, task.start, delta), 0); } else onMove(task, delta, dayOffset); }} duration={!task.continuesAfter ? { minutes: task.minutes!, bufferMinutes: task.bufferMinutes! } : undefined} onResize={minutes => onResize(task, minutes)} style={{ top: task.start * pixelsPerMinute, height: task.segmentMinutes * pixelsPerMinute, left: `${task.lane / task.columns * 100}%`, width: `${100 / task.columns}%`, "--tt-fill": tone.fill, "--tt-ink": tone.ink, "--tt-dark-fill": tone.darkFill, "--tt-dark-ink": tone.darkInk } as CSSProperties}>
                 {delta => {
                   const segment = Math.max(0, task.segmentMinutes + delta), buffer = delta === 0 ? task.segmentBuffer : Math.min(task.bufferMinutes!, segment), work = segment - buffer;
                   return <>{issue && <span className="oddk-timetableIssueBadge" aria-hidden="true">!</span>}{work > 0 && <span className="oddk-slotWork" data-compact={work * pixelsPerMinute < 48} data-tiny={work * pixelsPerMinute < 16} style={{ height: work * pixelsPerMinute }}><strong>{task.title}</strong><span>{clockLabel(task.start)}–{clockLabel(task.end + delta)}</span></span>}
@@ -92,7 +94,7 @@ export function WeeklyTimetable({ plan, tasks, date, today, onSelectDate, onEdit
         </div>
       </div>
     </TimelineScroll>
-    {!days.some(day => day.tasks.length || day.fixed.length) && <p className="oddk-weekEmpty">빈 시간을 클릭해 이 주의 할 일을 추가해보세요.</p>}
+    {!days.some(day => day.tasks.length || day.fixed.length) && <p className="oddk-weekEmpty">빈 시간을 클릭해 {native ? "오늘의" : "이 주의"} 할 일을 추가해보세요.</p>}
     {shortTasks.length > 0 && <div className="oddk-weekShort" aria-label="짧은 일정">{shortTasks.map(({ date: taskDate, task }) => <button key={`${taskDate}:${task.id}`} type="button" onClick={() => inspect(task.id, taskDate)}>{shortDate(taskDate)} {clockLabel(task.start)} · {task.title}</button>)}</div>}
     {inspectedTask && inspectedDay && <TimetableDetails key={inspectedDay.date + inspectedTask.id} task={inspectedTask} date={inspectedDay.date} start={inspectedTask.start} end={inspectedTask.end} work={inspectedTask.segmentWork} buffer={inspectedTask.segmentBuffer} conflict={inspectedTask.conflict} onClose={closeInspection} onEdit={() => { closeInspection(); onEdit(inspectedTask); }} />}
     {adding && <TimetableAddDialog plan={plan} date={adding.date} time={adding.time} context={newTaskContext} onClose={() => setAdding(null)} onCreate={onCreate} />}

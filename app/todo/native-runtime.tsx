@@ -8,9 +8,11 @@ import { syncClient } from "./supabase-client";
 import { startNativeUpdates } from "./native-updates";
 import { startNativeReminders, refreshNativeReminders } from "./native-reminders";
 import { useNativeReminderStatus } from "./native-reminder-settings";
+import { installNativeTouchPolicy } from "./native-touch-policy";
 import { getPlanScope, getPlanSnapshot, hasPendingAccountDeletion, subscribePlan, subscribeSync } from "./sync-store";
 
 export function NativeRuntime() {
+  useEffect(() => installNativeTouchPolicy(document.documentElement, Capacitor.isNativePlatform()), []);
   const [message, setMessage] = useState("");
   const reminders = useNativeReminderStatus();
   useEffect(() => startNativeReminders(() => {

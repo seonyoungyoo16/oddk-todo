@@ -23,3 +23,12 @@ html:has(.oddk-page) { scrollbar-gutter:stable; }
   .oddk-pageHeader .oddk-pageDescription { font-size:14px; }
   .oddk-page .oddk-pageHeader .oddk-themeToggle { display:none; }
 }
+
+/* CONTENT07: retain this file as the sole owner of its frame/layout rules. */
+.oddk-page .oddk-workspace { padding-top:24px; }
+@media(max-width:1099px) {
+  .oddk-page .oddk-workspace { padding:24px 16px; }
+}
+@media(max-width:480px) {
+  .oddk-page .oddk-workspace { padding-top:16px; }
+}

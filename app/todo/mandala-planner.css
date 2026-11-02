@@ -1,6 +1,6 @@
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] { --planner-rule:var(--oddk-border); --planner-grid:var(--oddk-border); padding:0; border:0; border-radius:0; background:transparent; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaBoard { gap:0; border:2px dashed var(--planner-rule); }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup { min-height:0; aspect-ratio:1.6; grid-auto-rows:minmax(0,1fr); border:0; border-right:2px dashed var(--planner-rule); border-bottom:2px dashed var(--planner-rule); border-radius:0; box-shadow:none; background:var(--oddk-soft); opacity:1; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup { min-height:360px; aspect-ratio:auto; grid-auto-rows:minmax(120px,auto); border:0; border-right:2px dashed var(--planner-rule); border-bottom:2px dashed var(--planner-rule); border-radius:0; box-shadow:none; background:var(--oddk-soft); opacity:1; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup:nth-child(3n) { border-right:0; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup:nth-last-child(-n+3) { border-bottom:0; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup > :is(.oddk-mandalaCell,.oddk-mandalaSubgoal,.oddk-mandalaGoal) { min-height:0; margin:0; padding:8px; border:0; border-right:1px dotted var(--planner-grid); border-bottom:1px dotted var(--planner-grid); }
@@ -8,30 +8,30 @@
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup > :nth-last-child(-n+3) { border-bottom:0; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup[data-disabled="true"] > .oddk-mandalaSubgoal { background:var(--oddk-soft); }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaCenter .oddk-mandalaSubgoal { background:var(--oddk-soft); }
-.oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaFieldLabel { display:block; flex-shrink:0; margin-bottom:2px; color:var(--oddk-muted); font-size:clamp(9px,2.5cqw,11px); font-weight:500; line-height:1.2; }
+.oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaFieldLabel { display:block; flex-shrink:0; margin-bottom:2px; color:var(--oddk-muted); font-size:14px; font-weight:500; line-height:1.5; }
 .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGoal .oddk-mandalaFieldLabel { color:var(--mandala-accent-ink); font-weight:600; }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup > .oddk-mandalaSubgoal strong { display:-webkit-box; max-width:100%; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; font-size:clamp(10px,3.8cqw,16px); line-height:1.25; }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaCenter textarea { margin:0; max-height:clamp(40px,17cqw,78px); font-size:clamp(12px,3.8cqw,16px); }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGoal textarea { font-size:clamp(16px,5.5cqw,24px); }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup :is(.oddk-mandalaTask,select) { font-size:clamp(11px,3.8cqw,15px); }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup > .oddk-mandalaSubgoal strong { display:-webkit-box; max-width:100%; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:16px; line-height:1.5; overflow-wrap:anywhere; white-space:pre-wrap; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaCenter textarea { margin:0; min-height:96px; max-height:320px; font-size:16px; line-height:1.5; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGoal textarea { font-size:20px; font-weight:600; line-height:1.5; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup :is(.oddk-mandalaTask,select) { font-size:16px; line-height:1.5; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup select { color:color-mix(in srgb,var(--mandala-ink) 65%,var(--mandala-cell)); }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup select:focus { color:var(--mandala-ink); }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaBoard { width:min(100%,calc(var(--planner-fit-height) * 1.6)); min-width:0; margin-inline:auto; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaBoard { width:100%; min-width:1080px; margin-inline:auto; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaGroup > :is(.oddk-mandalaCell,.oddk-mandalaSubgoal,.oddk-mandalaGoal) { padding:4px; }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaGroup :is(.oddk-mandalaTask,select) { font-size:clamp(10px,3.8cqw,15px); }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaSubgoal { font-size:clamp(11px,4.5cqw,20px); }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] textarea { padding:1px; max-height:calc(100% - 2px); font-size:clamp(10px,3.8cqw,16px); }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaCenter textarea { max-height:calc(100% - 16px); }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaGoal textarea { font-size:clamp(12px,5.5cqw,24px); line-height:1.15; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaGroup :is(.oddk-mandalaTask,select) { font-size:16px; line-height:1.5; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaSubgoal { font-size:16px; line-height:1.5; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] textarea { padding:4px; min-height:96px; max-height:320px; font-size:16px; line-height:1.5; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaCenter textarea { min-height:96px; max-height:320px; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaGoal textarea { font-size:20px; font-weight:600; line-height:1.5; }
 .oddk-page[data-theme="dark"] .oddk-mandalaCanvas[data-layout="planner"] { --planner-rule:var(--oddk-border); --planner-grid:var(--oddk-border); background:transparent; }
 .oddk-page[data-theme="dark"] .oddk-mandalaFieldLabel { color:var(--oddk-muted); }
 /* Keep all grid slots so entering the core goal never moves the center table. */
-.oddk-goalSwitcher { display:flex; align-items:center; flex-wrap:wrap; gap:var(--oddk-space-3); min-width:0; }
-.oddk-goalSwitcher label { display:flex; align-items:center; gap:var(--oddk-space-2); min-width:0; color:var(--oddk-muted); font-size:var(--oddk-font-label); }
-.oddk-goalSwitcher select { width:clamp(140px,20vw,260px); max-width:100%; min-height:var(--oddk-control-height); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); font:inherit; }
-.oddk-page .oddk-goalAdd { min-height:var(--oddk-control-height); gap:var(--oddk-space-2); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); font-size:var(--oddk-font-label); }
+.oddk-goalSwitcher { display:flex; flex:1; align-items:center; flex-wrap:nowrap; gap:8px; min-width:0; }
+.oddk-goalSwitcher label { display:flex; flex:1; align-items:center; gap:var(--oddk-space-2); min-width:0; color:var(--oddk-muted); font-size:16px; }
+.oddk-goalSwitcher select { width:100%; min-width:0; max-width:100%; min-height:var(--oddk-control-height); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); font:inherit; }
+.oddk-page .oddk-goalAdd { min-height:var(--oddk-control-height); gap:var(--oddk-space-2); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); font-size:var(--goal-font-body,16px); }
 .oddk-goalAdd svg { width:var(--oddk-icon-size); height:var(--oddk-icon-size); }
-.oddk-goalSaveStatus { color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+.oddk-goalSaveStatus { color:var(--oddk-muted); font-size:var(--goal-font-help,14px); }
 .oddk-page .oddk-mandalaCanvas[data-partial="true"] :is(.oddk-mandalaBoard,.oddk-mandalaGroup) { border-color:transparent; }
 .oddk-page .oddk-mandalaCanvas .oddk-mandalaGroup[data-visible="false"] { visibility:hidden; }
 .oddk-page .oddk-mandalaCanvas[data-partial="true"] .oddk-mandalaGroup:is(.oddk-mandalaCenter,[data-visible="true"]) { outline:2px dashed var(--planner-rule); outline-offset:-1px; }
@@ -39,25 +39,25 @@
 /* Compact navigation renders one level at a time; the desktop planner stays intact. */
 .oddk-page .oddk-mandalaCompact { min-width:0; padding:16px; border:0; border-radius:0; background:transparent; }
 .oddk-mandalaCompactHeader { display:flex; flex-direction:column; align-items:flex-start; gap:8px; margin-bottom:16px; min-width:0; }
-.oddk-mandalaCompactHeader h3 { max-width:100%; margin:0; color:var(--oddk-heading); font-size:16px; font-weight:600; line-height:1.5; overflow-wrap:anywhere; white-space:pre-wrap; }
+.oddk-mandalaCompactHeader h3 { max-width:100%; margin:0; color:var(--oddk-heading); font-size:20px; font-weight:600; line-height:1.5; overflow-wrap:anywhere; white-space:pre-wrap; }
 .oddk-mandalaCompactHeader h3:focus-visible { outline:2px solid var(--oddk-focus); outline-offset:4px; }
 .oddk-mandalaCompactHeader p { margin:0; color:var(--oddk-muted); font-size:14px; line-height:1.5; }
-.oddk-mandalaLevel { color:var(--oddk-muted); font-size:12px; line-height:1.5; }
+.oddk-mandalaLevel { color:var(--oddk-muted); font-size:14px; line-height:1.5; }
 .oddk-page .oddk-mandalaBack { min-height:44px; padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); font-size:16px; }
 .oddk-mandalaCompactGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; min-width:0; }
 .oddk-page .oddk-mandalaCompactCell,.oddk-page .oddk-mandalaCompact .oddk-mandalaCell { display:flex; flex-direction:column; justify-content:center; align-items:stretch; gap:8px; min-width:0; min-height:112px; margin:0; padding:10px 6px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); text-align:center; }
 .oddk-page .oddk-mandalaCompactCell[data-center="true"] { background:var(--mandala-accent); color:var(--mandala-accent-ink); }
 .oddk-page .oddk-mandalaCompactCell:disabled { opacity:1; background:var(--oddk-soft); color:var(--oddk-muted); cursor:not-allowed; }
 .oddk-page .oddk-mandalaCompactCell strong { display:-webkit-box; min-width:0; margin:0; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:16px; font-weight:500; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
-.oddk-mandalaSlotLabel,.oddk-mandalaCellAction { color:inherit; font-size:12px; line-height:1.5; }
+.oddk-mandalaSlotLabel,.oddk-mandalaCellAction { color:inherit; font-size:14px; line-height:1.5; }
 .oddk-mandalaSlotLabel { font-weight:500; }
 .oddk-mandalaCellAction { text-decoration:underline; text-underline-offset:3px; }
 .oddk-page .oddk-mandalaCompactGrid[data-level="area"] > :is(.oddk-mandalaCell,.oddk-mandalaCompactCell) { min-height:132px; }
-.oddk-page .oddk-mandalaCompact .oddk-mandalaCell .oddk-mandalaTask { display:flex; flex:1; flex-direction:column; gap:8px; min-height:44px; padding:8px 0; color:var(--oddk-heading); font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
-.oddk-page .oddk-mandalaCompact .oddk-mandalaUnlink { position:static; display:flex; justify-content:center; min-height:44px; min-width:44px; max-width:100%; margin:0; padding:8px 2px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); font-size:12px; line-height:1.5; white-space:normal; }
+.oddk-page .oddk-mandalaCompact .oddk-mandalaCell .oddk-mandalaTask { display:flex; flex:1; flex-direction:column; gap:8px; min-height:44px; padding:8px 0; color:var(--oddk-heading); font-size:16px; line-height:1.5; overflow-wrap:anywhere; }
+.oddk-page .oddk-mandalaCompact .oddk-mandalaUnlink { position:static; display:flex; justify-content:center; min-height:44px; min-width:44px; max-width:100%; margin:0; padding:8px 2px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); font-size:16px; line-height:1.5; white-space:normal; }
 .oddk-page .oddk-mandalaCompact .oddk-mandalaCell select { display:block; min-width:0; width:100%; max-width:100%; min-height:44px; padding:4px 0; border:0; border-radius:0; background:var(--oddk-surface); color:var(--oddk-heading); font-size:16px; line-height:1.5; }
-.oddk-mandalaDone { color:var(--oddk-muted); font-size:12px; line-height:1.5; }
-.oddk-mandalaConnectLabel { color:var(--oddk-heading); font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+.oddk-mandalaDone { color:var(--oddk-muted); font-size:14px; line-height:1.5; }
+.oddk-mandalaConnectLabel { color:var(--oddk-heading); font-size:16px; line-height:1.5; overflow-wrap:anywhere; }
 .oddk-mandalaMissing { font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
 .oddk-page .oddk-mandalaCompact :is(button,select):focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; }
 .oddk-mandalaNameEditor .oddk-dialogForm { min-width:0; }
@@ -65,3 +65,49 @@
 .oddk-mandalaNameEditor .oddk-dialogField textarea { width:100%; max-width:100%; min-height:120px; max-height:min(320px,40dvh); padding:12px; border:1px solid var(--oddk-dialog-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); font-size:16px; line-height:1.5; overflow-y:auto; }
 .oddk-mandalaNameEditor .oddk-dialogField textarea:focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; }
 .oddk-mandalaNameEditor p { color:var(--oddk-muted); font-size:14px; line-height:1.5; }
+
+/* Page-scoped reading sizes: never shrink the text to fit the full planner. */
+.oddk-page .oddk-mandalaGoals { --goal-font-body:16px; --goal-font-help:14px; --goal-font-section:18px; --goal-font-core:20px; font-size:var(--goal-font-body); line-height:1.6; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaToolbar { flex-wrap:nowrap; gap:8px; min-width:0; }
+.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalAdd { flex:0 0 44px; width:44px; min-width:44px; height:44px; padding:10px; gap:0; }
+.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalAdd > svg { width:20px; height:20px; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaActions { flex:0 0 44px; width:44px; margin:0; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaActions > button.oddk-mandalaReset { width:44px; min-width:44px; height:44px; padding:10px; line-height:1.5; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaReset > svg { width:20px; height:20px; }
+.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher select { height:44px; font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaBoard { min-width:1080px; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup > :is(.oddk-mandalaCell,.oddk-mandalaSubgoal,.oddk-mandalaGoal) { min-height:120px; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup :is(.oddk-mandalaTask,select,textarea) { font-size:16px; line-height:1.5; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGoal textarea { font-size:20px; font-weight:600; line-height:1.5; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaCompactCell[data-center="true"] strong { font-size:20px; font-weight:600; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaCompact:has(.oddk-mandalaCompactGrid[data-level="area"]) .oddk-mandalaCompactHeader h3 { font-size:18px; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaNameEditor .oddk-dialogHeader h2 { font-size:18px; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaNameEditor .oddk-dialogField { font-size:16px; }
+
+.oddk-page .oddk-mandalaGoals .oddk-mandalaFeedback { font-size:var(--goal-font-help); line-height:1.6; }
+.oddk-page .oddk-mandalaGoals .oddk-dialogActions > button { font-size:var(--goal-font-body); }
+.oddk-page .oddk-mandalaGoals .oddk-dialogHeader h2 { font-size:var(--goal-font-section); line-height:1.5; }
+
+/* Goal selection, creation and management share the page context row. */
+.oddk-page .oddk-mandalaGoals .oddk-mandalaToolbar { position:relative; padding:0; margin:0 0 24px; border:0; }
+.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > label { flex:0 1 300px; }
+.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalAdd { flex:0 0 auto; width:auto; min-width:44px; margin-left:auto; padding:8px 12px; gap:8px; white-space:nowrap; }
+.oddk-page .oddk-mandalaGoals .oddk-goalManagement { flex:0 0 44px; min-width:0; }
+.oddk-page .oddk-mandalaGoals .oddk-goalManagement > summary { display:flex; align-items:center; justify-content:center; width:44px; min-height:44px; padding:10px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); list-style:none; cursor:pointer; }
+.oddk-goalManagement > summary::-webkit-details-marker { display:none; }
+.oddk-goalManagement > summary > svg { width:20px; height:20px; }
+.oddk-page .oddk-mandalaGoals .oddk-goalManagement[open] > summary { border-color:var(--oddk-focus); color:var(--oddk-accent-text); background:var(--oddk-highlight); }
+.oddk-goalManagementPopover { position:absolute; z-index:45; top:calc(100% + 8px); right:0; width:min(240px,100%); padding:16px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-card); background:var(--oddk-surface); box-shadow:0 12px 32px #1722391c; }
+.oddk-goalManagementPopover > h3 { margin:0 0 12px; font-size:16px; font-weight:600; }
+.oddk-page .oddk-mandalaGoals .oddk-goalManagementPopover > button { display:flex; justify-content:flex-start; gap:8px; width:100%; min-width:0; min-height:44px; height:auto; padding:8px; border:0; border-radius:var(--oddk-radius-control); font-size:16px; text-align:left; white-space:normal; }
+.oddk-goalManagementPopover > button > svg { width:20px; height:20px; flex-shrink:0; }
+.oddk-goalManagementPopover > p { margin:8px 0 0; padding-top:12px; border-top:1px solid var(--oddk-border); color:var(--oddk-muted); font-size:14px; line-height:1.6; }
+.oddk-page .oddk-mandalaGoals .oddk-goalManagement :is(summary,button):focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; }
+.oddk-mandalaCompactHeader[data-overview="true"]:not(:has(p)) { margin:0; gap:0; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas .oddk-mandalaCell[data-done="true"] .oddk-mandalaTask > span { text-decoration:none; }
+@media(max-width:1099px) {
+  .oddk-page .oddk-mandalaGoals .oddk-mandalaToolbar { margin-bottom:20px; }
+  .oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > label { flex:1; }
+  .oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalAdd { flex:0 0 44px; width:44px; margin-left:0; padding:10px; gap:0; }
+  .oddk-goalSwitcher > .oddk-goalAdd > span { display:none; }
+}

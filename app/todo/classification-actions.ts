@@ -1,10 +1,11 @@
 import type { Plan, Task, Category, Tag } from "../../supabase/functions/_shared/plan.ts";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
 import { normalizeName, normalizeTagName, nameKey } from "../../supabase/functions/_shared/taxonomy.ts";
-export type ClassificationFilter = { category: "all" | "none" | `category:${string}`; tags: string[]; search: string };
+export type TaskStatusFilter = "all" | "active" | "done";
+export type ClassificationFilter = { category: "all" | "none" | `category:${string}`; tags: string[]; search: string; status?: TaskStatusFilter };
 export function filterClassifiedTasks(tasks: Task[], filter: ClassificationFilter): Task[] {
   const query = nameKey(filter.search);
-  return tasks.filter(task => (filter.category === "all" || (filter.category === "none" ? task.categoryId == null : task.categoryId === filter.category.slice(9))) && filter.tags.every(id => (task.tagIds ?? []).includes(id)) && (!query || nameKey(`${task.title} ${task.notes ?? ""}`).includes(query)));
+  return tasks.filter(task => (!filter.status || filter.status === "all" || (!task.summaryOnly && (filter.status === "done" ? task.done : !task.done))) && (filter.category === "all" || (filter.category === "none" ? task.categoryId == null : task.categoryId === filter.category.slice(9))) && filter.tags.every(id => (task.tagIds ?? []).includes(id)) && (!query || nameKey(`${task.title} ${task.notes ?? ""}`).includes(query)));
 }
 function checked(plan: Plan, error: string): Plan { if (!validPlan(plan)) throw new Error(error); return plan; }
 export function saveCategory(plan: Plan, category: Category): Plan {

@@ -1,0 +1,57 @@
+/* Shared shell: current page title, theme and destination controls on every page. */
+.oddk-page[data-shared-shell="true"] { --shared-shell-nav-size:0px; padding-bottom:calc(var(--shared-shell-nav-size) + var(--bottom-timer-size,0px) + var(--bottom-selection-size,0px) + var(--bottom-detail-size,0px) + var(--bottom-controls-gap,0px)); }
+.oddk-page[data-shared-shell="true"] .oddk-windowBody { display:block; min-width:0; }
+.oddk-page .oddk-sharedAccountHost > .oddk-accountFooter { display:none; }
+.oddk-page .oddk-desktopSidebar { display:none; }
+.oddk-page[data-shared-shell="true"] :is(.oddk-window,.oddk-windowBody) { min-height:calc(100dvh - 56px - env(safe-area-inset-top,0px) - var(--shared-shell-nav-size)); }
+.oddk-sharedHeader { position:sticky; top:0; z-index:60; flex-shrink:0; width:100%; border-bottom:1px solid var(--oddk-border); background:var(--oddk-surface); }
+.oddk-sharedHeaderInner { display:grid; grid-template-columns:44px minmax(0,1fr) 44px; align-items:center; gap:8px; box-sizing:border-box; width:100%; max-width:var(--oddk-page-max-width,1600px); height:calc(56px + env(safe-area-inset-top,0px)); margin-inline:auto; padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px)); }
+.oddk-page .oddk-sharedMenuToggle { display:inline-flex; flex:0 0 44px; align-items:center; justify-content:center; width:44px; min-width:44px; height:44px; min-height:44px; padding:8px; border:0; color:var(--oddk-muted); background:transparent; }
+.oddk-page .oddk-sharedMenuToggle { border-radius:var(--oddk-radius-control); }
+.oddk-sharedMenuToggle > svg { width:24px; height:24px; }
+.oddk-page .oddk-sharedTitle { min-width:0; margin:0; color:var(--oddk-heading); font-size:20px; font-weight:600; line-height:28px; letter-spacing:-.02em; overflow-wrap:anywhere; scroll-margin-top:calc(56px + env(safe-area-inset-top,0px)); }
+.oddk-sharedHeaderActions { display:flex; align-items:center; justify-content:end; }
+.oddk-page .oddk-sharedHeaderActions .oddk-themeToggle { position:static; display:inline-flex; align-items:center; justify-content:center; width:44px; min-width:44px; height:44px; min-height:44px; padding:10px; border:0; border-radius:var(--oddk-radius-control); background:transparent; color:var(--oddk-muted); }
+.oddk-sharedHeaderActions .oddk-themeToggle > svg { width:20px; height:20px; }
+.oddk-sharedHeaderInner :is(button,a):focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; }
+.oddk-page .oddk-sharedMenuToggle:hover { color:var(--oddk-heading); background:var(--oddk-highlight); }
+
+/* HTML dialog remains the modal/focus owner; CSS only gives it the full viewport. */
+.oddk-page .oddk-dialog.oddk-fullMenu { position:fixed; inset:0; box-sizing:border-box; width:100%; max-width:none; height:100dvh; min-height:100dvh; max-height:none; margin:0; padding:0; overflow:hidden; border:0; border-radius:0; background:var(--oddk-surface); color:var(--oddk-heading); box-shadow:none; }
+.oddk-page .oddk-fullMenu[open] { display:flex; flex-direction:column; }
+.oddk-fullMenu > .oddk-sharedHeaderInner { flex-shrink:0; max-width:none; border-bottom:1px solid var(--oddk-border); }
+.oddk-fullMenu::backdrop { background:var(--oddk-surface); }
+.oddk-fullMenuBody { flex:1; min-width:0; min-height:0; overflow-y:auto; padding:28px max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px)); overscroll-behavior:contain; }
+.oddk-fullMenuLinks { display:grid; min-width:0; }
+.oddk-page .oddk-fullMenuLinks > button { display:grid; grid-template-columns:28px minmax(0,1fr) 24px; align-items:center; gap:16px; min-width:0; min-height:64px; padding:16px; border:0; border-bottom:1px solid var(--oddk-border); border-radius:0; background:transparent; color:var(--oddk-heading); text-align:left; font-size:18px; font-weight:600; line-height:1.5; }
+.oddk-page .oddk-fullMenuLinks > button:last-child { border-bottom:0; }
+.oddk-page .oddk-fullMenuLinks > button[aria-current="page"] { border-color:transparent; border-radius:var(--oddk-radius-card); background:var(--oddk-highlight); color:var(--oddk-accent-text); }
+.oddk-fullMenuLinks > button > span:first-child { display:inline-flex; align-items:center; justify-content:center; color:var(--oddk-muted); }
+.oddk-fullMenuLinks > button > span:first-child > svg { width:28px; height:28px; }
+.oddk-fullMenuLinks > button > span:nth-child(2) { min-width:0; overflow-wrap:anywhere; }
+.oddk-fullMenuLinks > button > svg { justify-self:end; width:20px; height:20px; color:var(--oddk-muted); }
+.oddk-fullMenuLinks > button[aria-current="page"] > :is(span:first-child,svg) { color:inherit; }
+.oddk-page .oddk-fullMenuLinks > button:focus-visible { outline:2px solid var(--oddk-focus); outline-offset:-2px; }
+.oddk-page .oddk-fullMenuLinks > button:not([aria-current="page"]):hover { background:var(--oddk-soft); }
+
+.oddk-page[data-shared-shell="true"] .oddk-execution.oddk-executionDock { left:0; bottom:var(--shared-shell-nav-size); }
+.oddk-page[data-shared-shell="true"] .oddk-selectionActions { left:var(--oddk-page-gutter,16px); bottom:calc(var(--shared-shell-nav-size) + var(--bottom-timer-size,0px) + 16px); }
+.oddk-page[data-shared-shell="true"] .oddk-task { scroll-margin-bottom:calc(var(--shared-shell-nav-size) + var(--bottom-timer-size,0px) + var(--bottom-selection-size,0px) + 16px); }
+@media(max-width:1099px) {
+  .oddk-page[data-shared-shell="true"] { --shared-shell-nav-size:calc(var(--oddk-mobile-nav-height,76px) + env(safe-area-inset-bottom,0px)); }
+  .oddk-page[data-shared-shell="true"]:has(.oddk-mobileNavigation[data-keyboard-open="true"]) { --shared-shell-nav-size:0px; }
+  html:has(.oddk-page[data-shared-shell="true"]) { scroll-padding-bottom:calc(var(--oddk-mobile-nav-height,76px) + env(safe-area-inset-bottom,0px) + 16px); }
+}
+
+/* Restore the original 188px PC sidebar without moving dialogs into a hidden panel. */
+@media(min-width:1100px) {
+  .oddk-page[data-shared-shell="true"] { box-sizing:border-box; padding-inline-start:var(--oddk-sidebar-width); }
+  .oddk-page[data-shared-shell="true"] .oddk-desktopSidebar { position:fixed; z-index:61; inset:0 auto 0 0; display:flex; box-sizing:border-box; width:var(--oddk-sidebar-width); height:100dvh; padding:32px 16px calc(min(240px,35dvh) + 40px); overflow:hidden; }
+  .oddk-desktopSidebar > .oddk-navigation { flex:1; align-content:start; min-width:0; min-height:0; overflow-y:auto; }
+  .oddk-page .oddk-desktopSidebar > .oddk-navigation > button { min-height:44px; }
+  .oddk-page .oddk-sharedAccountHost > .oddk-accountFooter { position:fixed; z-index:62; inset:auto auto 24px 16px; display:grid; box-sizing:border-box; width:calc(var(--oddk-sidebar-width) - 32px); max-height:min(240px,35dvh); margin:0; overflow-y:auto; background:var(--oddk-sidebar); }
+  .oddk-sharedHeader > .oddk-sharedHeaderInner { grid-template-columns:minmax(0,1fr) 44px; padding-inline:var(--oddk-page-gutter); }
+  .oddk-sharedHeader .oddk-sharedMenuToggle { display:none; }
+  .oddk-page[data-shared-shell="true"] .oddk-execution.oddk-executionDock { left:var(--oddk-sidebar-width); }
+  .oddk-page[data-shared-shell="true"] .oddk-selectionActions { left:calc(var(--oddk-sidebar-width) + var(--oddk-page-gutter)); }
+}

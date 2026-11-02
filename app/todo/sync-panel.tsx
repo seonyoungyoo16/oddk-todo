@@ -12,7 +12,7 @@ import { getPlanScope } from "./sync-store";
 import { subscribeSettingsDialog } from "./settings-events";
 import { AccountHelpLinks } from "./account-help-links";
 
-export function SyncPanel({ fallback }: { fallback: string }) {
+export function SyncPanel({ fallback, onAccountDialogChange }: { fallback: string; onAccountDialogChange?: (open: boolean) => void }) {
   const raw = useSyncExternalStore(subscribeSync, getSyncSnapshot, getServerSyncSnapshot);
   const state: SyncStatus = JSON.parse(raw);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -21,11 +21,18 @@ export function SyncPanel({ fallback }: { fallback: string }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   useEffect(() => startSync(fallback), [fallback]);
+  useEffect(() => {
+    const dialogs = [dialog.current, profileDialog.current, deletionDialog.current];
+    const changed = () => onAccountDialogChange?.(dialogs.some(element => element?.open));
+    for (const element of dialogs) element?.addEventListener("close", changed);
+    return () => { for (const element of dialogs) element?.removeEventListener("close", changed); };
+  }, [onAccountDialogChange]);
   useEffect(() => subscribeSettingsDialog(target => {
     setMessage("");
     const element = target === "delete" ? deletionDialog.current : target === "profile" && state.connected ? profileDialog.current : dialog.current;
     if (element && !element.open) element.showModal();
-  }), [state.connected]);
+    onAccountDialogChange?.(Boolean(element?.open));
+  }), [state.connected, onAccountDialogChange]);
   async function perform(action: () => Promise<unknown>) {
     setBusy(true); setMessage("");
     try { await action(); }
@@ -47,6 +54,7 @@ export function SyncPanel({ fallback }: { fallback: string }) {
         <header className="oddk-dialogHeader"><h2 id="profile-title">내 정보</h2><button type="button" aria-label="내 정보 닫기" onClick={() => profileDialog.current?.close()}><HiOutlineXMark /></button></header>
         <div className="oddk-profileIdentity"><span className="oddk-providerMark"><ProviderIcon aria-hidden="true" /></span><strong>{state.displayName || state.name}</strong><span className="oddk-providerBadge">{providerName} 계정으로 로그인</span></div>
         <dl className="oddk-profileDetails"><div className="oddk-profileEmail"><dt><HiOutlineEnvelope aria-hidden="true" />이메일</dt><dd>{state.name}</dd></div><div><dt>가입일</dt><dd>{date(state.createdAt)}</dd></div><div><dt>최근 로그인</dt><dd>{date(state.lastSignInAt)}</dd></div></dl>
+        <div className="oddk-syncActions"><button type="button" onClick={() => { profileDialog.current?.close(); dialog.current?.showModal(); onAccountDialogChange?.(true); }}><HiOutlineCloud aria-hidden="true" />기기 동기화 관리</button></div>
         {state.connected && <PushSettings key={getPlanScope()} userId={getPlanScope()} />}
         <AccountHelpLinks><button type="button" className="oddk-deleteAccountLink" onClick={() => { profileDialog.current?.close(); deletionDialog.current?.showModal(); }}>계정 삭제</button></AccountHelpLinks>
         {message && <p className="oddk-syncFeedback" role="status">{message}</p>}

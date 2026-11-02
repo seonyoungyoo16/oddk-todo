@@ -32,3 +32,7 @@
 @import "./mobile-navigation.css";
 @import "./bottom-controls.css";
 @import "./goal-actions.css";
+@import "./shared-header.css";
+@import "./task-list-scroll.css";
+@import "./content-workspace.css";
+@import "./task-split-dialog.css";
