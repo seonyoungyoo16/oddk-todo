@@ -518,7 +518,6 @@ function TodoWorkspace({ scope }: { scope: string }) {
             {planningView && range === "day" && <PlanningAlert model={planningAlerts} onInspect={inspectPlanningIssues} />}
             <RepeatMaintenance plan={plan} today={today} from={planningView && range !== "all" && isPlanDate(planDate) ? range === "week" ? week[0] : planDate : undefined} through={planningView && range !== "all" && isPlanDate(planDate) ? range === "week" ? week.at(-1) : planDate : undefined} />
             {view !== "list" && <DraftFeedback draft={workspace} />}
-      {Object.entries(workspace.value.editors).filter(([id]) => !plan.tasks.some(t => t.id === id)).map(([id, draft]) => <section className="oddk-draftRecovery" key={id}><strong>삭제된 할 일의 초안</strong><p>{draft.title}</p><button type="button" onClick={() => { setInput(draft.title); changeView("list"); }}>추가 입력란으로 복사</button><button type="button" onClick={() => workspace.set(current => withoutEditor(current, id))}>이 초안 폐기</button><button type="button" onClick={workspace.download}>초안 백업 받기</button></section>)}
 
 
                 <section hidden={!planningView} className="oddk-composer" aria-label="할 일 작성">
