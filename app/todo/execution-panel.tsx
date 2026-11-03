@@ -13,7 +13,11 @@ import { sameValue } from "./json-equality";
 import { downloadExecutionBackup } from "./execution-client";
 import { localExecutionTransaction } from "./execution-idb";
 import { parseExecutionBackup } from "./execution-local-model";
-import { formatExecutionClock } from "./execution-timer";
+import { formatExecutionClock, executionTimerProgress, claimExecutionTimerAlert } from "./execution-timer";
+import { useRestAlert } from "./use-rest-alert";
+import { confirmedRestStart, restAlertSegment } from "./rest-alert";
+import { restAlertStore } from "./rest-alert-store";
+import { RestAlertDialog } from "./rest-alert-dialog";
 
 const minutes = (ms: number) => `${Math.round(ms / 6000) / 10}분`;
 const label = (iso: string) => new Intl.DateTimeFormat("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(iso));
@@ -45,6 +49,49 @@ export function ExecutionPanel({ compact = false, docked = false, scope, plan, d
   useEffect(() => { suspendPolling(editing !== null); return () => suspendPolling(false); }, [editing, suspendPolling]);
   const day = selectDay(plan.tasks, date), phase = current ? executionPhase(current) : null;
   const elapsed = current && now ? executionTotals(current, now) : null;
+  const restAlert = useRestAlert(scope, current ?? null);
+  const timerProgress = current && now ? executionTimerProgress(current, plan.tasks.find(task => task.id === current.taskId) ?? null, now, restAlert?.minutes ?? null) : null;
+  const [restDialog, setRestDialog] = useState<{ scope: string; record: ExecutionRecord; editing: boolean; initialMinutes: number } | null>(null);
+  const restStart = useRef<{ scope: string; previous: ExecutionRecord; minutes: number; confirmed: boolean } | null>(null);
+  function saveRestAlert(record: ExecutionRecord, minutes: number) {
+    try { restAlertStore.save(scope, record, minutes); setLocalError(""); return true; }
+    catch (error) { setLocalError(error instanceof Error ? error.message : "휴식 알림을 저장하지 못했어요."); return false; }
+  }
+  useEffect(() => {
+    const intent = restStart.current;
+    if (!intent) return;
+    if (intent.scope !== scope) { restStart.current = null; return; }
+    if (!intent.confirmed || model.busy || model.pending || !model.state) return;
+    restStart.current = null;
+    if (confirmedRestStart(intent.scope, intent.previous, scope, current ?? null, intent.minutes) && current) saveRestAlert(current, intent.minutes);
+  });
+  async function applyRestAlert(minutes: number) {
+    if (!restDialog || restDialog.scope !== scope || !current || current.id !== restDialog.record.id || model.busy || model.pending) return;
+    if (restDialog.editing) {
+      if (restAlertSegment(current)?.key !== restAlertSegment(restDialog.record)?.key) { setRestDialog(null); return; }
+      if (saveRestAlert(current, minutes)) setRestDialog(null);
+      return;
+    }
+    if (current.segments.length !== restDialog.record.segments.length || executionPhase(current) === "break") { setRestDialog(null); return; }
+    const intent = { scope, previous: current, minutes, confirmed: false };
+    restStart.current = intent;
+    const confirmed = await model.command({ type: "break", recordId: current.id });
+    if (restStart.current !== intent) return;
+    if (confirmed) intent.confirmed = true; else restStart.current = null;
+    setRestDialog(null);
+  }
+  const timerAlerts = useRef(new Set<string>());
+  const [timerNotice, setTimerNotice] = useState<{ key: string; message: string } | null>(null);
+  const alertKey = timerProgress?.alertKey ?? null;
+  const overdue = timerProgress?.overdue ?? false;
+  const timerTitle = timerProgress?.title ?? "";
+  const timerKind = timerProgress?.kind;
+  const timerBlocked = model.busy || Boolean(model.pending);
+  useEffect(() => {
+    if (!alertKey || !overdue || timerBlocked || !timerKind) return;
+    const message = claimExecutionTimerAlert({ alertKey, overdue, title: timerTitle, kind: timerKind }, timerAlerts.current);
+    if (message) setTimerNotice({ key: alertKey, message });
+  }, [alertKey, overdue, timerTitle, timerKind, timerBlocked]);
   const disabled = model.busy || !model.state || Boolean(model.pending);
   const dockRef = useRef<HTMLElement>(null);
   const showDock = Boolean(current || model.pending || model.error);
@@ -70,15 +117,17 @@ export function ExecutionPanel({ compact = false, docked = false, scope, plan, d
       <div><strong><HiOutlineClock aria-hidden="true" />{current ? phase === "work" ? "작업 기록 중" : phase === "break" ? "휴식 중 · 작업시간 정지" : "일시정지" : "실제 시간 기록"}</strong><p>{current?.title ?? "목록의 작업 시작을 눌러주세요."}</p>
         {elapsed && <span>작업 <b>{docked ? formatExecutionClock(elapsed.workMs) : minutes(elapsed.workMs)}</b> · 휴식 <b>{docked ? formatExecutionClock(elapsed.breakMs) : minutes(elapsed.breakMs)}</b></span>}
       </div>
-      {docked && elapsed && <div className="oddk-executionWorkClock"><span>작업시간</span><output className="oddk-executionClock" role="timer" aria-label="누적 작업 시간" aria-live="off">{formatExecutionClock(elapsed.workMs)}</output></div>}
+      {docked && elapsed && <div className="oddk-executionWorkClock"><span>{timerProgress?.kind === "break" ? "이번 휴식" : "작업시간"}</span><output className="oddk-executionClock" role="timer" aria-label={timerProgress?.kind === "break" ? "이번 휴식 시간" : "누적 작업 시간"} aria-live="off">{formatExecutionClock(timerProgress?.kind === "break" ? timerProgress.restSegmentMs : elapsed.workMs)}</output>{timerProgress?.remainingMs !== null && timerProgress?.remainingMs !== undefined && <span>{timerProgress.kind === "work" ? "작업" : "휴식"} {timerProgress.overdue ? `초과 ${formatExecutionClock(timerProgress.overdueMs)}` : `남음 ${formatExecutionClock(timerProgress.remainingMs)}`}</span>}</div>}
       {current && <div className="oddk-recordActions">
         <button type="button" disabled={disabled || phase === "work"} onClick={() => void model.command({ type: "resume", recordId: current.id })}><HiOutlinePlay aria-hidden="true" />{phase === "paused" ? "다시 시작" : "작업으로"}</button>
         <button type="button" disabled={disabled || phase === "paused"} onClick={() => void model.command({ type: "pause", recordId: current.id })}><HiOutlinePause aria-hidden="true" />일시정지</button>
-        <button type="button" disabled={disabled || phase === "break"} onClick={() => void model.command({ type: "break", recordId: current.id })}>휴식 시작</button>
+        <button type="button" disabled={disabled || phase === "break"} onClick={() => setRestDialog({ scope, record: current, editing: false, initialMinutes: 5 })}>휴식 시작</button>
         <button type="button" disabled={disabled} onClick={() => void model.command({ type: "stop", recordId: current.id })}><HiOutlineStop aria-hidden="true" />기록 종료</button>
       </div>}
     </div>}
+    {current && restAlertSegment(current) && <div className="oddk-restAlertSummary"><span>이번 휴식 {formatExecutionClock(timerProgress?.restSegmentMs ?? 0)} 경과 · {restAlert?.minutes ? `알림 ${restAlert.minutes}분` : "알림 없이 쉬기"}</span><button type="button" disabled={disabled} onClick={() => setRestDialog({ scope, record: current, editing: true, initialMinutes: restAlert?.minutes ?? 0 })}>이번 휴식 알림 변경</button></div>}
     <RecordFeedback model={model} />
+    {timerNotice && timerNotice.key === alertKey && <p role="status" className="oddk-executionSaved">{timerNotice.message}</p>}
     {localError && <p role="alert" className="oddk-error">{localError}</p>}
     {!compact && <div className="oddk-recordMeta"><small>{scope === "local" ? "이 브라우저에 기록 · 로그인 기록과 별도 보관" : "계정에 기록 · 서버 연결 후 조작 확정"}{model.state && ` · 마지막 확인 ${label(model.state.now)} (한국 시간)`}</small><button type="button" disabled={model.busy} onClick={() => void model.refresh().catch(e => setLocalError(e.message))}>현재 상태 확인</button></div>}
     {!compact && model.message && <p role="status">{model.message}</p>}
@@ -103,6 +152,7 @@ export function ExecutionPanel({ compact = false, docked = false, scope, plan, d
     {editing && <ExecutionEditor key={editing.record?.id ?? "manual"} record={editing.record} plan={plan} model={model} onClose={() => setEditing(null)} />}
     {switchTask && <SwitchRecord task={switchTask.task} from={switchTask.from} model={model} onClose={onCancelSwitch} />}
     {importing && <ImportRecords key={scope} records={importing} scope={scope} plan={plan} model={model} onClose={() => setImporting(null)} />}
+    {restDialog && restDialog.scope === scope && restDialog.record.id === current?.id && <RestAlertDialog key={`${scope}:${restDialog.record.id}:${restDialog.record.segments.length}:${restDialog.editing}`} editing={restDialog.editing} initialMinutes={restDialog.initialMinutes} elapsedMs={timerProgress?.restSegmentMs ?? 0} totalMs={elapsed?.breakMs ?? 0} disabled={model.busy} error={localError} onApply={applyRestAlert} onClose={() => setRestDialog(null)} />}
   </section>;
 }
 function SwitchRecord({ task, from, model, onClose }: { task: Task; from: string; model: ExecutionController; onClose: () => void }) {

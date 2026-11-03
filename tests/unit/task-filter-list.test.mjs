@@ -23,12 +23,12 @@ function component(file) {
 }
 const task = (id, patch = {}) => ({ id, title: "개발 문서", notes: "리뷰", minutes: 60, bufferMinutes: 10, startTime: "09:00", endTime: "10:00", endDate: "2026-11-01", endDayOffset: 0, plannedDate: "2026-11-01", priority: "normal", done: false, categoryId: "work", tagIds: ["review", "dev"], ...patch });
 
-test("status AND category AND every tag AND search preserve original records and order", () => {
+test("status AND every tag AND search ignore legacy category while preserving records and order", () => {
   const tasks = [task("active"), task("done", { done: true }), task("other", { categoryId: "private" }), task("tag", { tagIds: ["dev"] }), task("search", { title: "운동", notes: "" }), task("summary", { summaryOnly: true })];
   const original = structuredClone(tasks), filter = { category: "category:work", tags: ["review", "dev"], search: "개발", status: "active" };
-  assert.deepEqual(filterClassifiedTasks(tasks, filter).map(t => t.id), ["active"]);
+  assert.deepEqual(filterClassifiedTasks(tasks, filter).map(t => t.id), ["active", "other"]);
   assert.deepEqual(filterClassifiedTasks(tasks, { ...filter, status: "done" }).map(t => t.id), ["done"]);
-  assert.deepEqual(filterClassifiedTasks(tasks, { ...filter, status: "all" }).map(t => t.id), ["active", "done", "summary"]);
+  assert.deepEqual(filterClassifiedTasks(tasks, { ...filter, status: "all" }).map(t => t.id), ["active", "done", "other", "summary"]);
   assert.deepEqual(tasks, original);
 });
 
@@ -67,7 +67,7 @@ test("one/two/twenty-row bodies expose a keyboard region without including filte
 
 test("page uses one shared status control and timetable filter, preserving full plan for calculations", () => {
   const page = source("page.tsx");
-  assert.match(page, /currentFilters = \{ \.\.\.classification, status: filter \}/);
+  assert.match(page, /currentFilters = \{ \.\.\.classification, category: "all" as const, status: filter \}/);
   assert.match(page, /DailyPlanningControls plan=\{plan\} value=\{currentFilters\}/);
   assert.match(page, /setClassification\(\{ \.\.\.next, status: "all" \}\); setFilter\(next.status \?\? "all"\)/);
   assert.match(page, /tasks=\{filterClassifiedTasks\(plan.tasks, currentFilters\)\}/);

@@ -8,11 +8,11 @@ const config: CapacitorConfig = {
   webDir: "out-native",
   backgroundColor: "#ffffff",
   loggingBehavior: "none",
-  // CSS disables native double-tap zoom while WebView pinch/accessibility zoom remains available.
-  zoomEnabled: true,
+  // Native-only zoom lock. The ordinary browser viewport is unchanged.
+  zoomEnabled: false,
   server: { appStartPath: "/todo/", androidScheme: "https" },
-  android: { allowMixedContent: false },
-  ios: { contentInset: "automatic", preferredContentMode: "mobile" },
+  android: { allowMixedContent: false, zoomEnabled: false },
+  ios: { contentInset: "automatic", preferredContentMode: "mobile", zoomEnabled: false },
   plugins: {
     LocalNotifications: { presentationOptions: ["banner", "list", "sound"] },
     LiveUpdate: {

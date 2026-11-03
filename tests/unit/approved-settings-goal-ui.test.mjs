@@ -35,6 +35,7 @@ function settings(native = false) {
     "./account-help-links": { AccountHelpLinks: () => null },
     "./native-reminder-settings": { DeviceReminderSettings: () => null, useNativeReminderStatus: () => ({ native }) },
     "./ai-consent-controls": { AIConsentSettings: () => null },
+    "./plan-backup-dialog": { PlanBackupImport: () => null },
   }, h);
   const render = () => { h.reset(); return exports.SettingsPanel({ plan: {}, onSave() {}, theme: "light", onThemeChange() {}, fallback: "", native }); };
   return { calls, render };

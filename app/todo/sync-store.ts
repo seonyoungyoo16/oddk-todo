@@ -161,6 +161,26 @@ export function writePlan(plan: unknown) {
   changed();
   if (s && !conflict) { status(s, "waiting", "기기에 저장됨 · 동기화 대기"); clearTimeout(timer); timer = setTimeout(() => { void syncNow(); }, 400); }
 }
+
+export type PlanReplacementTarget = { scope: string; identity: string; snapshot: string };
+/** Read-only preview gate. An import never resolves a sync conflict implicitly. */
+export function readPlanReplacementTarget(fallback: string): PlanReplacementTarget {
+  const s = session(), sync: SyncStatus = JSON.parse(state);
+  if (hasPendingAccountDeletion()) throw Error("계정 삭제 결과를 먼저 확인해주세요. 현재 내용은 유지했어요.");
+  if (busy || conflict || sync.phase === "conflict" || sync.phase === "error" || sync.refreshRequired || s && blockedDevice === s.deviceId) throw Error("동기화 상태를 확인한 뒤 파일을 다시 선택해주세요. 현재 내용은 유지했어요.");
+  const cached = s ? cache(s) : null;
+  if (s && (!sync.connected || sync.phase !== "synced" || cached?.dirty)) throw Error("현재 변경의 동기화가 끝난 뒤 파일을 다시 선택해주세요.");
+  const snapshot = getPlanSnapshot(fallback), loaded = loadPlan(snapshot);
+  if (!loaded.ok) throw Error(loaded.error);
+  return { scope: s?.id ?? "local", identity: s ? JSON.stringify([s.id, s.deviceId, cached!.version]) : "local", snapshot };
+}
+export function replacePlanFromBackup(plan: Plan, expected: PlanReplacementTarget, fallback: string) {
+  const current = readPlanReplacementTarget(fallback);
+  if (!sameValue(current, expected)) throw Error("계정이나 현재 내용이 바뀌었어요. 파일을 다시 선택해주세요. 현재 내용은 유지했어요.");
+  writePlan(plan);
+  const saved = loadPlan(getPlanSnapshot(fallback));
+  if (getPlanScope() !== expected.scope || !saved.ok || !sameValue(saved.plan, plan)) throw Error("백업 적용 결과를 확인하지 못했어요. 현재 내용을 다시 확인해주세요.");
+}
 export function restoreLastValidPlan() {
   const s = session();
   const key = s ? cacheKey(s) : LOCAL_KEY;

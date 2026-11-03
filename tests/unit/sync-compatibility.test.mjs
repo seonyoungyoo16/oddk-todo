@@ -53,6 +53,55 @@ function harness({ plan = modern(), dirty = false, cached = plan, values = new M
     async download() { exports.exportPlanBackup("null", true); return JSON.parse(await download.text()); }, cache() { return JSON.parse(values.get(key)); }, snapshot() { return JSON.parse(exports.getPlanSnapshot("null")); }, status() { return JSON.parse(exports.getSyncSnapshot()); } };
 }
 
+test("backup preview does not write; explicit replacement preserves other scopes and does not merge", () => {
+  const h = harness({ connected: false }), fallback = JSON.stringify(modern()), before = new Map(h.values);
+  const target = h.store.readPlanReplacementTarget(fallback);
+  assert.deepEqual([...h.values], [...before]);
+  const incoming = { ...modern(), tasks: [], review: "명시 적용" };
+  h.store.replacePlanFromBackup(incoming, target, fallback);
+  assert.deepEqual(h.snapshot(), incoming);
+  assert.equal(h.values.get(key), before.get(key)); assert.equal(h.calls.length, 0);
+});
+
+test("stale backup previews cannot replace a changed plan, switched account or pending deletion", () => {
+  const fallback = JSON.stringify(modern());
+  for (const changed of ["plan", "scope", "deletion"]) {
+    const h = harness({ connected: false }), target = h.store.readPlanReplacementTarget(fallback);
+    if (changed === "plan") h.values.set(localKey, JSON.stringify({ ...modern(), review: "새 변경" }));
+    if (changed === "scope") h.values.set("oddk.sync.session.v1", JSON.stringify({ id: "account-b", deviceId: "another" }));
+    if (changed === "deletion") h.values.set(accountData.DELETION_KEY, JSON.stringify({ userId: "account-a", operation: "c".repeat(64) }));
+    const before = [...h.values];
+    assert.throws(() => h.store.replacePlanFromBackup({ ...modern(), review: "금지" }, target, fallback));
+    assert.deepEqual([...h.values], before); assert.equal(h.calls.length, 0);
+  }
+});
+
+test("failed or silently discarded canonical storage writes preserve the current plan and report failure", () => {
+  for (const silent of [false, true]) {
+    const h = harness({ connected: false }), fallback = JSON.stringify(modern()), target = h.store.readPlanReplacementTarget(fallback);
+    const before = h.values.get(localKey), set = h.storage.setItem;
+    h.storage.setItem = (key, value) => { if (key === localKey) { if (silent) return; throw Error("quota"); } set(key, value); };
+    assert.throws(() => h.store.replacePlanFromBackup({ ...modern(), review: "교체" }, target, fallback));
+    assert.equal(h.values.get(localKey), before);
+  }
+});
+
+test("account backup import respects settled sync, dirty, conflict and existing device/schema gates", async () => {
+  const h = harness(), fallback = JSON.stringify(modern());
+  assert.throws(() => h.store.readPlanReplacementTarget(fallback));
+  const stop = h.store.startSync(fallback); await h.jobs();
+  try {
+    const target = h.store.readPlanReplacementTarget(fallback);
+    h.remote.plan = { ...modern(), review: "외부 수정" }; h.remote.version++;
+    h.store.writePlan({ ...modern(), review: "기기 수정" });
+    assert.throws(() => h.store.replacePlanFromBackup(modern(), target, fallback));
+    await h.jobs(); assert.equal(h.status().phase, "conflict");
+    const before = [...h.values];
+    assert.throws(() => h.store.readPlanReplacementTarget(fallback));
+    assert.deepEqual([...h.values], before);
+  } finally { stop(); }
+});
+
 test("both OAuth providers start with the Pages callback without changing plan caches", async () => {
   const h = harness(); const before = [...h.values.entries()];
   for (const provider of ["google", "github"]) {

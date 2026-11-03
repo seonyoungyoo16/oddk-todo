@@ -27,10 +27,10 @@ test("classification filters and partial manager input survive reload under sepa
   assert.equal(validClassificationDraft({ ...partial, id: "deleted", base: null }), false);
   assert.equal(validClassificationDraft({ ...partial, color: "red" }), false);
 });
-test("category filtering never makes a hidden overlapping event free", () => {
+test("legacy category filters no longer hide tasks or make overlapping events free", () => {
   const tasks = [task("a", { categoryId: "work" }), task("b", { categoryId: "private", startTime: "09:30", endTime: "10:30" })];
   const filtered = filterClassifiedTasks(tasks, { category: "category:work", tags: [], search: "" });
-  assert.deepEqual(filtered.map(t => t.id), ["a"]);
+  assert.deepEqual(filtered.map(t => t.id), ["a", "b"]);
   const summary = availabilitySummary(selectDay(tasks, "2026-10-28"), { start: "09:00", end: "18:00", fixed: [] });
   assert.equal(summary.occupiedMinutes, 90); assert.equal(summary.freeMinutes, 450); assert.equal(summary.overlapMinutes, 30);
   assert.equal(summary.overlaps.find(e => e.task.id === "a").others[0].id, "b");
@@ -74,13 +74,13 @@ test("category/tag removal keeps tasks, goal links and times and undo restores d
   for (const after of [deletedCategory, deletedTag]) { const undo = makeUndo(before, after, "Remove classification"); assert.equal(validUndo(undo), true); assert.deepEqual(applyUndo(after, undo), before); }
   assert.deepEqual(before, original);
 });
-test("category, exact tag AND and title/note searches combine without changing stored order", () => {
+test("legacy category filters are ignored while exact tag AND and title/note searches retain order", () => {
   const tasks = [task("a", { title: "운동 계획", categoryId: "all", tagIds: ["exercise", "morning"], notes: "러닝 준비" }), task("b", { title: "#운동", categoryId: "work" }), task("c", { title: "개인 운동", tagIds: ["exercise"] })], original = structuredClone(tasks);
   const filter = { category: "all", tags: ["exercise"], search: "" };
   assert.deepEqual(filterClassifiedTasks(tasks, filter).map(t => t.id), ["a", "c"]);
   assert.deepEqual(filterClassifiedTasks(tasks, { ...filter, tags: ["exercise", "morning"] }).map(t => t.id), ["a"]);
   assert.deepEqual(filterClassifiedTasks(tasks, { ...filter, category: "category:all", search: "러닝" }).map(t => t.id), ["a"]);
-  assert.deepEqual(filterClassifiedTasks(tasks, { ...filter, category: "none" }).map(t => t.id), ["c"]);
+  assert.deepEqual(filterClassifiedTasks(tasks, { ...filter, category: "none" }).map(t => t.id), ["a", "c"]);
   assert.equal(filterClassifiedTasks(tasks, { ...filter, tags: ["missing"] }).length, 0);
   assert.deepEqual(filterClassifiedTasks(tasks, { category: "all", tags: [], search: "" }), tasks); assert.deepEqual(tasks, original);
 });

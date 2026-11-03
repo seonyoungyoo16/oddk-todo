@@ -25,9 +25,8 @@ export function DailyDateControl({ date, today, range, onChange, fixed = false }
 export function DailyPlanningControls({ plan, value, onChange, count, total, pane, onPaneChange, range }: {
   plan: Plan; value: ClassificationFilter; onChange: (value: ClassificationFilter) => void; count: number; total: number; pane: "list" | "rhythm"; onPaneChange: (value: "list" | "rhythm") => void; range: RangeScope;
 }) {
-  const detailed = value.category !== "all" || value.tags.length > 0 || value.search !== "";
+  const detailed = value.tags.length > 0 || value.search !== "";
   const filtered = detailed || (value.status ?? "all") !== "all";
-  const category = value.category === "none" ? "미분류" : value.category.startsWith("category:") ? plan.categories?.find(c => `category:${c.id}` === value.category)?.name ?? "삭제된 카테고리" : "";
   return <>
     <div className="oddk-dailyControls">
       {range === "day" ? <div className="oddk-paneSwitch" role="group" aria-label="하루 보기"><button type="button" aria-pressed={pane === "list"} onClick={() => onPaneChange("list")}><HiOutlineListBullet aria-hidden="true" />목록</button><button type="button" aria-pressed={pane === "rhythm"} onClick={() => onPaneChange("rhythm")}><HiOutlineClock aria-hidden="true" />시간표</button></div> : <span className="oddk-rangeLabel">{range === "week" ? "선택한 주의 할 일" : "모든 할 일"}</span>}
@@ -36,6 +35,6 @@ export function DailyPlanningControls({ plan, value, onChange, count, total, pan
         <div className="oddk-workspacePopover oddk-filterPopover"><h2>상세 필터</h2><ClassificationFilters plan={plan} value={value} onChange={onChange} count={count} total={total} showStatus={false} /></div>
       </details>
     </div>
-    {filtered && <div className="oddk-appliedFilters"><span role="status">{total}개 중 {count}개{category && ` · ${category}`}{value.tags.map(id => ` · #${plan.tags?.find(tag => tag.id === id)?.name ?? "삭제된 태그"}`).join("")}{value.search && ` · 검색: ${value.search}`}{value.status !== "all" && value.status && ` · ${value.status === "done" ? "완료" : "진행 중"}`}</span><button type="button" onClick={() => onChange(defaultClassification)}><HiOutlineXMark aria-hidden="true" />초기화</button></div>}
+    {filtered && <div className="oddk-appliedFilters"><span role="status">{total}개 중 {count}개{value.tags.map(id => ` · #${plan.tags?.find(tag => tag.id === id)?.name ?? "삭제된 태그"}`).join("")}{value.search && ` · 검색: ${value.search}`}{value.status !== "all" && value.status && ` · ${value.status === "done" ? "완료" : "진행 중"}`}</span><button type="button" onClick={() => onChange(defaultClassification)}><HiOutlineXMark aria-hidden="true" />초기화</button></div>}
   </>;
 }

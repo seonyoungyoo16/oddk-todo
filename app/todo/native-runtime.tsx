@@ -6,7 +6,8 @@ import { Browser } from "@capacitor/browser";
 import { createNativeAuthHandler } from "./native-options";
 import { syncClient } from "./supabase-client";
 import { startNativeUpdates } from "./native-updates";
-import { startNativeReminders, refreshNativeReminders } from "./native-reminders";
+import { startNativeReminders, refreshNativeReminders, getNativeReminderSnapshot, subscribeNativeReminders } from "./native-reminders";
+import { startNativeExecutionRuntime } from "./native-execution-runtime";
 import { useNativeReminderStatus } from "./native-reminder-settings";
 import { installNativeTouchPolicy } from "./native-touch-policy";
 import { getPlanScope, getPlanSnapshot, hasPendingAccountDeletion, subscribePlan, subscribeSync } from "./sync-store";
@@ -15,6 +16,20 @@ export function NativeRuntime() {
   useEffect(() => installNativeTouchPolicy(document.documentElement, Capacitor.isNativePlatform()), []);
   const [message, setMessage] = useState("");
   const reminders = useNativeReminderStatus();
+  useEffect(() => startNativeExecutionRuntime({
+    readGate: () => {
+      try {
+        const state = JSON.parse(getNativeReminderSnapshot());
+        return { scope: getPlanScope(), enabled: state.enabled && state.permission === "granted" && state.phase === "ready", blocked: hasPendingAccountDeletion() };
+      } catch { return { scope: "unreadable-session", enabled: false, blocked: true }; }
+    },
+    subscribeGate: notify => {
+      const stops = [subscribeNativeReminders(notify), subscribePlan(notify), subscribeSync(notify)];
+      return () => stops.forEach(stop => stop());
+    },
+    onReservationsChanged: () => { void refreshNativeReminders().catch(() => {}); },
+    onError: setMessage,
+  }), []);
   useEffect(() => startNativeReminders(() => {
     try { return { scope: getPlanScope(), raw: getPlanSnapshot(JSON.stringify({ schemaVersion: 5, start: "09:00", tasks: [], reviewsByDate: {}, goalTree: { goal: "", groups: [] } })), blocked: hasPendingAccountDeletion() }; }
     catch { return { scope: "unreadable-session", raw: "null", blocked: true }; }
