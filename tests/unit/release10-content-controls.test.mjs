@@ -40,7 +40,8 @@ test("one status control preserves detailed AND filters and collapsed conditions
   assert.equal(value.category, "category:work"); assert.equal(value.tags[0], "tag"); assert.equal(value.search, "중요"); assert.equal(value.status, "done");
   all = nodes(render());
   const applied = all.find(n => n.props?.className === "oddk-appliedFilters");
-  assert.match(text(applied), /20개 중 2개.*업무.*#검토.*검색: 중요.*완료/);
+  assert.match(text(applied), /20개 중 2개.*#검토.*검색: 중요.*완료/);
+  assert.doesNotMatch(text(applied), /업무|카테고리/);
   const popup = all.find(n => n.type === "details"); assert(!nodes(popup).includes(applied));
   assert.equal(all.find(n => n.type === "ClassificationFilters").props.showStatus, false);
   all.find(n => n.type === "button" && text(n) === "초기화").props.onClick(); assert.equal(value, defaults);
