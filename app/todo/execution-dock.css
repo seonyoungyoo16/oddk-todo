@@ -27,6 +27,12 @@
 .oddk-page .oddk-executionDock button { min-height:var(--oddk-control-height); border-radius:var(--oddk-radius-control); font-size:var(--oddk-font-label); padding:8px 12px; }
 .oddk-executionDock .oddk-recordCurrent > .oddk-recordActions button:last-child { color:var(--oddk-danger-text); }
 .oddk-executionDock > .oddk-error { margin:8px 0 0; }
+.oddk-restAlertSummary { display:flex; flex-wrap:wrap; align-items:center; gap:var(--oddk-space-2); margin-top:var(--oddk-space-2); color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+.oddk-page .oddk-restAlertSummary button { border:0; background:transparent; color:var(--oddk-accent-text); }
+.oddk-page .oddk-restAlertDialog { width:min(420px,calc(100vw - 32px)); }
+.oddk-restAlertDialog .oddk-dialogField select { max-width:none; }
+.oddk-restAlertDialog .oddk-primary:hover { background:var(--oddk-brand-hover); }
+.oddk-restAlertActions { flex-wrap:wrap; }
 @media (max-width:760px) {
   .oddk-page .oddk-execution.oddk-executionDock { padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
   .oddk-executionDock .oddk-recordCurrent { gap:12px; }

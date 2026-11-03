@@ -3,7 +3,6 @@
 .oddk-nativeMessage { position:fixed; z-index:2000; top:16px; left:16px; right:16px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; border:1px solid var(--oddk-border,#dbe2ee); border-radius:var(--oddk-radius-card,8px); background:var(--oddk-surface,#fff); color:var(--oddk-heading,#172438); font-family:var(--font-sans); font-size:14px; }
 .oddk-nativeMessage button { min-width:44px; min-height:44px; }
 
-/* manipulation keeps panning/pinch zoom, removing only double-tap zoom. */
-html[data-oddk-native-touch="manipulation"] { touch-action:manipulation; }
-/* Existing task cards allow vertical scrolling; retain pinch zoom there too. */
-html[data-oddk-native-touch="manipulation"] .oddk-page .oddk-task { touch-action:pan-y pinch-zoom; }
+/* Allow native single-finger scrolling, excluding pinch/double-tap zoom. */
+html[data-oddk-native-touch="locked"] { touch-action:pan-x pan-y; }
+html[data-oddk-native-touch="locked"] .oddk-page .oddk-task { touch-action:pan-y; }

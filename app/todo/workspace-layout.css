@@ -226,3 +226,10 @@
 .oddk-timeDrawer > summary .oddk-drawerChevron,.oddk-planningTools > summary .oddk-drawerChevron { margin-left:auto; transition:transform .15s; }
 .oddk-timeDrawer[open] > summary .oddk-drawerChevron,.oddk-planningTools[open] > summary .oddk-drawerChevron { transform:rotate(180deg); }
 @media(prefers-reduced-motion:reduce) { .oddk-drawerChevron { transition:none!important; } }
+
+/* Keep retained drafts mounted while making inactive view panels unambiguously hidden. */
+.oddk-page .oddk-pageBody [data-workspace-panel][hidden] { display:none; }
+/* Explicit closed-state rules also cover engines with differing details defaults. */
+.oddk-goalManagement:not([open]) > .oddk-goalManagementPopover,
+.oddk-startSort:not([open]) > .oddk-startSortOptions,
+details:not([open]) > .oddk-workspacePopover { display:none; }

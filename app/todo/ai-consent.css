@@ -16,6 +16,14 @@
 .oddk-page .oddk-aiConsentNote > button { width: auto; height: auto; min-height: 32px; max-width: 100%; margin-inline-start: 6px; padding: 4px; border: 0; background: none; color: var(--oddk-accent-text); text-decoration: underline; font: inherit; white-space: nowrap; }
 .oddk-aiConsent .oddk-primary:disabled { opacity: .45; cursor: not-allowed; }
 .oddk-aiConsentSettings > .oddk-settingTextButton { margin-top: 14px; }
+.oddk-aiSwitchWrap { display:flex; align-items:center; gap:10px; flex-shrink:0; color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+.oddk-page .oddk-aiSwitch { position:relative; width:48px; min-width:48px; height:44px; min-height:44px; padding:0; border:0; border-radius:var(--oddk-radius-control); background:transparent; }
+.oddk-aiSwitch::before { content:""; position:absolute; left:0; top:8px; width:48px; height:28px; border:1px solid var(--oddk-border); border-radius:16px; background:var(--oddk-soft); transition:background .15s; }
+.oddk-aiSwitch > span { position:absolute; left:4px; top:12px; width:20px; height:20px; border-radius:50%; background:var(--oddk-muted); transition:transform .15s; }
+.oddk-aiSwitch[aria-checked="true"]::before { background:var(--oddk-accent-text); border-color:var(--oddk-accent-text); }
+.oddk-aiSwitch[aria-checked="true"] > span { transform:translateX(20px); background:var(--oddk-surface); }
+.oddk-aiSwitch:disabled { opacity:.45; cursor:not-allowed; }
+.oddk-aiConsentDetails > p { margin:12px 0 0; line-height:1.6; }
 @media (max-width: 480px) {
   .oddk-aiConsent { width: calc(100vw - 24px); }
   .oddk-aiConsentFacts div { grid-template-columns: 1fr; gap: 4px; }

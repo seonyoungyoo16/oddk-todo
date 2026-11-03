@@ -5,6 +5,8 @@ import { createNativeReminderController, EMPTY_REMINDER_STATE } from "./native-r
 import { nativeReminderPlan, reminderExtra } from "./native-reminder-model";
 import type { ReminderBinding, ReminderState } from "./native-reminder-controller";
 import type { ReminderSource } from "./native-reminder-model";
+import { withNativeNotificationLock } from "./native-notification-lock";
+import { cancelNativeExecutionRemindersUnlocked } from "./native-execution-runtime";
 
 const BINDING_KEY = "oddk.native-reminders.v1";
 export type NativeReminderStatus = ReminderState & { native: boolean; available: boolean };
@@ -43,14 +45,24 @@ const controller = createNativeReminderController({
   },
   writeBinding: async binding => { await Preferences.set({ key: BINDING_KEY, value: JSON.stringify(binding) }); },
 }, () => readSource(), publish);
-export async function refreshNativeReminders() { if (nativeReminderSupported()) await controller.refresh(); }
+export async function refreshNativeReminders() { if (nativeReminderSupported()) await withNativeNotificationLock(() => controller.refresh()); }
 async function change(work: () => Promise<void>) {
   if (changing) throw Error("알림을 변경 중이에요. 잠시 기다려주세요.");
   changing = true;
   try { await work(); } finally { changing = false; publish(controllerState); }
 }
-export async function enableNativeReminders() { if (!nativeReminderSupported()) throw Error("알림 기능이 포함된 최신 iPhone 앱을 설치해주세요."); await change(controller.enable); }
-export async function disableNativeReminders() { if (nativeReminderSupported()) await change(controller.disable); }
+export async function enableNativeReminders() { if (!nativeReminderSupported()) throw Error("알림 기능이 포함된 최신 iPhone 앱을 설치해주세요."); await change(() => withNativeNotificationLock(controller.enable)); }
+export async function disableNativeReminders() {
+  if (!nativeReminderSupported()) return;
+  await change(() => withNativeNotificationLock(async () => {
+    await controller.disable();
+    try { await cancelNativeExecutionRemindersUnlocked(); }
+    catch (error) {
+      publish({ ...EMPTY_REMINDER_STATE, phase: "error", cleanupPending: true, error: "타이머 알림 끄기를 완료하지 못했어요. 다시 꺼주세요." });
+      throw error;
+    }
+  }));
+}
 
 export function startNativeReminders(read: () => ReminderSource, subscribe: (notify: () => void) => () => void) {
   publish({ ...EMPTY_REMINDER_STATE, phase: nativeReminderSupported() ? "checking" : "ready" });

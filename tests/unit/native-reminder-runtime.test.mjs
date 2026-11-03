@@ -5,6 +5,7 @@ import vm from "node:vm";
 import ts from "typescript";
 import { createNativeReminderController, EMPTY_REMINDER_STATE } from "../../app/todo/native-reminder-controller.ts";
 import { nativeReminderPlan, reminderExtra } from "../../app/todo/native-reminder-model.ts";
+import { withNativeNotificationLock } from "../../app/todo/native-notification-lock.ts";
 
 const js = ts.transpileModule(readFileSync(new URL("../../app/todo/native-reminders.ts", import.meta.url), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const tick = () => new Promise(setImmediate);
@@ -30,6 +31,8 @@ function harness(platform = "ios", available = true) {
     if (name === "@capacitor/local-notifications") return { LocalNotifications: notifications };
     if (name === "./native-reminder-controller") return { createNativeReminderController, EMPTY_REMINDER_STATE };
     if (name === "./native-reminder-model") return { nativeReminderPlan, reminderExtra };
+    if (name === "./native-notification-lock") return { withNativeNotificationLock };
+    if (name === "./native-execution-runtime") return { cancelNativeExecutionRemindersUnlocked: async () => { if (h.executionCancelFailure) throw Error("native timer cleanup failed"); h.executionCancellations = (h.executionCancellations ?? 0) + 1; } };
     throw Error(`Unexpected import ${name}`);
   } });
   h.api = exports;
@@ -97,5 +100,17 @@ test("Android native exposes compact unsupported native state without calling an
   await h.api.disableNativeReminders(); await h.api.refreshNativeReminders();
   assert.equal(h.prompts, 0); assert.equal(h.apiCalls, 0); assert.equal(h.pending.length, 0);
   assert.equal(h.preferences.size, 0); assert.equal(h.listeners.size, 0);
+  stop();
+});
+
+test("device OFF includes execution cancellation before confirming success and exposes cleanup failure", async () => {
+  const h = harness(), stop = h.start(); await h.api.enableNativeReminders();
+  h.executionCancelFailure = true;
+  await assert.rejects(h.api.disableNativeReminders());
+  let state = JSON.parse(h.api.getNativeReminderSnapshot());
+  assert.equal(state.phase, "error"); assert.equal(state.cleanupPending, true);
+  h.executionCancelFailure = false; await h.api.disableNativeReminders();
+  state = JSON.parse(h.api.getNativeReminderSnapshot());
+  assert.equal(state.phase, "ready"); assert.equal(state.enabled, false); assert.equal(h.executionCancellations, 1);
   stop();
 });

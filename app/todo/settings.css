@@ -88,6 +88,26 @@
 .oddk-settingsPanel :is(.oddk-classificationManager p, .oddk-filterFields small, .oddk-classificationBadges) { font-size: var(--settings-font-small, var(--oddk-font-small)); }
 .oddk-settingsPanel .oddk-aiConsent { font-size: var(--settings-font-body, var(--oddk-font-body)); }
 .oddk-page .oddk-settingsPanel .oddk-aiConsent .oddk-dialogActions > button { font-size: var(--settings-font-body, var(--oddk-font-body)); }
+.oddk-backupFootnote { margin:16px 0 0; color:var(--oddk-muted); font-size:var(--oddk-font-small); line-height:1.6; }
+.oddk-backupError { margin:16px 0 0; padding:12px; color:var(--oddk-danger-text); background:var(--oddk-soft); border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); overflow-wrap:anywhere; line-height:1.6; }
+.oddk-backupDialog { width:min(560px,calc(100vw - 32px)); }
+.oddk-backupDialog .oddk-dialogForm { padding:0; gap:0; }
+.oddk-backupDialog .oddk-dialogHeader { padding:24px; margin:0; }
+.oddk-backupBody { padding:0 24px 24px; overflow-y:auto; min-height:0; line-height:1.6; }
+.oddk-backupBody > p { margin:16px 0; }
+.oddk-backupFileName { overflow-wrap:anywhere; color:var(--oddk-muted); }
+.oddk-backupValid { display:inline-flex; align-items:center; gap:6px; color:var(--oddk-accent-text); font-size:var(--oddk-font-small); }
+.oddk-backupValid svg { width:18px; height:18px; }
+.oddk-backupSummary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding:20px 0; margin:16px 0; border-block:1px solid var(--oddk-border); }
+.oddk-backupSummary dt { color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+.oddk-backupSummary dd { margin:6px 0 0; font-size:var(--oddk-font-section); font-weight:600; }
+.oddk-backupTarget { color:var(--oddk-muted); font-size:var(--oddk-font-small); }
+.oddk-backupReplace { padding:16px; background:var(--oddk-soft); border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-card); }
+.oddk-backupReplace h3 { margin:0; font-size:var(--oddk-font-body); }
+.oddk-backupReplace p { margin:12px 0 0; overflow-wrap:anywhere; }
+.oddk-backupDialog .oddk-dialogActions { padding:16px 24px; margin:0; border-top:1px solid var(--oddk-border); flex-shrink:0; }
+.oddk-backupDialog .oddk-primary:disabled { opacity:.45; cursor:not-allowed; }
+@media(max-width:480px) { .oddk-backupDialog .oddk-dialogHeader,.oddk-backupDialog .oddk-dialogActions { padding:16px; } .oddk-backupBody { padding:0 16px 16px; } .oddk-backupSummary { gap:8px; } }
 
 @media (max-width: 760px) {
   .oddk-settingsCard { padding: 24px; }

@@ -27,10 +27,11 @@ import type { SyncStatus } from "./sync-store";
 import { AccountHelpLinks } from "./account-help-links";
 import { DeviceReminderSettings, useNativeReminderStatus } from "./native-reminder-settings";
 import { AIConsentSettings } from "./ai-consent-controls";
+import { PlanBackupImport } from "./plan-backup-dialog";
 
 const tabs = [
   { id: "general", label: "일반" },
-  { id: "classification", label: "분류·태그" },
+  { id: "classification", label: "태그" },
   { id: "account", label: "계정·동기화" },
   { id: "data", label: "알림·백업" },
 ] as const;
@@ -83,11 +84,11 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: 
     tabButtons.current[next]?.focus();
   }
 
-  function downloadBackup(previous = false) {
+  function downloadBackup() {
     setFeedback("");
     try {
-      exportPlanBackup(fallback, previous);
-      setFeedback(previous ? "보관한 백업 파일을 준비했어요." : "현재 내용의 백업 파일을 준비했어요.");
+      exportPlanBackup(fallback);
+      setFeedback("현재 내용의 백업 파일을 준비했어요.");
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "백업 파일을 만들지 못했어요.");
     }
@@ -137,7 +138,7 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: 
     </div>
 
     <div role="tabpanel" id="settings-panel-classification" aria-labelledby="settings-tab-classification" hidden={tab !== "classification"}>
-      <SettingsCard title="분류·태그" description="할 일을 묶고, 필요한 항목을 쉽게 찾아보세요." className="oddk-settingsClassification">
+      <SettingsCard title="태그" description="태그로 할 일을 묶고, 필요한 항목을 쉽게 찾아보세요." className="oddk-settingsClassification">
         <ClassificationManager plan={plan} onSave={onSave} initiallyOpen />
       </SettingsCard>
     </div>
@@ -157,7 +158,7 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: 
       <SettingsCard title="개인정보와 계정" description="개인정보 이용 내용과 계정 삭제를 확인하세요.">
         <AccountHelpLinks>{(sync.connected || sync.deletionPending) && <button type="button" className="oddk-deleteAccountLink" onClick={() => openSettingsDialog("delete")}>{sync.deletionPending ? "계정 삭제 결과 확인" : "계정 삭제"}</button>}</AccountHelpLinks>
       </SettingsCard>
-      <SettingsCard title="AI 분석·동의" description="이 기기의 현재 계정에 적용하는 전송 동의를 관리해요."><AIConsentSettings /></SettingsCard>
+      <SettingsCard title="AI 분석"><AIConsentSettings /></SettingsCard>
     </div>
 
     <div role="tabpanel" id="settings-panel-data" aria-labelledby="settings-tab-data" hidden={tab !== "data"}>
@@ -169,7 +170,7 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: 
 
       <SettingsCard title="데이터 백업" description="할 일과 계획을 JSON 파일로 보관할 수 있어요.">
         <div className="oddk-settingActionRow"><div className="oddk-settingCopy"><strong>현재 내용</strong><p>할 일, 목표, 날짜별 계획과 하루 점검을 함께 보관해요.</p></div><button type="button" className="oddk-settingButton" onClick={() => downloadBackup()}><HiOutlineArrowDownTray aria-hidden="true" />백업 받기</button></div>
-        <div className="oddk-settingActionRow oddk-settingDivided"><div className="oddk-settingCopy"><strong>최근 보관 백업</strong><p>로그인이나 데이터 변경 전에 보관한 내용을 받아요.</p></div><button type="button" className="oddk-settingTextButton" onClick={() => downloadBackup(true)}>보관 백업 받기<HiOutlineArrowDownTray aria-hidden="true" /></button></div>
+        {tab === "data" && <PlanBackupImport fallback={fallback} />}
         <p className={feedback ? "oddk-settingsFeedback" : "oddk-srOnly"} role="status" aria-live="polite">{feedback}</p>
       </SettingsCard>
       <p className="oddk-settingsPrivacy"><HiOutlineShieldCheck aria-hidden="true" />백업 파일은 이 기기에 내려받아요. 안전한 곳에 보관해주세요.</p>

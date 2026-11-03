@@ -34,3 +34,5 @@
 .oddk-taskClassification>legend{font-weight:600;font-size:var(--oddk-font-label);padding-right:8px}
 .oddk-classificationManager button:disabled,.oddk-tagOptions button:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:480px){.oddk-filterFields{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.oddk-searchField{min-width:0!important}.oddk-definitionLists{grid-template-columns:minmax(0,1fr)}.oddk-classificationFilters,.oddk-classificationManager{padding:var(--oddk-space-3)}}
+
+.oddk-tagOnlyLists{grid-template-columns:minmax(0,1fr)}

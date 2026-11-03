@@ -77,7 +77,7 @@ export function SyncPanel({ fallback, onAccountDialogChange }: { fallback: strin
           <div className="oddk-syncActions"><button type="button" disabled={busy} onClick={() => void perform(syncNow)}><HiOutlineArrowPath aria-hidden="true" />지금 동기화</button><button type="button" disabled={busy} onClick={() => void perform(disconnectSync)}>이 기기에서 로그아웃</button></div>
           <p className="oddk-syncHelp">로그아웃하면 로그인 전 이 기기의 목록으로 돌아가요. 계정 데이터는 서버에 남아 있어요.</p>
         </>}
-        <div className="oddk-syncActions"><button type="button" onClick={() => { try { exportPlanBackup(fallback); } catch (error) { setMessage((error as Error).message); } }}>현재 내용 백업</button><button type="button" onClick={() => { try { exportPlanBackup(fallback, true); } catch (error) { setMessage((error as Error).message); } }}>최근 보관 백업 받기</button></div>
+        <div className="oddk-syncActions"><button type="button" onClick={() => { try { exportPlanBackup(fallback); } catch (error) { setMessage((error as Error).message); } }}>현재 내용 백업</button></div>
         {message && <p className="oddk-syncFeedback" role="status">{message}</p>}
         <AccountHelpLinks />
       </div>
