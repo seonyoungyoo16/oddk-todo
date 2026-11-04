@@ -96,7 +96,7 @@ export function previewNewTimetableTask(plan: Plan, draft: TimetableTaskDraft) {
     categoryId: draft.categoryId, tagIds: [...draft.tagIds], dueDate: null, dueTime: null };
   if (plan.tasks.some(item => !item.done && !item.summaryOnly && taskTitleKey(item) === taskTitleKey(task))) throw new Error("같은 날짜와 시각에 같은 할 일이 있어요.");
   const next = { ...plan, tasks: [...plan.tasks, task] };
-  if (!validPlan(next)) throw new Error("할 일·메모·분류·시간을 확인해주세요. 입력은 그대로 남아 있어요.");
+  if (!validPlan(next)) throw new Error("할 일·메모·태그·시간을 확인해주세요. 입력은 그대로 남아 있어요.");
   return { expected: plan, draft: { ...draft, tagIds: [...draft.tagIds] }, task, next, warnings: travelPreviewWarnings(plan, [task]) };
 }
 

@@ -3,7 +3,6 @@ import { TaskSplitAction } from "./task-split-action";
 import { DesktopSidebar, SharedHeader } from "./shared-header";
 import { MobileNavigation, type MobileDestination, type WorkspaceDestination } from "./mobile-navigation";
 import { SelectionActions } from "./selection-actions";
-import { openSettingsDialog } from "./settings-events";
 import { usePlanningAlerts } from "./use-planning-alerts";
 import { PlanningAlert, PlanningIssuesButton, PlanningIssueBadge } from "./planning-alert";
 import { ActivityHours } from "./activity-hours";
@@ -52,7 +51,7 @@ import { updateSimpleTask } from "./simple-task-editor";
 import { taskTimeLabel } from "./task-time-label";
 import { workFromStoredTime } from "./task-time";
 import { selectDay } from "./day-selectors";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus } from "./dialog-focus";
 import { safeMandala } from "./planning-views";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, isPlanDate, validPlan } from "../../supabase/functions/_shared/plan";
@@ -63,7 +62,7 @@ import { loadPlan, taskToV4 } from "../../supabase/functions/_shared/plan-migrat
 import { AutoTextarea } from "./auto-textarea";
 import { ClassificationBadges, defaultClassification } from "./classification-controls";
 import { TaskTagEditor } from "./task-tag-editor";
-import { SettingsPanel } from "./settings-panel";
+import { SettingsPanel, type SettingsTab } from "./settings-panel";
 import { filterClassifiedTasks, type TaskStatusFilter } from "./classification-actions";
 import { sameValue } from "./json-equality";
 import { preserveManualRepeatEdits } from "../../supabase/functions/_shared/repeat-actions";
@@ -187,13 +186,14 @@ function TodoWorkspace({ scope }: { scope: string }) {
   const currentFilters = { ...classification, category: "all" as const, status: filter };
   // Navigation starts at the daily plan; saved workspace content stays intact.
   const [view, setView] = useState<View>("list");
+  const [settingsTab, setSettingsTab] = useState<SettingsTab>("general");
   const mobileDayPane = useRef<"list" | "rhythm">("list");
   const mobileScroll = useRef(new Map<View, number>());
   const [rangeDraft, setRange] = field("range");
   const range: RangeScope = rangeDraft ?? "day";
   const planningView = view === "list" || view === "rhythm";
   const week = weekDates(planDate);
-  const currentDestination: MobileDestination = view === "mandala" || view === "history" || view === "settings" ? view : "day";
+  const currentDestination: MobileDestination = view === "history" ? "settings" : view === "mandala" || view === "settings" ? view : "day";
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const selectionMode = true;
   const [sort, setSort] = useState<TaskSort>("manual");
@@ -262,8 +262,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (editingTaskId && !dialog.open) {
-      dialog.showModal();
-      editInputRef.current?.focus();
+      openDialogWithFocus(dialog, editInputRef.current);
     }
     if (!editingTaskId && dialog.open) dialog.close();
   }, [editingTaskId]);
@@ -476,7 +475,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
 
   function navigateWorkspace(destination: WorkspaceDestination) {
     closeTransientUI();
-    if (destination === "profile") { openSettingsDialog("profile"); return; }
+    if (destination === "profile" || destination === "account") { setSettingsTab("account"); navigateMobile("settings"); return; }
     navigateMobile(destination);
   }
 
@@ -520,14 +519,14 @@ function TodoWorkspace({ scope }: { scope: string }) {
 
   return (
     <div ref={workspaceRef} className="oddk-page font-sans" data-theme={theme} data-shared-shell="true" data-content-view={planningView ? "day" : view}>
-      <DesktopSidebar current={accountDialogOpen ? "profile" : currentDestination} onNavigate={navigateWorkspace} />
-      <SharedHeader current={accountDialogOpen ? "profile" : currentDestination} onNavigate={navigateWorkspace} actions={<button type="button" className="oddk-themeToggle" onClick={toggleTheme} aria-pressed={theme === "dark"}
+      <DesktopSidebar current={accountDialogOpen ? "settings" : currentDestination} onNavigate={navigateWorkspace} />
+      <SharedHeader current={accountDialogOpen ? "settings" : currentDestination} onNavigate={navigateWorkspace} actions={<button type="button" className="oddk-themeToggle" onClick={toggleTheme} aria-pressed={theme === "dark"}
         aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"} title={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}><HiOutlineSun aria-hidden="true" /></button>} />
-      <div className="oddk-sharedAccountHost"><SyncPanel fallback={EMPTY_SNAPSHOT} onAccountDialogChange={setAccountDialogOpen} /></div>
+      <div className="oddk-sharedAccountHost"><SyncPanel fallback={EMPTY_SNAPSHOT} onAccountDialogChange={setAccountDialogOpen} onShowProfile={() => navigateWorkspace("profile")} /></div>
 
       <div className="oddk-window">
         <div className="oddk-windowBody">
-          <MobileNavigation current={accountDialogOpen ? "profile" : currentDestination} onNavigate={navigateWorkspace} />
+          <MobileNavigation current={accountDialogOpen ? "settings" : currentDestination} onNavigate={navigateWorkspace} />
 
           <main className="oddk-workspace" aria-labelledby="workspace-title">
             <div className="oddk-pageBody">
@@ -562,7 +561,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
                 {workspace.problem && <DraftFeedback draft={workspace} />}
                 </section>
             {planningView && <DailyPlanningControls plan={plan} value={currentFilters} onChange={next => { setClassification({ ...next, status: "all" }); setFilter(next.status ?? "all"); setSelectionIds([]); }} count={visibleTasks.length} total={rangeTasks.length} pane={view === "rhythm" ? "rhythm" : "list"} onPaneChange={changeView} range={range} />}
-            {view === "history" && <ExecutionHistoryPage scope={scope} today={today} revision={execution.state?.revision} />}
+            {view === "history" && <><div className="oddk-historyContext"><button type="button" onClick={() => changeView("settings")}>← 환경설정으로</button><h2>작업이력</h2></div><ExecutionHistoryPage scope={scope} today={today} revision={execution.state?.revision} /></>}
             <div id="planning-issues-targets" data-workspace-panel="planning" hidden={view === "settings" || view === "history"} className={"oddk-contentGrid oddk-singleView" + (planningView && range === "day" ? " oddk-dailyGrid" : "")} data-pane={view === "rhythm" ? "rhythm" : "list"}>
               <aside data-workspace-panel="timetable" hidden={!planningView || range !== "day"} className="oddk-rhythm" aria-labelledby="rhythm-title">
                 <WeeklyTimetable key={(nativeTimetableDate ? "native-today" : planDate) + ":" + planningAlerts.focusRequest} plan={plan} tasks={filterClassifiedTasks(plan.tasks, currentFilters)} date={planDate} today={today} nativeToday={nativeTimetableDate}
@@ -582,12 +581,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
                 <div className="oddk-sectionHeading">
                   <h2 id="task-list-title" className="oddk-mobileListHeading">오늘 할 일 <span>{scopedTasks.length}개</span></h2>
                   <PlanningIssuesButton model={planningAlerts} onInspect={inspectPlanningIssues} />
-                  <details className="oddk-startSort">
-                    <summary aria-label="목록 정렬" title="목록 정렬" data-active={sort !== "manual"}>정렬<HiOutlineChevronDown aria-hidden="true" /></summary>
-                    <div className="oddk-startSortOptions" role="group" aria-label="목록 정렬 방식">
-                      {([["manual", "수동 순서"], ["importance", "중요도 높은 순"], ["importance-low", "중요도 낮은 순"], ["start-asc", "시작시간 오름차순"], ["start-desc", "시작시간 내림차순"]] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={sort === value} onClick={event => { setSort(value); const menu = event.currentTarget.closest("details"); if (menu) { menu.open = false; menu.querySelector("summary")?.focus(); } }}>{label}</button>)}
-                    </div>
-                  </details>
+                  <label className="oddk-sortControl"><span className="oddk-srOnly">목록 정렬</span><select aria-label="목록 정렬" value={sort} onChange={event => setSort(event.target.value as TaskSort)}>{([["manual", "수동 순서"], ["importance", "중요도 높은 순"], ["importance-low", "중요도 낮은 순"], ["start-asc", "시작시간 오름차순"], ["start-desc", "시작시간 내림차순"]] as const).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
                 </div>
 
 
@@ -648,7 +642,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
               </div>
             </div>
             <section data-workspace-panel="settings" className="oddk-settings" hidden={view !== "settings"} aria-label="환경설정">
-              <SettingsPanel plan={plan} onSave={save} theme={theme} onThemeChange={next => { if (next !== theme) toggleTheme(); }} fallback={EMPTY_SNAPSHOT} />
+              <SettingsPanel plan={plan} onSave={save} theme={theme} onThemeChange={next => { if (next !== theme) toggleTheme(); }} fallback={EMPTY_SNAPSHOT} onShowHistory={() => changeView("history")} activeTab={settingsTab} onTabChange={setSettingsTab} />
             </section>
             </div>
           </main>
@@ -661,7 +655,7 @@ function TodoWorkspace({ scope }: { scope: string }) {
           <DialogHeader id="edit-dialog-title" title="할 일 수정" closeLabel="수정 창 닫기" onClose={() => setEditingId(null)} />
           <div className="oddk-dialogBody">
           <label className="oddk-dialogField oddk-editorTitle" htmlFor="edit-title">할 일<AutoTextarea ref={editInputRef} id="edit-title" aria-label="할 일" value={editTitle} maxLength={120} required aria-describedby="edit-title-count" onLimit={() => setEditError("제목은120자까지 입력할 수 있어요. 기존 입력은 유지했어요.")}
-            onChange={(event) => { setEditTitle(event.target.value); setEditError(""); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} autoFocus /><small id="edit-title-count">{editTitle.length}/120</small></label>
+            onChange={(event) => { setEditTitle(event.target.value); setEditError(""); }} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} /><small id="edit-title-count">{editTitle.length}/120</small></label>
           <label className="oddk-dialogField oddk-editorNotes" htmlFor="edit-notes">상세 메모<AutoTextarea id="edit-notes" aria-label="상세 메모" aria-describedby="edit-notes-count" onLimit={() => setEditError("상세 메모는2000자까지 입력할 수 있어요. 기존 메모는 유지했어요.")} value={editNotes ?? ""} maxLength={2000} placeholder="단계, 준비물, 참고할 내용을 자유롭게 적어보세요." onChange={event => { setEditNotes(event.target.value); setEditError(""); }} onKeyDown={event => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && !event.nativeEvent.isComposing) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }} /><small id="edit-notes-count">{(editNotes ?? "").length}/2000</small></label>
           {editor && <TaskTagEditor key={editingTask.id} plan={plan} draft={editor} onChange={patchEditor} />}
           <TaskImportanceFields importance={editor?.importance ?? editingTask.importance ?? "normal"} onChange={patchEditor} />

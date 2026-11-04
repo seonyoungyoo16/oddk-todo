@@ -4,7 +4,7 @@ import { DialogHeader } from "./ui/dialog-header";
 import type { Task } from "../../supabase/functions/_shared/plan";
 import type { Importance } from "../../supabase/functions/_shared/task-planning";
 import { taskImportance, urgencyLabel } from "./task-order";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus } from "./dialog-focus";
 import type { BulkRequest } from "./bulk-actions";
 const labels = { high: "높음", normal: "보통", low: "낮음" };
 export function TaskImportanceFields({ importance, onChange }: { importance: Importance; onChange: (patch: { importance: Importance }) => void }) {
@@ -23,7 +23,7 @@ export function TaskMoveButtons({ title, first, last, onMove }: { title: string;
 export function BulkActionDialog({ request, onCancel, onConfirm }: { request: BulkRequest; onCancel: () => void; onConfirm: () => string | null }) {
   const dialog = useRef<HTMLDialogElement>(null), cancel = useRef<HTMLButtonElement>(null);
   const [error, setError] = useState("");
-  useEffect(() => { dialog.current?.showModal(); cancel.current?.focus(); }, []);
+  useEffect(() => { openDialogWithFocus(dialog.current); cancel.current?.focus(); }, []);
   const label = request.kind === "delete" ? "삭제" : request.kind === "done" ? "완료" : "완료 취소";
   return <dialog ref={dialog} className="oddk-dialog oddk-bulkDialog" aria-labelledby="bulk-dialog-title" onKeyDown={keepFocusInDialog} onCancel={event => { event.preventDefault(); onCancel(); }} onClick={event => { if (event.target === event.currentTarget) onCancel(); }}>
     <form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); const message = onConfirm(); if (message) setError(message); }}>

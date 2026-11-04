@@ -29,6 +29,10 @@ export function planGoalBoards(plan: Plan): GoalBoard[] {
   return [{ id: firstGoalId, goal: plan.goalTree.goal, groupIds, ...(plan.mandala ? { layout: plan.mandala } : {}) }];
 }
 
+export const EMPTY_CORE_GOAL_MESSAGE = "빈 핵심목표를 먼저 입력하고 저장해주세요.";
+/** Inspect every saved board; UI draft checks are an additional safeguard. */
+export const hasEmptyCoreGoal = (plan: Plan) => planGoalBoards(plan).some(board => !board.goal.trim());
+
 export type GoalDeletion = { id: string; board: GoalBoard; tree: GoalTree };
 export function previewGoalDeletion(plan: Plan, id: string): GoalDeletion {
   const board = planGoalBoards(plan).find(board => board.id === id);
@@ -82,6 +86,7 @@ export function addGoalBoard(plan: Plan, id: string): Plan {
   const boards = planGoalBoards(plan);
   if (boards.length >= 32) throw new Error("핵심목표는 최대 32개까지 추가할 수 있어요.");
   if (!id || id.length > 80 || boards.some(board => board.id === id)) throw new Error("새 목표를 추가하지 못했어요. 다시 시도해주세요.");
+  if (hasEmptyCoreGoal(plan)) throw new Error(EMPTY_CORE_GOAL_MESSAGE);
   const reserved = new Set(boards.flatMap(board => board.groupIds));
   const groupIds = Array.from({ length: 8 }, (_, index) => `${id}-slot-${index}`);
   if (groupIds.some(id => reserved.has(id))) throw new Error("목표의 식별자가 겹쳐요. 다시 시도해주세요.");

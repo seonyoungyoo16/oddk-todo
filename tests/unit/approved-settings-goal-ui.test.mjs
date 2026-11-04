@@ -1,3 +1,4 @@
+import * as dialogFocus from "../../app/todo/dialog-focus.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -30,6 +31,8 @@ function settings(native = false) {
   const h = hooks(), calls = [];
   const exports = load("settings-panel.tsx", {
     "./classification-controls": { ClassificationManager: () => null },
+    "./settings-card": { SettingsCard: ({ title, children }) => element("section", { children: [title && element("header", { children: title }), children] }) },
+    "./account-settings": { AccountSettings: () => null, AccountNotifications: function AccountNotifications() {} },
     "./settings-events": { openSettingsDialog: mode => calls.push(mode) },
     "./sync-store": { getSyncSnapshot: () => JSON.stringify({ connected: false, phase: "local", message: "local" }), getServerSyncSnapshot() {}, subscribeSync() {}, exportPlanBackup() {} },
     "./account-help-links": { AccountHelpLinks: () => null },
@@ -37,7 +40,7 @@ function settings(native = false) {
     "./ai-consent-controls": { AIConsentSettings: () => null },
     "./plan-backup-dialog": { PlanBackupImport: () => null },
   }, h);
-  const render = () => { h.reset(); return exports.SettingsPanel({ plan: {}, onSave() {}, theme: "light", onThemeChange() {}, fallback: "", native }); };
+  const render = (extra = {}) => { h.reset(); return exports.SettingsPanel({ plan: {}, onSave() {}, theme: "light", onThemeChange() {}, fallback: "", native, onShowHistory: () => calls.push("history"), ...extra }); };
   return { calls, render };
 }
 
@@ -69,18 +72,53 @@ test("settings Arrow/Home/End navigation keeps the existing keyboard flow after 
 
 test("native notification card has only its toggle content while the web title, explanation and four tabs remain", () => {
   for (const native of [true, false]) {
-    const h = settings(native), tree = nodes(h.render());
+    const h = settings(native);
+    assert(!nodes(h.render()).some(n => n.type?.name === "AccountNotifications"));
+    nodes(h.render()).find(n => n.props?.id === "settings-tab-data").props.onClick();
+    const tree = nodes(h.render());
     const panel = tree.find(n => n.props?.id === "settings-panel-data");
-    const card = panel.props.children[0];
+    const card = panel.props.children.find(node => node?.props?.children?.type?.name === "AccountNotifications");
     assert.equal(card.props.title, native ? undefined : "일정 알림"); assert.equal(!!card.props.description, !native);
     assert.equal(nodes(card.type(card.props)).filter(n => n.type === "header").length, native ? 0 : 1);
     assert.equal(tree.filter(n => n.props?.role === "tab").length, 4);
   }
 });
 
+test("settings opens the existing history through one explicit action", () => {
+  const h = settings();
+  nodes(h.render()).find(node => node.props?.id === "settings-tab-data").props.onClick();
+  nodes(h.render()).find(node => node.type === "button" && node.props.children?.[0] === "작업이력 보기").props.onClick();
+  assert.deepEqual(h.calls, ["history"]);
+});
+
+test("settings can enter the existing account panel directly under the My Info tab and still change tabs normally", () => {
+  const h = settings(), changes = [], tree = nodes(h.render({ activeTab: "account", onTabChange: tab => changes.push(tab) }));
+  const selected = tree.find(n => n.props?.role === "tab" && n.props["aria-selected"]);
+  assert.equal(selected.props.children, "내정보"); assert.equal(selected.props.id, "settings-tab-account");
+  assert.equal(tree.filter(n => n.props?.role === "tabpanel" && !n.props.hidden)[0].props.id, "settings-panel-account");
+  tree.find(n => n.props?.id === "settings-tab-general").props.onClick(); assert.deepEqual(changes, ["general"]);
+  const next = nodes(h.render({ activeTab: "general", onTabChange: tab => changes.push(tab) }));
+  assert.equal(next.filter(n => n.props?.role === "tabpanel" && !n.props.hidden)[0].props.id, "settings-panel-general");
+  assert.deepEqual(h.calls, [], "entering My Info does not trigger login, sync or a profile-modal loop");
+});
+
+test("legacy profile and account navigation open settings account tab without opening another dialog", () => {
+  const source = readFileSync(new URL("../../app/todo/page.tsx", import.meta.url), "utf8");
+  const ast = ts.createSourceFile("page.tsx", source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let navigate;
+  const visit = node => { if (ts.isFunctionDeclaration(node) && node.name?.text === "navigateWorkspace") navigate = node; else ts.forEachChild(node, visit); };
+  visit(ast); assert(navigate);
+  const code = ts.transpileModule(navigate.getText(ast), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+  for (const destination of ["profile", "account", "day"]) {
+    const calls = [], context = { closeTransientUI: () => calls.push("close"), setSettingsTab: tab => calls.push(tab), navigateMobile: value => calls.push(value) };
+    vm.runInNewContext(`${code}\nnavigateWorkspace(${JSON.stringify(destination)});`, context);
+    assert.deepEqual(calls, destination === "day" ? ["close", "day"] : ["close", "account", "settings"]);
+  }
+});
+
 test("goal deletion opens with cancel focus, Escape cancels without confirming, and a failed confirmation remains visible", () => {
   const h = hooks(); let cancelled = 0, confirmed = 0, focused = 0, opened = 0;
-  const exports = load("goal-delete-dialog.tsx", { "./ui/dialog-header": { DialogHeader: () => null }, "./dialog-focus": { keepFocusInDialog() {} } }, h);
+  const exports = load("goal-delete-dialog.tsx", { "./ui/dialog-header": { DialogHeader: () => null }, "./dialog-focus": dialogFocus }, h);
   const render = () => { h.reset(); return exports.GoalDeleteDialog({ title: "긴 목표 원문을 보존하는 목표", dirty: true, onCancel() { cancelled++; }, onConfirm() { confirmed++; return "최신 내용을 확인해주세요."; } }); };
   let tree = render();
   h.refs[0].current = { showModal() { opened++; }, close() {} }; h.refs[1].current = { focus() { focused++; } };

@@ -1,13 +1,11 @@
 "use client";
 
 import { useRef, useState, useSyncExternalStore } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent } from "react";
 import {
   HiOutlineArrowDownTray,
   HiOutlineArrowUpRight,
-  HiOutlineBell,
   HiOutlineCheck,
-  HiOutlineCloud,
   HiOutlineComputerDesktop,
   HiOutlineGlobeAlt,
   HiOutlineMoon,
@@ -16,7 +14,8 @@ import {
 } from "react-icons/hi2";
 import type { Plan } from "../../supabase/functions/_shared/plan";
 import { ClassificationManager } from "./classification-controls";
-import { openSettingsDialog } from "./settings-events";
+import { SettingsCard } from "./settings-card";
+import { AccountSettings, AccountNotifications } from "./account-settings";
 import {
   exportPlanBackup,
   getServerSyncSnapshot,
@@ -24,55 +23,36 @@ import {
   subscribeSync,
 } from "./sync-store";
 import type { SyncStatus } from "./sync-store";
-import { AccountHelpLinks } from "./account-help-links";
-import { DeviceReminderSettings, useNativeReminderStatus } from "./native-reminder-settings";
-import { AIConsentSettings } from "./ai-consent-controls";
+import { useNativeReminderStatus } from "./native-reminder-settings";
 import { PlanBackupImport } from "./plan-backup-dialog";
 
 const tabs = [
   { id: "general", label: "일반" },
   { id: "classification", label: "태그" },
-  { id: "account", label: "계정·동기화" },
+  { id: "account", label: "내정보" },
   { id: "data", label: "알림·백업" },
 ] as const;
-type SettingsTab = (typeof tabs)[number]["id"];
+export type SettingsTab = (typeof tabs)[number]["id"];
 
-function SettingsCard({ title, description, children, className = "" }: {
-  title?: string;
-  description?: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return <section className={`oddk-settingsCard ${className}`}>
-    {(title || description) && <header className="oddk-settingsCardHeading">
-      {title && <h2>{title}</h2>}
-      {description && <p>{description}</p>}
-    </header>}
-    {children}
-  </section>;
-}
-
-export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: {
+export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback, onShowHistory, activeTab, onTabChange }: {
   plan: Plan;
   onSave: (next: Plan, message: string) => boolean;
   theme: "light" | "dark";
   onThemeChange: (theme: "light" | "dark") => void;
   fallback: string;
+  onShowHistory?: () => void;
+  activeTab?: SettingsTab;
+  onTabChange?: (tab: SettingsTab) => void;
 }) {
-  const [tab, setTab] = useState<SettingsTab>("general");
+  const [localTab, setLocalTab] = useState<SettingsTab>("general");
+  const tab = activeTab ?? localTab;
+  const setTab = (value: SettingsTab) => { if (onTabChange) onTabChange(value); else setLocalTab(value); };
   const [feedback, setFeedback] = useState("");
   const tabButtons = useRef<Array<HTMLButtonElement | null>>([]);
   const raw = useSyncExternalStore(subscribeSync, getSyncSnapshot, getServerSyncSnapshot);
   const sync: SyncStatus = JSON.parse(raw);
   const nativeReminder = useNativeReminderStatus().native;
-  const syncLabel = !sync.connected ? "이 기기에 저장 중" : {
-    local: "이 기기에 저장 중",
-    syncing: "동기화 중",
-    synced: "동기화됨",
-    waiting: "저장 대기",
-    conflict: "충돌 확인 필요",
-    error: "연결 확인 필요",
-  }[sync.phase];
+
 
   function navigateTab(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const next = event.key === "ArrowRight" ? (index + 1) % tabs.length
@@ -144,28 +124,13 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback }: 
     </div>
 
     <div role="tabpanel" id="settings-panel-account" aria-labelledby="settings-tab-account" hidden={tab !== "account"}>
-      <SettingsCard title="내 계정" description="같은 계정으로 로그인하면 다른 기기에서도 이어서 사용할 수 있어요.">
-        <div className="oddk-settingActionRow">
-          <div className="oddk-settingIdentity"><span className="oddk-settingIcon"><HiOutlineCloud aria-hidden="true" /></span><div><strong>{sync.connected ? sync.displayName || sync.name : "로그인하지 않았어요"}</strong><p>{sync.connected ? sync.name : "할 일과 계획은 현재 브라우저에 저장돼요."}</p></div></div>
-          <button type="button" className="oddk-settingButton" onClick={() => openSettingsDialog(sync.connected ? "profile" : "sync")}>{sync.connected ? "내 정보" : "계정 연결"}<HiOutlineArrowUpRight aria-hidden="true" /></button>
-        </div>
-      </SettingsCard>
-
-      <SettingsCard title="기기 동기화">
-        <div className="oddk-settingActionRow"><div className="oddk-settingCopy"><strong>저장 상태</strong><p>{sync.message}</p></div><span className="oddk-settingStatus" data-attention={sync.phase === "conflict" || sync.phase === "error"}><i aria-hidden="true" />{syncLabel}</span></div>
-        <div className="oddk-settingsCardBottom"><span>할 일 · 목표 · 하루 점검</span><button type="button" className="oddk-settingTextButton" onClick={() => openSettingsDialog("sync")}>동기화 관리<HiOutlineArrowUpRight aria-hidden="true" /></button></div>
-      </SettingsCard>
-      <SettingsCard title="개인정보와 계정" description="개인정보 이용 내용과 계정 삭제를 확인하세요.">
-        <AccountHelpLinks>{(sync.connected || sync.deletionPending) && <button type="button" className="oddk-deleteAccountLink" onClick={() => openSettingsDialog("delete")}>{sync.deletionPending ? "계정 삭제 결과 확인" : "계정 삭제"}</button>}</AccountHelpLinks>
-      </SettingsCard>
-      <SettingsCard title="AI 분석"><AIConsentSettings /></SettingsCard>
+      <AccountSettings state={sync} fallback={fallback} onShowNotifications={() => setTab("data")} />
     </div>
 
     <div role="tabpanel" id="settings-panel-data" aria-labelledby="settings-tab-data" hidden={tab !== "data"}>
+      <SettingsCard title="작업이력" description="기록한 작업·휴식 시간을 날짜별로 확인해요."><div className="oddk-settingActionRow"><div className="oddk-settingCopy"><strong>실제 수행 기록</strong><p>기존 기록을 그대로 조회해요.</p></div><button type="button" className="oddk-settingButton" disabled={!onShowHistory} onClick={onShowHistory}>작업이력 보기<HiOutlineArrowUpRight aria-hidden="true" /></button></div></SettingsCard>
       <SettingsCard title={nativeReminder ? undefined : "일정 알림"} description={nativeReminder ? undefined : "일정을 놓치지 않도록, 사용하는 기기마다 알림을 연결하세요."}>
-        <DeviceReminderSettings>
-        <div className="oddk-settingActionRow"><div className="oddk-settingIdentity"><span className="oddk-settingIcon"><HiOutlineBell aria-hidden="true" /></span><div><strong>이 기기의 알림</strong><p>{sync.connected ? "연결 상태와 알림을 받을 기기를 관리해요." : "계정을 연결한 뒤 기기 알림을 설정할 수 있어요."}</p></div></div><button type="button" className="oddk-settingButton" onClick={() => openSettingsDialog(sync.connected ? "profile" : "sync")}>{sync.connected ? "알림 설정" : "로그인하고 설정"}<HiOutlineArrowUpRight aria-hidden="true" /></button></div>
-        </DeviceReminderSettings>
+        {tab === "data" && <AccountNotifications state={sync} />}
       </SettingsCard>
 
       <SettingsCard title="데이터 백업" description="할 일과 계획을 JSON 파일로 보관할 수 있어요.">

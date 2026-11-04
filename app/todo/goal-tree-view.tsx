@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { HiOutlinePlus, HiOutlineTrash } from "react-icons/hi2";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan";
 import { goalBoard, validGoalDraft, missingGoalDraftTasks } from "./goal-draft";
 import type { GoalDraft } from "./goal-draft";
-import { alignGoalDraft, editGoalBoardDraft, emptyGoalWorkspace, goalBoardTree, goalDraftChanged, goalDraftConflict, planGoalBoards, validGoalWorkspace, previewGoalDeletion, type GoalDeletion } from "./goal-boards";
+import { alignGoalDraft, editGoalBoardDraft, emptyGoalWorkspace, goalBoardTree, goalDraftChanged, goalDraftConflict, planGoalBoards, validGoalWorkspace, previewGoalDeletion, hasEmptyCoreGoal, EMPTY_CORE_GOAL_MESSAGE, type GoalDeletion } from "./goal-boards";
 import { sameValue } from "./json-equality";
 import { useLocalDraft, DraftFeedback } from "./use-local-draft";
 import { GoalManagementMenu, MandalaView } from "./planning-views";
@@ -62,6 +62,13 @@ export function GoalTreeView({ plan, ready, onSave, onAdd, onDelete, onEdit }: P
   const conflict = Boolean(selected && dirty && draft && goalDraftConflict(plan, selected.id, draft));
   const missing = draft ? missingGoalDraftTasks(draft, plan.tasks) : [];
   const error = errors[selected?.id ?? "add"];
+  const adding = useRef(false);
+  useEffect(() => { adding.current = false; }, [boards]);
+  const blankStoredGoal = hasEmptyCoreGoal(plan);
+  const blankDraftGoal = Object.values(drafts).some(draft => !draft.value.goal.trim());
+  const unsettledDraft = Object.values(drafts).some(goalDraftChanged);
+  const addBlocked = !ready || !local.hydrated || !legacy.hydrated || Boolean(local.problem || legacy.problem) || blankStoredGoal || blankDraftGoal || unsettledDraft || Boolean(deleting);
+  const addHint = blankStoredGoal || blankDraftGoal ? EMPTY_CORE_GOAL_MESSAGE : unsettledDraft ? "목표를 저장한 뒤 새 목표를 추가할 수 있어요." : "";
   const updateDraft = (next: GoalDraft) => { if (selected) local.set(current => ({ ...current, drafts: { ...current.drafts, [selected.id]: next } })); };
   function backupSelectedDraft() {
     const url = URL.createObjectURL(new Blob([JSON.stringify({ goalId: selected?.id, draft, saved, savedBoard: goalBoard(saved, selected?.layout) })], { type: "application/json" }));
@@ -72,11 +79,14 @@ export function GoalTreeView({ plan, ready, onSave, onAdd, onDelete, onEdit }: P
       {selected && <label><span className="oddk-srOnly">목표 전환</span><select aria-label="목표 전환" value={selected.id} disabled={!ready || !local.hydrated} onChange={event => { const id = event.target.value; local.set(current => ({ ...current, selectedId: id })); }}>
         {boards.map((meta, index) => <option key={meta.id} value={meta.id}>{drafts[meta.id]?.value.goal.trim() || meta.goal.trim() || `새 목표 ${index + 1}`}</option>)}
       </select></label>}
-      <button type="button" className="oddk-goalAdd" aria-label="새 목표 추가" title="새 목표 추가" disabled={!ready || !local.hydrated || Boolean(local.problem)} onClick={() => {
+      <button type="button" className="oddk-goalAdd" aria-label="새 목표 추가" title={addHint || "새 목표 추가"} aria-describedby={addHint ? "goal-add-hint" : undefined} disabled={addBlocked} onClick={() => {
+        if (addBlocked || adding.current) return;
+        adding.current = true;
         const id = crypto.randomUUID(), error = onAdd(id);
-        if (error) { setErrors(current => ({ ...current, [selected?.id ?? "add"]: error })); return; }
+        if (error) { adding.current = false; setErrors(current => ({ ...current, [selected?.id ?? "add"]: error })); return; }
         local.set(current => ({ ...current, selectedId: id }));
       }}><HiOutlinePlus aria-hidden="true" /><span>새 목표</span></button>
+      {addHint && <small id="goal-add-hint" className="oddk-goalAddHint">{addHint}</small>}
     </div>
   </>;
   const management = selected && <button type="button" className="oddk-goalDelete" aria-label="현재 목표 삭제" disabled={!ready || !local.hydrated || !legacy.hydrated || Boolean(local.problem) || Boolean(legacy.problem)} onClick={() => {

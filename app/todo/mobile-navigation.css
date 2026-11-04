@@ -41,7 +41,6 @@
   .oddk-taskArea .oddk-listTabs button > span { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
   .oddk-page .oddk-taskArea .oddk-startSort { margin-left:0; }
   .oddk-taskArea .oddk-startSort > summary { width:44px; height:44px; }
-  .oddk-page .oddk-selectionBar[data-selected-count="0"] { display:none; }
   .oddk-page .oddk-taskTitle { font-size:16px; font-weight:600; }
   .oddk-page .oddk-listTag { min-height:16px; padding:0; background:transparent; }
   .oddk-page .oddk-listTag[data-importance="normal"],.oddk-page .oddk-listTag[data-status="active"],.oddk-page .oddk-listTagDivider { display:none; }

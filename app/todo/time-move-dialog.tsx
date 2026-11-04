@@ -4,7 +4,7 @@ import { HiOutlineExclamationTriangle } from "react-icons/hi2";
 import { DialogHeader } from "./ui/dialog-header";
 import type { TimeMovePreview } from "./task-movement";
 import { previewTimeMove } from "./task-movement";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 export function TimeMoveDialog({ initial, stale = false, onCancel, onApply, onRefresh }: { initial: TimeMovePreview; stale?: boolean; onCancel: () => void; onApply: (value: TimeMovePreview) => string | null; onRefresh: (date: string, time: string) => string | null }) {
   const ref = useRef<HTMLDialogElement>(null);
   const date = initial.after.plannedDate!;
@@ -13,8 +13,8 @@ export function TimeMoveDialog({ initial, stale = false, onCancel, onApply, onRe
   useEffect(() => {
     const dialog = ref.current;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialog?.showModal();
-    return () => { dialog?.close(); if (opener?.isConnected) opener.focus(); else document.getElementById("todo-input")?.focus(); };
+    openDialogWithFocus(dialog);
+    return () => { dialog?.close(); restoreDialogFocus(opener, document.getElementById("todo-input")); };
   }, []);
   let preview: TimeMovePreview | null = null, validation = "";
   try { preview = previewTimeMove(initial.expected, initial.before.id, date, time); } catch (e) { validation = (e as Error).message; }

@@ -10,7 +10,7 @@ import { getPlanScope, getSyncSnapshot, getServerSyncSnapshot, subscribeSync } f
 import { makeReplanRecovery, restoreReplanRecovery, validReplanRecovery } from "./replan-recovery";
 import type { ReplanRecovery } from "./replan-recovery";
 import { useLocalDraft, DraftFeedback } from "./use-local-draft";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 
 export function ReplanPanel({ scope, date, today, plan, execution, onApplied, onRestore }: {
   scope: string; date: string; today: string; plan: Plan; execution: ExecutionController;
@@ -24,8 +24,8 @@ export function ReplanPanel({ scope, date, today, plan, execution, onApplied, on
   const [confirmed, setConfirmed] = useState(false), [busy, setBusy] = useState(false), [message, setMessage] = useState("");
   const dialog = useRef<HTMLDialogElement>(null), opener = useRef<HTMLButtonElement>(null);
   const active = execution.state?.current;
-  useEffect(() => { if (opened) dialog.current?.showModal(); else dialog.current?.close(); }, [opened]);
-  function close() { if (busy) return; setOpened(false); setCandidate(null); setConfirmed(false); opener.current?.focus(); }
+  useEffect(() => { if (opened) openDialogWithFocus(dialog.current); else dialog.current?.close(); }, [opened]);
+  function close() { if (busy) return; setOpened(false); setCandidate(null); setConfirmed(false); restoreDialogFocus(opener.current); }
   function open() {
     const clock = replanClock(new Date().toISOString());
     setPins(defaultReplanPins(plan, date, clock.minute)); setTime(""); setCandidate(null); setConfirmed(false); setMessage(""); setOpened(true);
@@ -50,7 +50,7 @@ export function ReplanPanel({ scope, date, today, plan, execution, onApplied, on
       const visible = await commitReplan(scope, candidate.preview, candidate.revision);
       if (getPlanScope() !== scope) return;
       if (!visible) { setMessage("서버에 적용됐지만 기기의 새 변경도 있어요. 동기화 비교 화면을 확인해주세요."); return; }
-      onApplied(candidate.preview); setOpened(false); setCandidate(null); setConfirmed(false); setMessage("남은 시간에 맞춰 계획을 재조정했어요."); opener.current?.focus();
+      onApplied(candidate.preview); setOpened(false); setCandidate(null); setConfirmed(false); setMessage("남은 시간에 맞춰 계획을 재조정했어요."); restoreDialogFocus(opener.current);
       await execution.refresh();
     } catch (e) { if (getPlanScope() === scope) setMessage((e as Error).message); }
     finally { setBusy(false); }

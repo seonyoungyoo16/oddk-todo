@@ -24,7 +24,7 @@
 .oddk-timeMoveBefore { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px 12px; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--oddk-border); color:var(--oddk-muted); font-size:var(--oddk-font-label); }
 .oddk-timeMoveDialog .oddk-timeMoveFields { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
 .oddk-timeMoveDialog .oddk-timeMoveFields label,.oddk-timeMoveEnd { min-width:0; display:grid; gap:var(--oddk-space-2); font-size:var(--oddk-font-label); }
-.oddk-timeMoveDialog .oddk-timeMoveFields input,.oddk-timeMoveEnd output { box-sizing:border-box; width:100%; min-width:0; min-height:var(--oddk-control-height); padding:8px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); font-size:var(--oddk-font-section); line-height:24px; background:var(--oddk-surface); color:var(--oddk-heading); }
+.oddk-timeMoveDialog .oddk-timeMoveFields input,.oddk-timeMoveEnd output { box-sizing:border-box; width:100%; min-width:0; min-height:var(--oddk-control-height); padding:8px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); --editing-control-font:var(--oddk-font-section); font-size:var(--oddk-font-section); line-height:24px; background:var(--oddk-surface); color:var(--oddk-heading); }
 .oddk-timeMoveEnd output { display:flex; align-items:center; background:var(--oddk-soft); font-size:var(--oddk-font-body); }
 .oddk-timeMoveDialog .oddk-timeMoveDuration { margin:12px 0 0; color:var(--oddk-muted); font-size:var(--oddk-font-small); line-height:var(--oddk-line-body); }
 .oddk-timeMoveDuration span { display:block; }

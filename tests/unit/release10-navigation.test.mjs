@@ -48,15 +48,15 @@ test("bottom navigation exposes exactly day, goals, settings and invokes each re
   assert.deepEqual(buttons.map(label), ["하루계획", "목표추적", "환경설정"]);
   for (const button of buttons) button.props.onClick();
   assert.deepEqual(h.calls, ["day", "mandala", "settings"]);
-  assert.equal(h.exports.workspaceDestinations.length, 5);
-  assert.deepEqual(Array.from(h.exports.workspaceDestinations, item => item.id), ["day", "mandala", "history", "settings", "profile"]);
+  assert.equal(h.exports.workspaceDestinations.length, 3);
+  assert.deepEqual(Array.from(h.exports.workspaceDestinations, item => item.id), ["day", "mandala", "settings"]);
   assert.deepEqual(Array.from(h.exports.mobileDestinations, item => item.id), ["day", "mandala", "settings"]);
   h.unmount();
 });
 
-test("bottom active marker follows only its three destinations and never mislabels history or profile", () => {
+test("bottom active marker keeps legacy history/profile/account entries in settings context", () => {
   const h = navigation();
-  for (const [current, expected] of [["day", "하루계획"], ["mandala", "목표추적"], ["settings", "환경설정"], ["history", null], ["profile", null]]) {
+  for (const [current, expected] of [["day", "하루계획"], ["mandala", "목표추적"], ["settings", "환경설정"], ["history", "환경설정"], ["profile", "환경설정"], ["account", "환경설정"]]) {
     const active = descendants(h.render(current)).filter(n => n.type === "button" && n.props["aria-current"] === "page");
     assert.equal(active.length, expected ? 1 : 0);
     if (expected) assert.equal(label(active[0]), expected);

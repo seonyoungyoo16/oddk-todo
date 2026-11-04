@@ -1,3 +1,4 @@
+import * as dialogFocus from "../../app/todo/dialog-focus.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -65,13 +66,13 @@ function goalsUI(initial = plan(), localValue) {
 }
 function mandalaUI(initial, compact = true) {
   const h = hooks(compact), changes = [], edits = []; let board = initial;
-  const exports = load("planning-views.tsx", h, { "./auto-textarea": { AutoTextarea: "textarea" }, "./task-order": {}, "../../supabase/functions/_shared/plan": {}, "./dialog-focus": { keepFocusInDialog() {} } });
+  const exports = load("planning-views.tsx", h, { "./auto-textarea": { AutoTextarea: "textarea" }, "./task-order": {}, "../../supabase/functions/_shared/plan": {}, "./dialog-focus": dialogFocus });
   const render = () => { h.reset(); return exports.MandalaView({ tasks: [task("linked", true), task("free")], draft: board,
     onChange(value) { changes.push(value); board = value; }, onEdit(value) { edits.push(value); }, management: element("button", { children: "목표 삭제" }) }); };
   return { ...h, exports, render, changes, edits, get board() { return board; } };
 }
 
-test("goal selection/new-goal callbacks preserve every pending board draft while sharing one context row", () => {
+test("goal selection preserves pending drafts while new-goal stays blocked until they are saved", () => {
   const p = plan(), value = { selectedId: "default", drafts: { default: dirtyDraft(p, "default", "작성 중 첫 목표"), second: dirtyDraft(p, "second", "작성 중 둘째") } };
   const original = JSON.stringify(value.drafts), h = goalsUI(p, structuredClone(value));
   let view = nodes(h.render()).find(n => n.type === h.View), fields = nodes(view.props.toolbar);
@@ -80,8 +81,56 @@ test("goal selection/new-goal callbacks preserve every pending board draft while
   fields = nodes(view.props.toolbar); assert.equal(text(fields.find(n => n.props?.className === "oddk-goalAdd")), "새 목표");
   assert(!fields.some(n => n.props?.className === "oddk-goalDelete"));
   fields.find(n => n.props?.className === "oddk-goalAdd").props.onClick();
-  assert.deepEqual(h.adds, ["new-goal"]); assert.equal(h.local.value.selectedId, "new-goal");
+  assert.deepEqual(h.adds, []); assert.equal(h.local.value.selectedId, "second");
+  assert.equal(fields.find(n => n.props?.className === "oddk-goalAdd").props.disabled, true);
   assert.equal(JSON.stringify(h.local.value.drafts), original); assert.equal(h.plan.tasks, p.tasks);
+});
+
+const addButton = h => { const root = h.render(), view = nodes(root).find(n => n.type === h.View); return nodes(view ? view.props.toolbar : root).find(n => n.props?.className === "oddk-goalAdd"); };
+
+test("any stored or non-selected draft with an empty core blocks both new-goal UI and its handler without clearing drafts", () => {
+  const p = plan(), values = { selectedId: "default", drafts: { second: dirtyDraft(p, "second", "   ") } };
+  const h = goalsUI(p, structuredClone(values)), before = JSON.stringify(h.local.value);
+  const button = addButton(h); assert.equal(button.props.disabled, true); button.props.onClick();
+  assert.deepEqual(h.adds, []); assert.equal(JSON.stringify(h.local.value), before);
+  const stored = plan(); stored.goalBoards[1].goal = " ";
+  const blank = goalsUI(stored, { selectedId: "default", drafts: {} });
+  assert.equal(addButton(blank).props.disabled, true); addButton(blank).props.onClick(); assert.deepEqual(blank.adds, []);
+});
+
+test("stale clean blank caches yield to newer saved goals without blocking addition or erasing local and legacy backups", () => {
+  for (const source of ["local", "legacy"]) {
+    const p = plan(), id = source === "local" ? "second" : "default", stale = dirtyDraft(p, id, "");
+    stale.base = structuredClone(stale.value); stale.baseBoard = structuredClone(stale.board);
+    assert.equal(goals.goalDraftChanged(stale), false); assert.equal(goals.goalDraftConflict(p, id, stale), true);
+    const h = goalsUI(p, { selectedId: id, drafts: source === "local" ? { [id]: stale } : {} });
+    if (source === "legacy") h.legacy.value = stale;
+    const before = JSON.stringify({ drafts: h.local.value.drafts, legacy: h.legacy.value });
+    const view = nodes(h.render()).find(n => n.type === h.View);
+    assert.equal(view.props.draft.goal, goals.goalBoardTree(p, id).goal);
+    const button = addButton(h); assert.equal(button.props.disabled, false); button.props.onClick();
+    assert.equal(h.adds.length, 1); assert.equal(goals.goalBoardTree(h.plan, id).goal, goals.goalBoardTree(p, id).goal);
+    assert.equal(JSON.stringify({ drafts: h.local.value.drafts, legacy: h.legacy.value }), before);
+    assert.equal(h.plan.tasks, p.tasks);
+  }
+});
+
+test("a non-selected dirty blank draft still blocks addition when it conflicts with the saved goal", () => {
+  const p = plan(), draft = dirtyDraft(p, "second", "   "); draft.base.goal = "이전 저장 목표";
+  assert.equal(goals.goalDraftChanged(draft), true); assert.equal(goals.goalDraftConflict(p, "second", draft), true);
+  const h = goalsUI(p, { selectedId: "default", drafts: { second: draft } }), before = JSON.stringify(h.local.value);
+  const button = addButton(h); assert.equal(button.props.disabled, true); button.props.onClick();
+  assert.deepEqual(h.adds, []); assert.equal(JSON.stringify(h.local.value), before); assert.equal(h.plan.tasks, p.tasks);
+});
+
+test("first empty board is allowed, named settled boards permit one addition, and repeat clicks cannot add another", () => {
+  const initial = { schemaVersion: 5, start: "09:00", tasks: [], reviewsByDate: {}, goalTree: { goal: "", groups: [] } };
+  const first = goalsUI(initial, { selectedId: null, drafts: {} });
+  assert.equal(addButton(first).props.disabled, false); addButton(first).props.onClick();
+  assert.equal(first.adds.length, 1); assert.equal(addButton(first).props.disabled, true);
+  const settled = goalsUI(plan(), { selectedId: "default", drafts: {} }), button = addButton(settled);
+  assert.equal(button.props.disabled, false); button.props.onClick(); button.props.onClick();
+  assert.equal(settled.adds.length, 1);
 });
 
 test("management deletion keeps confirmation target and drafts on cancel/failure, then deletes only selected draft", () => {

@@ -9,6 +9,7 @@ import { splitWithLocalAI } from "./local-task-ai";
 import { splitWithRemoteAI } from "./remote-task-ai";
 import { syncClient } from "./supabase-client";
 import { TaskSplitReview } from "./task-split-review";
+import { restoreDialogFocus } from "./dialog-focus";
 import { AIConsentDialog, AIConsentNote } from "./ai-consent-controls";
 import { consentedFetch, type AIRequestPermit } from "./ai-consent";
 import { aiRequestPermit, currentAIContext, hasAIConsent, sameAIContext, saveAIConsent, subscribeAIConsent, type AIContext } from "./ai-consent-runtime";
@@ -53,7 +54,7 @@ export function TaskSplitAction({ source, disabled, onAdd, onBusyChange, onSourc
       const task = prepareManualTask(submitted);
       const message = onAdd([task.title], task.original);
       if (message) setError(message);
-      else requestAnimationFrame(() => document.getElementById("todo-input")?.focus());
+      else requestAnimationFrame(() => restoreDialogFocus(document.getElementById("todo-input")));
     } catch (error) { setError((error as Error).message); }
   }
   async function split(expected?: AIContext) {

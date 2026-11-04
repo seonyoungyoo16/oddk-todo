@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addGoalBoard, alignGoalDraft, editGoalBoardDraft, emptyGoalWorkspace, firstGoalId, goalBoardTree, goalDraftConflict, planGoalBoards, saveGoalBoard, validGoalWorkspace } from "../../app/todo/goal-boards.ts";
+import { addGoalBoard, alignGoalDraft, editGoalBoardDraft, emptyGoalWorkspace, firstGoalId, goalBoardTree, goalDraftConflict, planGoalBoards, saveGoalBoard, validGoalWorkspace, hasEmptyCoreGoal, EMPTY_CORE_GOAL_MESSAGE } from "../../app/todo/goal-boards.ts";
 import { goalBoard, updateGoalBoard } from "../../app/todo/goal-draft.ts";
 import { deletePlanTasks } from "../../app/todo/goal-actions.ts";
 import { validPlan } from "../../supabase/functions/_shared/plan.ts";
@@ -119,4 +119,59 @@ test("shared task deletion removes canonical links from active and inactive boar
   assert.equal(goalBoardTree(next, "second").groups[2].title, "Exercise");
   assert.deepEqual(goalBoardTree(next, "second").groups[2].taskIds, ["b"]);
   assert.equal(goalBoardTree(next, firstGoalId).groups.every(g => !g.taskIds.includes("a")), true);
+});
+
+test("the first empty board may be created once; blank and whitespace-only stored cores block another board without mutation", () => {
+  const empty = { ...plan(), goalTree: { goal: "", groups: [] } };
+  assert.equal(hasEmptyCoreGoal(empty), false);
+  const first = addGoalBoard(empty, "first");
+  assert.equal(hasEmptyCoreGoal(first), true);
+  const before = JSON.stringify(first);
+  assert.throws(() => addGoalBoard(first, "second"), { message: EMPTY_CORE_GOAL_MESSAGE });
+  assert.equal(JSON.stringify(first), before);
+  for (const goal of ["", "   ", "\t\n", "\u3000\u00a0"]) {
+    const p = { ...plan(), goalTree: { ...plan().goalTree, goal } };
+    const raw = JSON.stringify(p);
+    assert.equal(hasEmptyCoreGoal(p), true, "legacy core with existing groups must be checked");
+    assert.throws(() => addGoalBoard(p, "new"), { message: EMPTY_CORE_GOAL_MESSAGE });
+    assert.equal(JSON.stringify(p), raw); assert.equal(p.goalTree.groups[0].taskIds[0], "a");
+  }
+});
+
+test("every stored board is checked, including an inactive empty core; filling it unlocks a new board while links, layouts and drafts remain intact", () => {
+  let p = addGoalBoard(plan(), "second");
+  const draft = change(p, "second", b => { b.goal = "Pending unsaved goal"; b.areas[3].taskIds[4] = "b"; });
+  const draftBytes = JSON.stringify(draft), before = JSON.stringify(p);
+  assert.equal(hasEmptyCoreGoal(p), true);
+  assert.throws(() => addGoalBoard(p, "third"), { message: EMPTY_CORE_GOAL_MESSAGE });
+  assert.equal(JSON.stringify(p), before); assert.equal(JSON.stringify(draft), draftBytes);
+  p = saveGoalBoard(p, "second", draft);
+  assert.equal(hasEmptyCoreGoal(p), false);
+  const filledBytes = JSON.stringify(p), next = addGoalBoard(p, "third");
+  assert.equal(JSON.stringify(p), filledBytes); assert.equal(next.goalBoards.length, 3);
+  assert.deepEqual(next.goalTree, p.goalTree); assert.deepEqual(next.tasks, p.tasks); assert.deepEqual(next.reviewsByDate, p.reviewsByDate);
+  assert.deepEqual(next.goalBoards.slice(0, 2), p.goalBoards); assert.equal(JSON.stringify(draft), draftBytes);
+  const emptyFirst = saveGoalBoard(p, firstGoalId, change(p, firstGoalId, b => { b.goal = " "; }));
+  assert.equal(boardFor(emptyFirst, "second").goal, "Pending unsaved goal");
+  assert.throws(() => addGoalBoard(emptyFirst, "third"), { message: EMPTY_CORE_GOAL_MESSAGE });
+});
+
+test("filled boards keep duplicate ID and 32-board limits; refusal never removes existing blank boards or migration metadata", () => {
+  let p = plan();
+  for (let i = 1; i < 32; i++) {
+    p = addGoalBoard(p, `board-${i}`);
+    p = saveGoalBoard(p, `board-${i}`, change(p, `board-${i}`, b => { b.goal = `Goal ${i}`; }));
+  }
+  assert.equal(hasEmptyCoreGoal(p), false); assert.equal(validPlan(p), true);
+  const raw = JSON.stringify(p);
+  assert.throws(() => addGoalBoard(p, "over-limit"), /최대 32개/);
+  assert.equal(JSON.stringify(p), raw);
+  let two = addGoalBoard(plan(), "second");
+  two = saveGoalBoard(two, "second", change(two, "second", b => { b.goal = "Filled"; }));
+  assert.throws(() => addGoalBoard(two, "second"), /다시 시도/);
+  two = saveGoalBoard(two, "second", change(two, "second", b => { b.goal = ""; }));
+  const loaded = loadPlan(JSON.stringify(two)); assert.equal(loaded.ok, true);
+  const before = JSON.stringify(loaded.plan);
+  assert.throws(() => addGoalBoard(loaded.plan, "third"), { message: EMPTY_CORE_GOAL_MESSAGE });
+  assert.equal(JSON.stringify(loaded.plan), before); assert.equal(loaded.plan.goalBoards.length, 2);
 });

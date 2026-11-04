@@ -1,3 +1,4 @@
+import { openDialogWithFocus } from "./dialog-focus.ts";
 type Options = { dialog: HTMLDialogElement; trigger: HTMLElement; onClosed: () => void };
 
 /** A modal navigation layer owns one history entry, never a plan or a draft. */
@@ -14,7 +15,7 @@ export function openFullMenuSession({ dialog, trigger, onClosed }: Options) {
   let afterClose: (() => void) | undefined;
   const ownsEntry = () => win.location.href === originalURL && win.history.state?.[marker] === token;
 
-  dialog.showModal();
+  openDialogWithFocus(dialog);
   doc.body.style.overflow = "hidden";
   doc.body.style.position = "fixed";
   doc.body.style.top = `${-position.top}px`;

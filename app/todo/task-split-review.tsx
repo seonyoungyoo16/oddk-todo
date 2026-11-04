@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { HiOutlineArrowPath, HiOutlineTrash, HiOutlineXMark } from "react-icons/hi2";
 import { AutoTextarea } from "./auto-textarea";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 import { parseTaskCandidates } from "./batch-tasks";
 
 /** A second tap after the modal disappears must not activate the navigation below it. */
@@ -26,7 +26,7 @@ export function openTaskSplitDialog(dialog: HTMLDialogElement, opener: HTMLEleme
   const before = { overflow: body.overflow, position: body.position, top: body.top, left: body.left, right: body.right, width: body.width, rootOverflow: root.overflow };
   const x = view?.scrollX ?? 0, y = view?.scrollY ?? 0;
   const scrolls = [...doc.querySelectorAll<HTMLElement>(".oddk-taskListScroll,.oddk-composer textarea")].map(element => ({ element, top: element.scrollTop, left: element.scrollLeft }));
-  dialog.showModal();
+  openDialogWithFocus(dialog);
   body.overflow = "hidden"; body.position = "fixed"; body.top = `-${y}px`; body.left = `-${x}px`; body.right = "0"; body.width = "100%"; root.overflow = "hidden";
   dialog.querySelector<HTMLButtonElement>("[data-split-close]")?.focus({ preventScroll: true });
   let closed = false;
@@ -37,7 +37,7 @@ export function openTaskSplitDialog(dialog: HTMLDialogElement, opener: HTMLEleme
     for (const { element, top, left } of scrolls) if (element.isConnected) { element.scrollTop = top; element.scrollLeft = left; }
     view?.scrollTo({ left: x, top: y, behavior: "instant" });
     protectTaskSplitReturn(doc);
-    if (opener?.isConnected) opener.focus({ preventScroll: true });
+    restoreDialogFocus(opener);
   };
 }
 

@@ -1,0 +1,10 @@
+/* Larger editing controls declare their original size through this local variable.
+   Floor only editing text; ordinary browser viewport/user zoom stays available. */
+@media (max-width:1099px), (pointer:coarse) {
+  :is(.oddk-page,dialog,[role="dialog"]) :is(input,textarea,select,[contenteditable]:not([contenteditable="false"])) {
+    font-size:max(16px,var(--editing-control-font,1em)) !important;
+  }
+}
+html[data-oddk-native-touch="locked"] :is(.oddk-page,dialog,[role="dialog"]) :is(input,textarea,select,[contenteditable]:not([contenteditable="false"])) {
+  font-size:max(16px,var(--editing-control-font,1em)) !important;
+}

@@ -23,7 +23,7 @@ export function parseTaskCandidates(value: unknown): string[] {
 export function addTaskCandidates(plan: Plan, titles: string[], context: { date: string | null; categoryId: string | null; tagIds: string[] }, makeId: () => string): Plan {
   const candidates = parseTaskCandidates({ titles });
   if (context.date !== null && !isPlanDate(context.date)) throw Error("추가할 날짜를 확인해주세요.");
-  if (!validTaxonomyReferences([{ categoryId: context.categoryId, tagIds: context.tagIds }], plan.categories, plan.tags)) throw Error("분류가 바뀌었어요. 원문을 유지했으니 다시 확인해주세요.");
+  if (!validTaxonomyReferences([{ categoryId: context.categoryId, tagIds: context.tagIds }], plan.categories, plan.tags)) throw Error("태그가 바뀌었어요. 원문을 유지했으니 다시 확인해주세요.");
   const existing = new Set(plan.tasks.filter(task => !task.done && !task.summaryOnly).map(taskTitleKey));
   const ids = new Set(plan.tasks.map(task => task.id));
   const tasks: Task[] = candidates.map(title => {
