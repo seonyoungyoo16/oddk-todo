@@ -7,6 +7,7 @@ import { isPlanDate } from "../../supabase/functions/_shared/plan.ts";
 import { dayLabel, weekDates } from "../../app/todo/calendar-range.ts";
 import { activityHoursValue } from "../../app/todo/activity-hours-model.ts";
 import { sameValue } from "../../app/todo/json-equality.ts";
+import * as dialogFocus from "../../app/todo/dialog-focus.ts";
 
 const element = (type, props) => ({ type, props });
 const nodes = n => !n || typeof n !== "object" ? [] : [n, ...[n.props?.children].flat(Infinity).flatMap(nodes)];
@@ -24,6 +25,7 @@ function load(file, hooks = {}) {
     if (name === "./activity-hours-model") return { activityHoursValue };
     if (name === "./json-equality") return { sameValue };
     if (name === "./ui/dialog-header") return { DialogHeader: "DialogHeader" };
+    if (name === "./dialog-focus") return dialogFocus;
     return {};
   } });
   return exports;
