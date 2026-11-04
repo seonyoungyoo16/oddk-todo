@@ -4,7 +4,7 @@ import { hasTaskTime } from "../../supabase/functions/_shared/plan";
 import { DialogHeader } from "./ui/dialog-header";
 import { TaskTimeFields } from "./task-time-fields";
 import { parseTaskTimeDraft } from "./task-time";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 import { previewTimetablePlacement } from "./weekly-timetable-model";
 import type { TimetablePlacementDuration, TimetablePlacementPreview } from "./weekly-timetable-model";
 
@@ -22,8 +22,8 @@ export function TimetablePlacementDialog({ initial, stale, onCancel, onApply, on
   const needsDuration = !hasTaskTime(initial.before);
   useEffect(() => {
     const dialog = ref.current, opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialog?.showModal();
-    return () => { dialog?.close(); if (opener?.isConnected) opener.focus(); else document.getElementById("todo-input")?.focus(); };
+    openDialogWithFocus(dialog);
+    return () => { dialog?.close(); restoreDialogFocus(opener, document.getElementById("todo-input")); };
   }, []);
   let preview: TimetablePlacementPreview | null = null, validation = "", duration: TimetablePlacementDuration | undefined;
   try {

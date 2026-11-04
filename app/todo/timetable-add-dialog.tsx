@@ -5,7 +5,7 @@ import { DialogHeader } from "./ui/dialog-header";
 import type { Plan } from "../../supabase/functions/_shared/plan";
 import { AutoTextarea } from "./auto-textarea";
 import { TaskTimeFields } from "./task-time-fields";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 import { previewNewTimetableTask } from "./weekly-timetable-model";
 import type { TimetableTaskDraft } from "./weekly-timetable-model";
 
@@ -19,8 +19,8 @@ export function TimetableAddDialog({ plan, date, time, context, onClose, onCreat
   const [error, setError] = useState("");
   useEffect(() => {
     const dialog = ref.current, opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialog?.showModal();
-    return () => { dialog?.close(); if (opener?.isConnected && opener.getClientRects().length) opener.focus(); else document.getElementById("todo-input")?.focus(); };
+    openDialogWithFocus(dialog, dialog?.querySelector<HTMLElement>("#timetable-new-title"));
+    return () => { dialog?.close(); restoreDialogFocus(opener, document.getElementById("todo-input")); };
   }, []);
   function change(patch: Partial<TimetableTaskDraft>) { setDraft(current => ({ ...current, ...patch })); setError(""); }
   let preview: NewTimetableTaskPreview | null = null, validation = "";
@@ -32,7 +32,7 @@ export function TimetableAddDialog({ plan, date, time, context, onClose, onCreat
     <form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); if (preview) { const problem = onCreate(preview); if (problem) setError(problem); else onClose(); } }}>
       <DialogHeader id="timetable-add-title" title="할 일 추가" closeLabel="추가 창 닫기" onClose={onClose} />
       <div className="oddk-timetableAddBody">
-      <label htmlFor="timetable-new-title">할 일<AutoTextarea id="timetable-new-title" aria-label="추가할 할 일" value={draft.title} maxLength={120} required autoFocus placeholder="어떤 일을 할까요?" onChange={event => change({ title: event.target.value })} /></label>
+      <label htmlFor="timetable-new-title">할 일<AutoTextarea id="timetable-new-title" aria-label="추가할 할 일" value={draft.title} maxLength={120} required placeholder="어떤 일을 할까요?" onChange={event => change({ title: event.target.value })} /></label>
       <label htmlFor="timetable-new-notes"><span>상세 메모<small>선택</small></span><AutoTextarea id="timetable-new-notes" aria-label="새 할 일 상세 메모" rows={2} value={draft.notes} maxLength={2000} placeholder="필요한 내용을 적어주세요." onChange={event => change({ notes: event.target.value })} /></label>
       <div className="oddk-placementFields"><label>날짜<input type="date" required min="0001-01-01" max="9999-12-31" value={draft.date} onChange={event => change({ date: event.target.value })} /></label><label>시작 시각<input type="time" required step={300} value={draft.time} onChange={event => change({ time: event.target.value })} /></label></div>
       <section className="oddk-newTaskDuration" aria-label="새 할 일 소요시간"><h3>소요시간</h3><TaskTimeFields work={draft.work} buffer={draft.buffer} timeRange={preview ? `${preview.task.startTime}–${preview.task.endDayOffset === 1 ? "다음 날 " : ""}${preview.task.endTime}` : undefined} onWorkChange={work => change({ work, ...(!work.trim() ? { buffer: "" } : {}) })} onBufferChange={buffer => change({ buffer })} /></section>

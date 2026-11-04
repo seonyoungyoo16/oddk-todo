@@ -17,4 +17,4 @@
 .oddk-executionCompact .oddk-recordCurrent { gap:var(--oddk-space-2); }
 .oddk-executionCompact .oddk-recordCurrent strong { font-size:var(--oddk-font-label); }
 .oddk-executionCompact .oddk-recordCurrent strong svg { width:16px; height:16px; }
-@media(max-width:640px) { .oddk-dashboardCard { padding:var(--oddk-space-5); } .oddk-dashboardReview .oddk-review textarea { font-size:var(--oddk-font-section); } }
+@media(max-width:640px) { .oddk-dashboardCard { padding:var(--oddk-space-5); } .oddk-dashboardReview .oddk-review textarea { --editing-control-font:var(--oddk-font-section); font-size:var(--oddk-font-section); } }

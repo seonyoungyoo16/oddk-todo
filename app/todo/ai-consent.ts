@@ -1,6 +1,6 @@
 import { AI_PROCESSING_FACTS } from "./ai-policy.ts";
 /** Change for notice edits; processing facts below are also compared automatically. */
-export const AI_CONSENT_VERSION = "2026-11-04.1";
+export const AI_CONSENT_VERSION = "2026-11-04.2";
 export const AI_CONSENT_PREFIX = "oddk.ai-consent.v1.";
 export type AITarget = "gateway" | "local";
 export type AIConsentContext = { scope: string; target: AITarget };

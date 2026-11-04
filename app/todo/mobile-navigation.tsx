@@ -1,21 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HiOutlineCalendarDays, HiOutlineClipboardDocumentList, HiOutlineCog6Tooth, HiOutlineUserCircle } from "react-icons/hi2";
+import { HiOutlineCalendarDays, HiOutlineCog6Tooth } from "react-icons/hi2";
 import { TbTargetArrow } from "react-icons/tb";
 
 export type MobileDestination = "day" | "mandala" | "history" | "settings";
-export type WorkspaceDestination = MobileDestination | "profile";
+export type WorkspaceDestination = MobileDestination | "profile" | "account";
+export function primaryDestination(destination: WorkspaceDestination) {
+  return destination === "profile" || destination === "account" || destination === "history" ? "settings" : destination;
+}
 export const workspaceDestinations = [
   { id: "day", label: "하루계획", Icon: HiOutlineCalendarDays },
   { id: "mandala", label: "목표추적", Icon: TbTargetArrow },
-  { id: "history", label: "작업이력", Icon: HiOutlineClipboardDocumentList },
   { id: "settings", label: "환경설정", Icon: HiOutlineCog6Tooth },
-  { id: "profile", label: "내정보", Icon: HiOutlineUserCircle },
 ] as const;
 export const mobileDestinations = workspaceDestinations.filter(({ id }) => id === "day" || id === "mandala" || id === "settings");
 
-export function MobileNavigation({ current, onNavigate }: { current: WorkspaceDestination; onNavigate: (destination: WorkspaceDestination) => void }) {
+export function MobileNavigation({ current: destination, onNavigate }: { current: WorkspaceDestination; onNavigate: (destination: WorkspaceDestination) => void }) {
+  const current = primaryDestination(destination);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   useEffect(() => {
     let fullHeight = window.innerHeight, width = window.innerWidth, frame = 0;

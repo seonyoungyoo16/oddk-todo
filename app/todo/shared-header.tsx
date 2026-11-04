@@ -5,24 +5,26 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { HiOutlineBars3, HiOutlineCheck, HiOutlineChevronRight, HiOutlineXMark } from "react-icons/hi2";
-import { workspaceDestinations, type WorkspaceDestination } from "./mobile-navigation";
+import { workspaceDestinations, primaryDestination, type WorkspaceDestination } from "./mobile-navigation";
 import { keepFocusInDialog } from "./dialog-focus";
 import { openFullMenuSession } from "./full-menu-session";
 
-export function DesktopSidebar({ current, onNavigate }: { current: WorkspaceDestination; onNavigate: (destination: WorkspaceDestination) => void }) {
+export function DesktopSidebar({ current: destination, onNavigate }: { current: WorkspaceDestination; onNavigate: (destination: WorkspaceDestination) => void }) {
+  const current = primaryDestination(destination);
   return <aside className="oddk-sidebar oddk-desktopSidebar" aria-label="PC 사이드바">
     <Link href="/" className="oddk-brand" aria-label="oddk 홈으로"><Image src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.png`} alt="oddk" width={1952} height={800} className="oddk-logo" priority /></Link>
     <nav className="oddk-navigation" aria-label="계획 탐색">
       {workspaceDestinations.map(({ id, label, Icon }) => <button key={id} type="button" aria-current={current === id ? "page" : undefined} onClick={() => {
         if (current === id) return;
         onNavigate(id);
-        if (id !== "profile") requestAnimationFrame(() => document.getElementById("workspace-title")?.focus({ preventScroll: true }));
+        requestAnimationFrame(() => document.getElementById("workspace-title")?.focus({ preventScroll: true }));
       }}><Icon aria-hidden="true" /><span>{label}</span></button>)}
     </nav>
   </aside>;
 }
 
-export function SharedHeader({ current, onNavigate, actions }: { current: WorkspaceDestination; onNavigate: (destination: WorkspaceDestination) => void; actions?: ReactNode }) {
+export function SharedHeader({ current: destination, onNavigate, actions }: { current: WorkspaceDestination; onNavigate: (destination: WorkspaceDestination) => void; actions?: ReactNode }) {
+  const current = primaryDestination(destination);
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null), dialog = useRef<HTMLDialogElement>(null);
   const session = useRef<ReturnType<typeof openFullMenuSession> | null>(null);
@@ -37,7 +39,6 @@ export function SharedHeader({ current, onNavigate, actions }: { current: Worksp
     close(() => {
       if (destination === current) return;
       onNavigate(destination);
-      if (destination === "profile") return;
       requestAnimationFrame(() => {
         const heading = document.getElementById("workspace-title");
         if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }

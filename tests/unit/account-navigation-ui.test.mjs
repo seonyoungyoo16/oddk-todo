@@ -1,3 +1,4 @@
+import * as dialogFocus from "../../app/todo/dialog-focus.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -6,9 +7,8 @@ import ts from "typescript";
 
 const element = (type, props) => ({ type, props });
 function nodes(n) { return !n || typeof n !== "object" ? [] : [n, ...[n.props?.children].flat(Infinity).flatMap(nodes)]; }
-function text(n) { return typeof n === "string" ? n : n && typeof n === "object" ? [n.props?.children].flat(Infinity).map(text).join("") : ""; }
-function panel(connected) {
-  const refs = [], effects = [], changes = [], writes = [], exports = {}; let refIndex = 0, receive;
+function panel(connected, onShowProfile) {
+  const refs = [], effects = [], changes = [], writes = [], entries = [], exports = {}; let refIndex = 0, receive;
   const state = { connected, phase: "local", name: "synthetic account", provider: "google" };
   const store = { getSyncSnapshot: () => JSON.stringify(state), getServerSyncSnapshot() {}, subscribeSync() {}, startSync: () => () => {}, getPlanScope: () => "synthetic" };
   for (const method of ["loginSync", "disconnectSync", "resolveSyncConflict", "exportPlanBackup", "syncNow"]) store[method] = () => writes.push(method);
@@ -18,40 +18,41 @@ function panel(connected) {
     if (name === "react/jsx-runtime") return { jsx: element, jsxs: element };
     if (name === "./sync-store") return store;
     if (name === "./settings-events") return { subscribeSettingsDialog(fn) { receive = fn; return () => {}; } };
-    if (name === "./dialog-focus") return { keepFocusInDialog() {} };
+    if (name === "./dialog-focus") return dialogFocus;
     if (name === "./account-deletion-dialog") return { AccountDeletionDialog: () => null };
     if (name === "./apple-login-button") return { AppleLoginButton: () => null };
+    if (name === "./account-settings") return { syncStatusLabel: state => state.phase };
     if (name === "./account-help-links") return { AccountHelpLinks: () => null };
     if (name === "./push-settings") return { PushSettings: () => null };
     if (name.startsWith("react-icons/")) return {};
     throw Error(name);
   } });
-  const tree = exports.SyncPanel({ fallback: "synthetic", onAccountDialogChange: open => changes.push(open) });
+  const tree = exports.SyncPanel({ fallback: "synthetic", onAccountDialogChange: open => changes.push(open), onShowProfile: onShowProfile ?? (() => entries.push("account")) });
   class FakeDialog extends EventTarget { open = false; showModal() { this.open = true; } close() { this.open = false; this.dispatchEvent(new Event("close")); } }
-  for (const ref of refs) ref.current = new FakeDialog();
+  refs[0].current = new FakeDialog();
   const cleanups = effects.map(effect => effect()).filter(Boolean);
-  return { tree, changes, writes, dialogs: refs.map(ref => ref.current), receive: target => receive(target), cleanup: () => cleanups.forEach(fn => fn()) };
+  return { tree, changes, writes, entries, dialogs: [refs[0].current], receive: target => receive(target), cleanup: () => cleanups.forEach(fn => fn()) };
 }
 
-test("the fifth destination reuses the login/sync dialog for a guest and clears its active marker when closed", () => {
-  const h = panel(false); h.receive("profile");
-  assert.equal(h.dialogs[0].open, true); assert.equal(h.dialogs[1].open, false); assert.equal(h.changes.at(-1), true);
-  h.dialogs[0].close(); assert.equal(h.changes.at(-1), false); assert.deepEqual(h.writes, []); h.cleanup();
-});
-
-test("a connected account opens its existing profile, can enter sync management, and returns without touching auth/storage", () => {
-  const h = panel(true); h.receive("profile");
-  assert.equal(h.dialogs[1].open, true); assert.equal(h.changes.at(-1), true);
-  nodes(h.tree).find(n => n.type === "button" && text(n) === "기기 동기화 관리").props.onClick();
-  assert.equal(h.dialogs[1].open, false); assert.equal(h.dialogs[0].open, true); assert.equal(h.changes.at(-1), true);
-  h.dialogs[0].close(); assert.equal(h.changes.at(-1), false); assert.deepEqual(h.writes, []); h.cleanup();
-});
-
-test("existing direct sync/delete entry points share the active marker rather than introducing another view", () => {
-  const h = panel(true);
-  for (const [target, index] of [["sync", 0], ["delete", 2]]) {
-    h.receive(target); assert(h.dialogs[index].open); assert.equal(h.changes.at(-1), true);
-    h.dialogs[index].close(); assert.equal(h.changes.at(-1), false);
+test("legacy profile and sync actions enter settings account for guests and connected accounts without modal round trips", () => {
+  for (const connected of [false, true]) {
+    const h = panel(connected);
+    for (const target of ["profile", "sync"]) h.receive(target);
+    assert.deepEqual(h.entries, ["account", "account"]); assert(h.dialogs.every(dialog => !dialog.open));
+    assert.deepEqual(h.writes, []); h.cleanup();
   }
+});
+
+test("account deletion retains its existing confirmation dialog and clears the active marker when closed", () => {
+  const h = panel(true); h.receive("delete");
+  assert.equal(h.dialogs[0].open, true); assert.equal(h.changes.at(-1), true);
+  h.dialogs[0].close(); assert.equal(h.changes.at(-1), false);
   assert.deepEqual(h.writes, []); h.cleanup();
+});
+
+test("sidebar account name and sync status enter settings without opening dialogs or writing account data", () => {
+  let entries = 0; const h = panel(true, () => entries++);
+  nodes(h.tree).find(n => n.props?.["aria-label"] === "내 정보 보기").props.onClick();
+  nodes(h.tree).find(n => n.props?.className === "oddk-syncTrigger").props.onClick();
+  assert.equal(entries, 2); assert(h.dialogs.every(dialog => !dialog.open)); assert.deepEqual(h.writes, []); h.cleanup();
 });

@@ -79,10 +79,11 @@ test("grant failure and revocation persistence failure remain OFF and expose an 
   enabled.toggle(); assert.equal(enabled.checked(), false); assert.match(text(enabled.render()), /철회를 저장하지 못/);
 });
 
-test("compact notice keeps recipient and fields visible while retention, scope and policy links remain in collapsed details", () => {
+test("short notice has no detail accordion or long replacement but keeps the recipient, fields, optionality and links", () => {
   const h = setup(); h.toggle(); const tree = h.renderDialog(), all = nodes(tree);
-  const facts = all.find(node => node.type === "dl"), details = all.find(node => node.type === "details");
+  const facts = all.find(node => node.type === "dl");
   assert.match(text(facts), /oddk 운영자의 AI 서버/); assert.match(text(facts), /로그인 인증 토큰/);
-  assert(!details.props.open); assert.match(text(details), /보관 기간은 현재 확인 중/); assert.match(text(details), /회수나 외부 로그 삭제/);
-  assert.equal(nodes(details).filter(node => node.type === "a").length, 2);
+  assert(!all.some(node => node.type === "details" || node.type === "summary"));
+  assert.match(text(tree), /보관 기간은 확인 중/); assert.match(text(tree), /동의하지 않아도 일반 추가/);
+  assert(!text(tree).includes("처리·보관 자세히")); assert.equal(all.filter(node => node.type === "a").length, 2);
 });

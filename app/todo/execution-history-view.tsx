@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import type { ExecutionController } from "./use-execution";
 import { DialogHeader } from "./ui/dialog-header";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 import { formatExecutionClock } from "./execution-timer";
 import { finishedExecutionSummary } from "./execution-history";
 
@@ -18,8 +18,8 @@ export function ExecutionHistoryView({ model, date }: { model: ExecutionControll
     catch (value) { setError(value instanceof Error ? value.message : "수행 기록을 불러오지 못했어요."); }
   }
   return <>
-    <button ref={opener} type="button" className="oddk-executionHistoryLink" disabled={model.busy} onClick={() => { setError(""); dialog.current?.showModal(); }}>수행 기록</button>
-    <dialog ref={dialog} className="oddk-dialog oddk-executionHistoryDialog" aria-labelledby="execution-history-title" onKeyDown={keepFocusInDialog} onClose={() => opener.current?.focus()} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
+    <button ref={opener} type="button" className="oddk-executionHistoryLink" disabled={model.busy} onClick={() => { setError(""); openDialogWithFocus(dialog.current); }}>수행 기록</button>
+    <dialog ref={dialog} className="oddk-dialog oddk-executionHistoryDialog" aria-labelledby="execution-history-title" onKeyDown={keepFocusInDialog} onClose={() => restoreDialogFocus(opener.current)} onClick={event => { if (event.target === event.currentTarget) dialog.current?.close(); }}>
       <div className="oddk-dialogForm">
         <DialogHeader id="execution-history-title" title="수행 기록" closeLabel="수행 기록 닫기" onClose={() => dialog.current?.close()} />
         <p className="oddk-executionHistoryDate">{date} · 실제 수행한 시간</p>

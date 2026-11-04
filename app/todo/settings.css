@@ -43,6 +43,27 @@
 .oddk-settingRows dt { color: var(--settings-muted); flex-shrink: 0; }
 .oddk-settingRows dd { margin: 0; text-align: right; }
 .oddk-settingRows dd > span { margin-left: 8px; color: var(--settings-muted); font-size: var(--settings-font-small, var(--oddk-font-small)); }
+.oddk-accountIdentityIcon { width:40px; height:40px; flex:none; color:var(--oddk-heading); }
+.oddk-accountIdentityRow { margin-bottom:24px; }
+.oddk-page .oddk-settingsPanel .oddk-accountIdentityRow .oddk-settingIdentity strong { font-size:20px; font-weight:700; line-height:1.4; }
+.oddk-page[data-content-view="settings"] .oddk-sharedAccountHost .oddk-accountFooter { display:none; }
+.oddk-accountFacts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:24px; margin:0; padding-top:20px; border-top:1px solid var(--oddk-border); }
+.oddk-accountFacts dt { color:var(--settings-muted); font-size:var(--settings-font-small,var(--oddk-font-small)); }
+.oddk-accountFacts dd { margin:6px 0 0; font-size:var(--settings-font-body,var(--oddk-font-body)); overflow-wrap:anywhere; }
+.oddk-accountProviders { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:20px; }
+.oddk-accountProviders .oddk-settingButton { width:100%; justify-content:center; }
+.oddk-accountSyncRow { flex-wrap:wrap; }
+.oddk-accountSyncRow .oddk-settingStatus { display:inline-flex; align-items:center; gap:8px; margin-left:auto; }
+.oddk-accountSyncRow .oddk-settingStatus svg { width:16px; height:16px; }
+.oddk-accountCompare { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.oddk-accountCompare pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:240px; overflow:auto; font-size:var(--oddk-font-small); }
+.oddk-accountCompare h3 { font-size:var(--oddk-font-body); }
+.oddk-accountConflict { margin-top:20px; }
+@media(max-width:640px) {
+  .oddk-accountProviders,.oddk-accountCompare { grid-template-columns:minmax(0,1fr); }
+  .oddk-accountFacts { grid-template-columns:minmax(0,1fr); gap:16px; }
+  .oddk-accountIdentityRow .oddk-settingIdentity { flex:1; }
+}
 .oddk-settingActionRow { display: flex; align-items: center; justify-content: space-between; gap: var(--oddk-space-6); }
 .oddk-settingIdentity { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .oddk-settingIdentity > div { min-width: 0; }
@@ -82,7 +103,7 @@
 .oddk-accountHelpLinks > a { display: inline-flex; align-items: center; min-height: 44px; color: var(--oddk-accent-text); text-decoration: underline; text-underline-offset: 3px; }
 .oddk-settingsPanel .oddk-accountLinks { font-size: var(--settings-font-body, var(--oddk-font-body)); }
 .oddk-page .oddk-settingsPanel .oddk-settingTextButton { min-height: 44px; }
-.oddk-settingsPanel .oddk-aiConsent :is(.oddk-aiConsentDetails, .oddk-aiConsentOptional), .oddk-settingsPanel .oddk-aiConsentNote { font-size: var(--settings-font-small, var(--oddk-font-small)); }
+.oddk-settingsPanel .oddk-aiConsent .oddk-aiConsentOptional, .oddk-settingsPanel .oddk-aiConsentNote { font-size: var(--settings-font-small, var(--oddk-font-small)); }
 .oddk-settingsPanel .oddk-classificationManager { font-size: var(--settings-font-body, var(--oddk-font-body)); }
 .oddk-page .oddk-settingsPanel :is(.oddk-filterFields label, .oddk-filterFields input, .oddk-filterFields select, .oddk-definitionLists li, .oddk-definitionLists button, .oddk-tagOptions legend, .oddk-tagOptions button) { font-size: var(--settings-font-body, var(--oddk-font-body)); }
 .oddk-settingsPanel :is(.oddk-classificationManager p, .oddk-filterFields small, .oddk-classificationBadges) { font-size: var(--settings-font-small, var(--oddk-font-small)); }

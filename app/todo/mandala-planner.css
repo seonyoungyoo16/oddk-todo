@@ -12,7 +12,7 @@
 .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGoal .oddk-mandalaFieldLabel { color:var(--mandala-accent-ink); font-weight:600; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup > .oddk-mandalaSubgoal strong { display:-webkit-box; max-width:100%; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:16px; line-height:1.5; overflow-wrap:anywhere; white-space:pre-wrap; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaCenter textarea { margin:0; min-height:96px; max-height:320px; font-size:16px; line-height:1.5; }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGoal textarea { font-size:20px; font-weight:600; line-height:1.5; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGoal textarea { --editing-control-font:20px; font-size:20px; font-weight:600; line-height:1.5; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup :is(.oddk-mandalaTask,select) { font-size:16px; line-height:1.5; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup select { color:color-mix(in srgb,var(--mandala-ink) 65%,var(--mandala-cell)); }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup select:focus { color:var(--mandala-ink); }
@@ -22,7 +22,7 @@
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaSubgoal { font-size:16px; line-height:1.5; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] textarea { padding:4px; min-height:96px; max-height:320px; font-size:16px; line-height:1.5; }
 .oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaCenter textarea { min-height:96px; max-height:320px; }
-.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaGoal textarea { font-size:20px; font-weight:600; line-height:1.5; }
+.oddk-page .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaScroll[data-fit="true"] .oddk-mandalaGoal textarea { --editing-control-font:20px; font-size:20px; font-weight:600; line-height:1.5; }
 .oddk-page[data-theme="dark"] .oddk-mandalaCanvas[data-layout="planner"] { --planner-rule:var(--oddk-border); --planner-grid:var(--oddk-border); background:transparent; }
 .oddk-page[data-theme="dark"] .oddk-mandalaFieldLabel { color:var(--oddk-muted); }
 /* Keep all grid slots so entering the core goal never moves the center table. */
@@ -78,7 +78,7 @@
 .oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaBoard { min-width:1080px; }
 .oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup > :is(.oddk-mandalaCell,.oddk-mandalaSubgoal,.oddk-mandalaGoal) { min-height:120px; }
 .oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGroup :is(.oddk-mandalaTask,select,textarea) { font-size:16px; line-height:1.5; }
-.oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGoal textarea { font-size:20px; font-weight:600; line-height:1.5; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas[data-layout="planner"] .oddk-mandalaGoal textarea { --editing-control-font:20px; font-size:20px; font-weight:600; line-height:1.5; }
 .oddk-page .oddk-mandalaGoals .oddk-mandalaCompactCell[data-center="true"] strong { font-size:20px; font-weight:600; }
 .oddk-page .oddk-mandalaGoals .oddk-mandalaCompact:has(.oddk-mandalaCompactGrid[data-level="area"]) .oddk-mandalaCompactHeader h3 { font-size:18px; }
 .oddk-page .oddk-mandalaGoals .oddk-mandalaNameEditor .oddk-dialogHeader h2 { font-size:18px; }
@@ -95,6 +95,7 @@
 .oddk-page .oddk-mandalaGoals .oddk-goalManagement { flex:0 0 44px; min-width:0; }
 .oddk-page .oddk-mandalaGoals .oddk-goalManagement > summary { display:flex; align-items:center; justify-content:center; width:44px; min-height:44px; padding:10px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); list-style:none; cursor:pointer; }
 .oddk-goalManagement > summary::-webkit-details-marker { display:none; }
+.oddk-goalAddHint { flex:1 1 100%; color:var(--oddk-muted); font-size:var(--oddk-font-small); line-height:1.6; overflow-wrap:anywhere; }
 .oddk-goalManagement > summary > svg { width:20px; height:20px; }
 .oddk-page .oddk-mandalaGoals .oddk-goalManagement[open] > summary { border-color:var(--oddk-focus); color:var(--oddk-accent-text); background:var(--oddk-highlight); }
 .oddk-goalManagementPopover { position:absolute; z-index:45; top:calc(100% + 8px); right:0; width:min(240px,100%); padding:16px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-card); background:var(--oddk-surface); box-shadow:0 12px 32px #1722391c; }

@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { HiOutlineXMark, HiOutlineSparkles } from "react-icons/hi2";
-import { AI_CONSENT_VERSION, aiConsentChanges } from "./ai-consent";
-import { AI_MODEL, AI_PROCESSING_FACTS } from "./ai-policy";
+import { aiConsentChanges } from "./ai-consent";
+import { AI_MODEL } from "./ai-policy";
 import { currentAIContext, getAIConsentSnapshot, getServerAIConsentSnapshot, saveAIConsent, sameAIContext, subscribeAIConsent, withdrawAIConsent, type AIContext } from "./ai-consent-runtime";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 
 export function AIConsentDialog({ context, onClose, onConfirm, mode = "analyze" }: {
   context: AIContext; onClose: () => void; onConfirm: () => void; mode?: "analyze" | "grant" | "view";
@@ -16,8 +16,8 @@ export function AIConsentDialog({ context, onClose, onConfirm, mode = "analyze" 
   const renewal = changes.length > 0 && mode !== "view";
   useEffect(() => {
     const dialog = ref.current, opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialog?.showModal();
-    return () => { dialog?.close(); if (opener?.isConnected) opener.focus(); };
+    openDialogWithFocus(dialog);
+    return () => { dialog?.close(); restoreDialogFocus(opener); };
   }, []);
   return <dialog ref={ref} className="oddk-dialog oddk-aiConsent" aria-labelledby="ai-consent-title" aria-describedby="ai-consent-description" onKeyDown={keepFocusInDialog} onCancel={event => { event.preventDefault(); onClose(); }}>
     <div className="oddk-dialogForm">
@@ -30,15 +30,7 @@ export function AIConsentDialog({ context, onClose, onConfirm, mode = "analyze" 
       </dl>
       <p className="oddk-aiConsentOptional">동의하지 않아도 일반 추가와 계획은 그대로 사용할 수 있어요.</p>
       <p className="oddk-aiConsentOptional">보관 기간은 확인 중이에요.</p>
-      <details className="oddk-aiConsentDetails"><summary>처리·보관 자세히</summary>
-        <p>전체 목록·목표·메모를 함께 보내지 않아요.</p>
-        <p>{AI_PROCESSING_FACTS[context.target].recipient} · {AI_MODEL}{local ? " · 이 경로에서는 로그인 토큰을 보내지 않아요." : " · 인증 토큰은 로그인 확인에만 쓰고 AI 모델 입력에는 포함하지 않아요."}</p>
-        <p>{local ? "모델의 보관 기간은 현재 확인 중이에요." : "운영 로그·모델의 보관 기간은 현재 확인 중이에요."} 입력 내용이 어디에도 남지 않는다고 보장하지 않아요.</p>
-        <p>{AI_PROCESSING_FACTS[context.target].endpoint}로 요청해요.{!local && " 게이트웨이는 Supabase에서 로그인을 확인한 뒤 운영자 PC의 모델에 입력 문장을 전달해요."}</p>
-        <p>동의는 이 기기의 현재 {context.scope === "local" ? "로그인 전 공간" : "로그인 계정"}과 처리 경로에만 저장해요. 다른 계정·기기에는 적용하지 않아요. 문구나 처리 조건이 바뀌면 다시 동의받아요.</p>
-        <p>설정 → 계정·동기화 → AI 분석에서 철회할 수 있어요. 철회하면 진행 중 요청과 결과 적용을 중단하고 이후 전송을 막아요. 이미 전송된 내용의 회수나 외부 로그 삭제를 뜻하지는 않아요.</p>
-        <p><a href={`${base}/privacy/`} target="_blank" rel="noreferrer">개인정보처리방침</a> · <a href={`${base}/support/`} target="_blank" rel="noreferrer">지원·문의</a><span className="oddk-aiConsentVersion">안내 버전 {AI_CONSENT_VERSION}</span></p>
-      </details>
+      <p className="oddk-aiConsentLinks"><a href={`${base}/privacy/`} target="_blank" rel="noreferrer">개인정보처리방침</a> · <a href={`${base}/support/`} target="_blank" rel="noreferrer">지원·문의</a></p>
       {mode !== "view" && <label className="oddk-aiConsentCheck"><input type="checkbox" checked={checked} onChange={event => setChecked(event.target.checked)} />위 내용과 전송 범위를 확인했고, AI 분석에 동의해요.</label>}
       {error && <p role="alert" className="oddk-aiSplitError">{error}</p>}
       <footer className="oddk-dialogActions"><button type="button" onClick={onClose}>{mode === "view" ? "닫기" : "지금은 안 할게요"}</button>{mode !== "view" && <button type="button" className="oddk-primary" disabled={!checked} onClick={() => { if (!checked) return; try { onConfirm(); } catch (error) { setError(error instanceof Error ? error.message : "동의를 저장하지 못했어요. 전송하지 않았어요."); } }}>{mode === "analyze" ? renewal ? "다시 동의하고 분석" : "동의하고 분석" : "동의하고 사용"}</button>}</footer>

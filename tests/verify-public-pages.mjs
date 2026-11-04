@@ -16,12 +16,10 @@ const home = readFileSync("out/index.html", "utf8");
 for (const route of ["privacy", "support"]) assert.ok(home.includes(`href="${base}/${route}/"`), `Home does not link to ${route}`);
 const app = readFileSync("out/todo/index.html", "utf8");
 const helpGroups = [...app.matchAll(/<nav\b[^>]*aria-label="개인정보 및 지원"[^>]*>([\s\S]*?)<\/nav>/g)];
-assert.equal(helpGroups.length, 3, "Account settings, profile and sync dialog must all expose help");
-for (const title of ["profile-title", "sync-title"]) {
-  const dialog = [...app.matchAll(/<dialog\b([^>]*)>([\s\S]*?)<\/dialog>/g)].find(([, attrs]) => attrs.includes(`aria-labelledby="${title}"`));
-  assert.ok(dialog && dialog[2].includes('aria-label="개인정보 및 지원"'), `${title}: help navigation missing`);
-}
+assert.equal(helpGroups.length, 1, "Settings privacy group must expose the shared help navigation once");
+for (const heading of ["계정 정보", "이 기기·저장 상태", "개인정보·AI 사용"]) assert.ok(app.includes(`<h2>${heading}</h2>`), `${heading}: account group missing`);
+for (const title of ["profile-title", "sync-title"]) assert.ok(!app.includes(`aria-labelledby="${title}"`), `${title}: removed popup returned`);
 for (const [index, group] of helpGroups.entries()) {
   for (const route of ["privacy", "support"]) assert.ok(group[1].includes(`href="${base}/${route}/"`), `App help ${index}: ${route} misses Pages base path`);
 }
-console.log("Public pages, contacts and all three app account/help entry points verified.");
+console.log("Public pages, contacts and the three account groups with their shared help navigation verified.");

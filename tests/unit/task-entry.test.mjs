@@ -1,3 +1,4 @@
+import * as dialogFocus from "../../app/todo/dialog-focus.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -24,6 +25,7 @@ function harness(options = {}) {
   }, useEffect: () => {} };
   vm.runInNewContext(js, { exports, AbortController, Error, fetch, requestAnimationFrame: work => work(), location: { hostname: "example.invalid" }, document: { querySelector: () => ({}), body: {}, getElementById: () => ({ focus() {} }) }, require: name => {
     if (name === "react") return react;
+    if (name === "./dialog-focus") return dialogFocus;
     if (name === "react/jsx-runtime") return { jsx: element, jsxs: element };
     if (name === "react-dom") return { createPortal: node => node };
     if (name === "@capacitor/core") return { Capacitor: { isNativePlatform: () => false } };

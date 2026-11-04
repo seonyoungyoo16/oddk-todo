@@ -19,7 +19,7 @@ function components(state) {
     const compiledModule = { exports: {} }, realRequire = createRequire(file);
     cache.set(file, compiledModule.exports);
     const compiled = ts.transpileModule(readFileSync(file, "utf8"), { compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS, esModuleInterop: true } }).outputText;
-    const require = spec => spec === "./sync-store" ? store : spec === "./native-reminder-settings" ? { DeviceReminderSettings: () => null, useNativeReminderStatus: () => ({ native: false }) } : spec === "./account-help-links" ? load(resolve(dirname(file), "account-help-links.tsx")) : spec.startsWith(".") ? boundary : realRequire(spec);
+    const require = spec => spec === "./sync-store" ? store : spec === "./native-reminder-settings" ? { DeviceReminderSettings: () => null, useNativeReminderStatus: () => ({ native: false }) } : ["./account-help-links", "./settings-card", "./account-settings"].includes(spec) ? load(resolve(dirname(file), `${spec.slice(2)}.tsx`)) : spec.startsWith(".") ? boundary : realRequire(spec);
     new Function("require", "module", "exports", compiled)(require, compiledModule, compiledModule.exports);
     return compiledModule.exports;
   }
@@ -34,17 +34,13 @@ for (const base of ["", "/oddk-todo"]) for (const connected of [false, true]) {
       const { SyncPanel, SettingsPanel } = components({ connected, phase: connected ? "synced" : "local", provider: "google", name: "fixture", message: "fixture" });
       const sync = renderToStaticMarkup(React.createElement(SyncPanel, { fallback: "{}" }));
       const settings = renderToStaticMarkup(React.createElement(SettingsPanel, { plan: {}, onSave: () => true, theme: "light", onThemeChange: () => {}, fallback: "{}" }));
-      for (const title of ["profile-title", "sync-title"]) {
-        const dialog = [...sync.matchAll(/<dialog\b([^>]*)>([\s\S]*?)<\/dialog>/g)].find(([, attrs]) => attrs.includes(`aria-labelledby="${title}"`));
-        assert.ok(dialog, `Missing ${title}`);
-        assert.equal([...dialog[2].matchAll(/aria-label="개인정보 및 지원"/g)].length, 1, `${title} must have exactly one help navigation`);
-      }
-      for (const [markup, expected] of [[sync, 2], [settings, 1]]) {
+      assert.ok(!sync.includes('id="profile-title"') && !sync.includes('id="sync-title"'), "Profile/sync popup round trips are removed");
+      for (const [markup, expected] of [[sync, 0], [settings, 1]]) {
         const groups = [...markup.matchAll(/<nav\b[^>]*aria-label="개인정보 및 지원"[^>]*>([\s\S]*?)<\/nav>/g)];
         assert.equal(groups.length, expected);
         for (const [, group] of groups) for (const route of ["privacy", "support"]) assert.ok(group.includes(`href="${base}/${route}/"`));
       }
-      if (connected && readFileSync(resolve(app, "sync-panel.tsx"), "utf8").includes("AccountDeletionDialog")) assert.ok(sync.includes("계정 삭제"), "Existing account deletion action must remain");
+      if (connected) assert.ok(settings.includes("계정 삭제"), "Existing account deletion action remains in the privacy group");
     } finally { if (previous === undefined) delete process.env.NEXT_PUBLIC_BASE_PATH; else process.env.NEXT_PUBLIC_BASE_PATH = previous; }
   });
 }

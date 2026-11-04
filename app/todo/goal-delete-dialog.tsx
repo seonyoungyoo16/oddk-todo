@@ -1,15 +1,15 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { DialogHeader } from "./ui/dialog-header";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 
 export function GoalDeleteDialog({ title, dirty, onCancel, onConfirm }: { title: string; dirty: boolean; onCancel: () => void; onConfirm: () => string | null }) {
   const ref = useRef<HTMLDialogElement>(null), cancel = useRef<HTMLButtonElement>(null);
   const [error, setError] = useState("");
   useEffect(() => {
     const element = ref.current, opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    element?.showModal(); cancel.current?.focus();
-    return () => { element?.close(); if (opener?.isConnected && opener.getClientRects().length) opener.focus(); else document.querySelector<HTMLButtonElement>(".oddk-goalAdd")?.focus(); };
+    openDialogWithFocus(element); cancel.current?.focus();
+    return () => { element?.close(); restoreDialogFocus(opener, document.querySelector<HTMLButtonElement>(".oddk-goalAdd")); };
   }, []);
   return <dialog ref={ref} className="oddk-dialog oddk-goalDeleteDialog" aria-labelledby="goal-delete-title" onKeyDown={keepFocusInDialog} onCancel={event => { event.preventDefault(); onCancel(); }}>
     <form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); setError(onConfirm() ?? ""); }}>

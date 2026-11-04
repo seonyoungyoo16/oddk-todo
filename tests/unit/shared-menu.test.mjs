@@ -69,12 +69,12 @@ const element = (type, props) => ({ type, props });
 function nodes(n) { return !n || typeof n !== "object" ? [] : [n, ...[n.props?.children].flat(Infinity).flatMap(nodes)]; }
 function header(current = "day", actions) {
   const state = [], refs = [], calls = [], exports = {}; let s, r, options;
-  const destinations = ["day", "mandala", "history", "settings", "profile"].map((id, i) => ({ id, label: ["하루계획", "목표추적", "작업이력", "환경설정", "내정보"][i], Icon: () => null }));
+  const destinations = ["day", "mandala", "settings"].map((id, i) => ({ id, label: ["하루계획", "목표추적", "환경설정"][i], Icon: () => null }));
   const code = ts.transpileModule(readFileSync(new URL("../../app/todo/shared-header.tsx", import.meta.url), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   vm.runInNewContext(code, { exports, process: { env: {} }, requestAnimationFrame: fn => fn(), document: { getElementById: () => ({ focus() { calls.push("heading"); } }) }, require(name) {
     if (name === "react") return { useState(initial) { const i = s++; if (!(i in state)) state[i] = initial; return [state[i], value => { state[i] = value; }]; }, useRef: initial => refs[r++] ??= { current: initial }, useEffect() {} };
     if (name === "react/jsx-runtime") return { jsx: element, jsxs: element };
-    if (name === "./mobile-navigation") return { workspaceDestinations: destinations };
+    if (name === "./mobile-navigation") return { workspaceDestinations: destinations, primaryDestination: value => ["profile", "account", "history"].includes(value) ? "settings" : value };
     if (name === "./full-menu-session") return { openFullMenuSession(value) { options = value; calls.push("open"); return { close(after) { calls.push("close"); options.onClosed(); after?.(); }, dispose() {} }; } };
     if (name === "./dialog-focus") return { keepFocusInDialog() {} };
     if (name === "next/image") return { default: "img" };
@@ -87,11 +87,11 @@ function header(current = "day", actions) {
   return { render, open, calls, sidebar: () => exports.DesktopSidebar({ current, onNavigate: id => calls.push(id) }) };
 }
 
-test("all five destinations have one active menu row; choosing the current page only closes and cannot reset its scroll", () => {
-  for (const current of ["day", "mandala", "history", "settings", "profile"]) {
+test("all three destinations have one active menu row; choosing the current page only closes and cannot reset its scroll", () => {
+  for (const current of ["day", "mandala", "settings"]) {
     const h = header(current); h.open(); const tree = nodes(h.render());
     const nav = tree.find(n => n.props?.className === "oddk-fullMenuLinks"), rows = nav.props.children;
-    assert.equal(rows.length, 5); assert.equal(rows.filter(row => row.props["aria-current"] === "page").length, 1);
+    assert.equal(rows.length, 3); assert.equal(rows.filter(row => row.props["aria-current"] === "page").length, 1);
     assert.equal(tree.filter(n => n.props?.className === "oddk-sharedProfile").length, 0);
     rows.find(row => row.props["aria-current"] === "page").props.onClick();
     assert.deepEqual(h.calls, ["open", "close"]);
@@ -104,17 +104,17 @@ test("destination selection closes first, then uses the existing navigation call
   rows[1].props.onClick(); assert.deepEqual(h.calls, ["open", "close", "mandala", "heading"]);
 });
 
-test("Escape cancellation and profile reuse close only the menu before invoking the existing profile flow", () => {
+test("Escape cancellation closes only the menu, and settings selection closes before navigating", () => {
   const h = header(); h.open(); const dialog = nodes(h.render()).find(n => n.type === "dialog"); let prevented = false;
   dialog.props.onCancel({ preventDefault() { prevented = true; } }); assert(prevented); assert.deepEqual(h.calls, ["open", "close"]);
   const profile = header(); profile.open();
   const rows = nodes(profile.render()).find(n => n.props?.className === "oddk-fullMenuLinks").props.children;
-  rows[4].props.onClick();
-  assert.deepEqual(profile.calls, ["open", "close", "profile"]);
+  rows[2].props.onClick();
+  assert.deepEqual(profile.calls, ["open", "close", "settings", "heading"]);
 });
 
-test("all five current destinations have one top H1, no logo, and retain the workspace title focus target", () => {
-  const labels = { day: "하루계획", mandala: "목표추적", history: "작업이력", settings: "환경설정", profile: "내정보" };
+test("all three current destinations have one top H1, no logo, and retain the workspace title focus target", () => {
+  const labels = { day: "하루계획", mandala: "목표추적", settings: "환경설정", profile: "환경설정", account: "환경설정", history: "환경설정" };
   for (const [current, label] of Object.entries(labels)) {
     const tree = nodes(header(current).render()), top = tree.find(n => n.type === "header");
     const titles = tree.filter(n => n.type === "h1");
@@ -147,21 +147,20 @@ test("open menu title occupies the close-button bar once; existing theme action 
   actions.props.children.props.onClick(); assert.equal(toggles, 1);
 });
 
-test("restored desktop sidebar shares all five active destinations and profile entry without resetting the current view", () => {
-  for (const current of ["day", "mandala", "history", "settings", "profile"]) {
+test("desktop sidebar shares all three active destinations without resetting the current view", () => {
+  for (const current of ["day", "mandala", "settings"]) {
     const h = header(current), sidebar = h.sidebar(), all = nodes(sidebar);
     assert.equal(sidebar.type, "aside"); assert.equal(sidebar.props["aria-label"], "PC 사이드바");
     const nav = all.find(n => n.type === "nav"), rows = nav.props.children;
-    assert.equal(rows.length, 5); assert.equal(rows.filter(n => n.props["aria-current"] === "page").length, 1);
+    assert.equal(rows.length, 3); assert.equal(rows.filter(n => n.props["aria-current"] === "page").length, 1);
     rows.find(n => n.props["aria-current"] === "page").props.onClick(); assert.deepEqual(h.calls, []);
-    if (current !== "profile") { rows[4].props.onClick(); assert.deepEqual(h.calls, ["profile"]); }
     assert.equal(all.filter(n => n.type === "a" && n.props.href === "/").length, 1);
     assert.equal(all.filter(n => n.type === "img" && n.props.className === "oddk-logo").length, 1);
   }
   const h = header(); nodes(h.sidebar()).find(n => n.type === "nav").props.children[1].props.onClick();
   assert.deepEqual(h.calls, ["mandala", "heading"]);
   const page = readFileSync(new URL("../../app/todo/page.tsx", import.meta.url), "utf8");
-  assert.match(page, /DesktopSidebar current=\{accountDialogOpen \? "profile" : currentDestination\} onNavigate=\{navigateWorkspace\}/);
+  assert.match(page, /DesktopSidebar current=\{accountDialogOpen \? "settings" : currentDestination\} onNavigate=\{navigateWorkspace\}/);
   assert.match(page, /<div className="oddk-sharedAccountHost"><SyncPanel/);
 });
 

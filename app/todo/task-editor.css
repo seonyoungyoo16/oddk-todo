@@ -283,6 +283,7 @@
 .oddk-taskEditor .oddk-startField input {
   width: 100%;
   max-width: none;
+  --editing-control-font: var(--oddk-font-section);
   font-size: var(--oddk-font-section);
 }
 .oddk-taskEditor .oddk-startField input:disabled {

@@ -5,7 +5,7 @@ import { executionPhase, executionTotals } from "../../supabase/functions/_share
 import type { ExecutionRecord } from "../../supabase/functions/_shared/execution";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan";
 import { selectDay } from "./day-selectors";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 import type { ExecutionController } from "./use-execution";
 import { DraftFeedback, useLocalDraft } from "./use-local-draft";
 import { initialExecutionEditor, previewExecutionEditor, validExecutionEditor } from "./execution-editor-model";
@@ -35,7 +35,7 @@ function useRecordDialog() {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current, opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialog?.showModal(); return () => { dialog?.close(); if (opener?.isConnected) opener.focus(); else document.getElementById("todo-input")?.focus(); };
+    openDialogWithFocus(dialog); return () => { dialog?.close(); restoreDialogFocus(opener, document.getElementById("todo-input")); };
   }, []);
   return ref;
 }

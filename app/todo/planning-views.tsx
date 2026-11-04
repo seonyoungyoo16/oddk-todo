@@ -8,7 +8,7 @@ import { HiOutlineArrowPath, HiOutlineArrowRight, HiOutlineEllipsisHorizontal, H
 import type { Task, Mandala } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, validMandala } from "../../supabase/functions/_shared/plan";
 import type { DayPlan } from "./day-selectors";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 const emptyMandala = (): Mandala => ({ goal: "", areas: Array.from({ length: 8 }, () => ({ title: "", taskIds: Array(8).fill("") })) });
 export function safeMandala(value: Mandala | undefined): Mandala {
   return validMandala(value) ? value : emptyMandala();
@@ -66,8 +66,7 @@ export function MandalaView({ tasks, draft, toolbar, management, onChange, onEdi
   }, [invalidActiveArea]);
   useEffect(() => {
     if (editingName === null) return;
-    nameDialog.current?.showModal();
-    nameField.current?.focus();
+    openDialogWithFocus(nameDialog.current, nameField.current);
   }, [editingName]);
   useEffect(() => {
     const element = plannerScroll.current;
@@ -124,14 +123,12 @@ export function MandalaView({ tasks, draft, toolbar, management, onChange, onEdi
     if (area !== null && activeAreas[area]) {
       setActiveArea(area);
       requestAnimationFrame(() => {
-        if (nameTrigger.current?.isConnected && nameTrigger.current.getClientRects().length) nameTrigger.current.focus();
-        else compactHeading.current?.focus();
+        restoreDialogFocus(nameTrigger.current, compactHeading.current);
       });
     } else {
       if (!hasGoal || area !== null) setActiveArea(null);
       requestAnimationFrame(() => {
-        if (nameTrigger.current?.isConnected && nameTrigger.current.getClientRects().length && !nameTrigger.current.hasAttribute("disabled")) nameTrigger.current.focus();
-        else (coreButton.current ?? compactHeading.current)?.focus();
+        restoreDialogFocus(nameTrigger.current, coreButton.current ?? compactHeading.current);
       });
     }
   }
@@ -167,7 +164,7 @@ export function MandalaView({ tasks, draft, toolbar, management, onChange, onEdi
     <div>
       <header className="oddk-mandalaToolbar">
         {toolbar}
-        <GoalManagementMenu onReset={() => resetDialog.current?.showModal()}>{management}</GoalManagementMenu>
+        <GoalManagementMenu onReset={() => openDialogWithFocus(resetDialog.current)}>{management}</GoalManagementMenu>
       </header>
       {compact ? <div className="oddk-mandalaCanvas oddk-mandalaCompact" data-layout="compact">
         <div className="oddk-mandalaCompactHeader" data-overview={selectedArea === null}>

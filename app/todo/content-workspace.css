@@ -46,11 +46,15 @@
 .oddk-page .oddk-appliedFilters > button { min-height:44px; gap:4px; color:var(--oddk-accent-text); font-size:14px; }
 .oddk-appliedFilters svg { width:16px; height:16px; }
 .oddk-rangeLabel { min-width:0; font-size:14px; color:var(--oddk-muted); }
-.oddk-page[data-content-view="day"] .oddk-taskArea > .oddk-sectionHeading { margin:0 0 12px; min-height:44px; gap:8px; }
+.oddk-page[data-content-view="day"] .oddk-taskArea > .oddk-sectionHeading { margin:0 0 12px; min-height:44px; gap:8px; flex-wrap:wrap; }
 .oddk-page[data-content-view="day"] .oddk-mobileListHeading { flex:1; min-width:0; margin:0; font-size:18px; font-weight:600; }
 .oddk-page[data-content-view="day"] .oddk-mobileListHeading > span { font-size:14px; font-weight:400; color:var(--oddk-muted); }
 .oddk-page[data-content-view="day"] .oddk-startSort > summary { width:auto; min-width:44px; height:44px; display:flex; align-items:center; gap:4px; font-size:14px; }
-.oddk-page[data-content-view="day"] .oddk-selectionBar[data-selected-count="0"] { display:none; }
+.oddk-page .oddk-sortControl { min-width:0; max-width:100%; }
+.oddk-page .oddk-sortControl select { min-width:148px; max-width:100%; min-height:44px; padding:8px 32px 8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); font-size:16px; }
+.oddk-historyContext { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+.oddk-historyContext h2 { margin:0; font-size:var(--oddk-font-section); }
+.oddk-page .oddk-historyContext button { min-height:44px; padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-accent-text); }
 .oddk-page[data-content-view="day"] .oddk-taskList { gap:0; }
 .oddk-page[data-content-view="day"] .oddk-taskListScroll { max-height:min(510px,55dvh); scrollbar-gutter:stable; }
 .oddk-page[data-content-view="day"] .oddk-task { padding:16px 0; border:0; border-bottom:1px solid var(--oddk-border); border-radius:0; gap:12px; background:var(--oddk-surface); }

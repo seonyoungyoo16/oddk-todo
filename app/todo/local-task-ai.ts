@@ -39,7 +39,7 @@ export function taskSplitRequest(text: string) {
   return { model: LOCAL_TASK_MODEL, stream: false, think: false, messages: [{ role: "system", content: TASK_SPLIT_SYSTEM }, { role: "user", content: text }], format: { type: "object", additionalProperties: false, required: ["titles"], properties: { titles: { type: "array", maxItems: 32, items: { type: "string", minLength: 1, maxLength: 120 } } } }, options: { temperature: 0, num_ctx: 4096, num_predict: 2048 } };
 }
 export async function splitWithLocalAI(text: string, signal: AbortSignal, hostname: string, fetcher: typeof fetch = fetch): Promise<string[]> {
-  if (!["localhost", "127.0.0.1", "[::1]"].includes(hostname)) throw Error("자동 분류는 Ollama가 실행 중인 PC의 로컬 앱에서 사용할 수 있어요.");
+  if (!["localhost", "127.0.0.1", "[::1]"].includes(hostname)) throw Error("AI 분석은 Ollama가 실행 중인 PC의 로컬 앱에서 사용할 수 있어요.");
   const body = taskSplitRequest(text);
   try {
     const response = await fetcher("http://127.0.0.1:11434/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.any([signal, AbortSignal.timeout(90000)]) });

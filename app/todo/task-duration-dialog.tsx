@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { DialogHeader } from "./ui/dialog-header";
 import type { TaskDurationPreview } from "./task-duration";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 
 export function TaskDurationDialog({ preview, stale, onCancel, onApply, onRefresh }: {
   preview: TaskDurationPreview; stale: boolean; onCancel: () => void;
@@ -11,8 +11,8 @@ export function TaskDurationDialog({ preview, stale, onCancel, onApply, onRefres
   const ref = useRef<HTMLDialogElement>(null), [error, setError] = useState("");
   useEffect(() => {
     const dialog = ref.current, opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    dialog?.showModal();
-    return () => { dialog?.close(); if (opener?.isConnected) opener.focus(); else document.getElementById("todo-input")?.focus(); };
+    openDialogWithFocus(dialog);
+    return () => { dialog?.close(); restoreDialogFocus(opener, document.getElementById("todo-input")); };
   }, []);
   return <dialog ref={ref} className="oddk-dialog" aria-labelledby="duration-change-title" onKeyDown={keepFocusInDialog} onCancel={event => { event.preventDefault(); onCancel(); }}>
     <form className="oddk-dialogForm" onSubmit={event => { event.preventDefault(); if (!stale) setError(onApply(preview) ?? ""); }}>

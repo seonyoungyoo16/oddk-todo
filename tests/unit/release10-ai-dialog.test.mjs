@@ -1,3 +1,4 @@
+import * as dialogFocus from "../../app/todo/dialog-focus.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -22,7 +23,7 @@ function hooks() {
 function load(file, require, globals = {}) {
   const exports = {}, input = readFileSync(new URL(`../../app/todo/${file}`, import.meta.url), "utf8");
   const js = ts.transpileModule(input, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText;
-  vm.runInNewContext(js, { exports, require, AbortController, Error, ...globals }); return exports;
+  vm.runInNewContext(js, { exports, require: name => name === "./dialog-focus" ? dialogFocus : require(name), AbortController, Error, ...globals }); return exports;
 }
 function action(options = {}) {
   const h = hooks(), calls = { ai: 0, auth: 0, saves: [], busy: [], snapshots: [], permits: 0 }, pending = [];

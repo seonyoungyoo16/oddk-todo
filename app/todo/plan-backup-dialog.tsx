@@ -5,7 +5,7 @@ import type { Plan } from "../../supabase/functions/_shared/plan";
 import { loadPlan } from "../../supabase/functions/_shared/plan-migration";
 import { readPlanReplacementTarget, replacePlanFromBackup, subscribePlan, subscribeSync, type PlanReplacementTarget } from "./sync-store";
 import { MAX_PLAN_BACKUP_BYTES, parsePlanBackup, planBackupSummaryText, summarizePlanBackup } from "./plan-backup";
-import { keepFocusInDialog } from "./dialog-focus";
+import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 
 type Preview = { name: string; plan: Plan; target: PlanReplacementTarget };
 const changedMessage = "계정이나 현재 내용이 바뀌었어요. 파일을 다시 선택해주세요. 현재 내용은 유지했어요.";
@@ -69,12 +69,12 @@ function PlanBackupDialog({ preview, invalid, onClose, onApply }: { preview: Pre
   const summary = summarizePlanBackup(preview.plan), before = loadPlan(preview.target.snapshot);
   useEffect(() => {
     const modal = dialog.current, opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    modal?.showModal();
+    openDialogWithFocus(modal);
     const ancestors: HTMLElement[] = [];
     for (let node = modal?.parentElement; node; node = node.parentElement) ancestors.push(node);
     const observer = new MutationObserver(() => { if (ancestors.some(node => node.hidden)) onClose(); });
     for (const ancestor of ancestors) observer.observe(ancestor, { attributes: true, attributeFilter: ["hidden"] });
-    return () => { observer.disconnect(); modal?.close(); if (opener?.isConnected) opener.focus(); };
+    return () => { observer.disconnect(); modal?.close(); restoreDialogFocus(opener); };
   }, [onClose]);
   return <dialog ref={dialog} className="oddk-dialog oddk-backupDialog" aria-labelledby="backup-import-title" onKeyDown={keepFocusInDialog} onCancel={event => { event.preventDefault(); onClose(); }} onClick={event => { if (event.target === event.currentTarget) onClose(); }}><div className="oddk-dialogForm">
     <header className="oddk-dialogHeader"><h2 ref={title} tabIndex={-1} id="backup-import-title">{confirming ? "현재 내용을 바꿀까요?" : "가져올 백업을 확인하세요"}</h2><button type="button" aria-label="백업 가져오기 닫기" onClick={onClose}><HiOutlineXMark aria-hidden="true" /></button></header>
