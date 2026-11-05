@@ -8,6 +8,7 @@ import { HiOutlineArrowPath, HiOutlineArrowRight, HiOutlineEllipsisHorizontal, H
 import type { Task, Mandala } from "../../supabase/functions/_shared/plan";
 import { hasTaskTime, validMandala } from "../../supabase/functions/_shared/plan";
 import type { DayPlan } from "./day-selectors";
+import { BackButton } from "./ui/back-button";
 import { keepFocusInDialog, openDialogWithFocus, restoreDialogFocus } from "./dialog-focus";
 const emptyMandala = (): Mandala => ({ goal: "", areas: Array.from({ length: 8 }, () => ({ title: "", taskIds: Array(8).fill("") })) });
 export function safeMandala(value: Mandala | undefined): Mandala {
@@ -168,7 +169,7 @@ export function MandalaView({ tasks, draft, toolbar, management, onChange, onEdi
       </header>
       {compact ? <div className="oddk-mandalaCanvas oddk-mandalaCompact" data-layout="compact">
         <div className="oddk-mandalaCompactHeader" data-overview={selectedArea === null}>
-          {selectedArea !== null && <button className="oddk-mandalaBack" type="button" onClick={showOverview}>← 핵심목표로</button>}
+          {selectedArea !== null && <BackButton label="핵심목표로 돌아가기" onClick={showOverview} />}
           {selectedArea !== null && <span className="oddk-mandalaLevel">세부목표 {selectedArea + 1}</span>}
           <h3 ref={compactHeading} tabIndex={-1} className={selectedArea === null ? "oddk-srOnly" : undefined}>{selectedArea === null ? "핵심 목표와 세부 목표" : draft.areas[selectedArea].title}</h3>
           {!hasGoal && <p id={`${statusId}-core-guide`}>핵심목표를 입력하면 세부목표를 추가할 수 있어요.</p>}

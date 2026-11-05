@@ -176,7 +176,7 @@ test("PC sidebar layout is scoped to min1100 while mobile sidebar stays hidden; 
   assert.equal(pc.display, "flex"); assert.equal(pc.width, "var(--oddk-sidebar-width)"); assert.equal(pc.position, "fixed");
   assert.equal(rule('.oddk-page[data-shared-shell="true"]', "(min-width:1100px)")["padding-inline-start"], "var(--oddk-sidebar-width)");
   assert.equal(rule(".oddk-sharedHeader .oddk-sharedMenuToggle", "(min-width:1100px)").display, "none");
-  assert.equal(rule(".oddk-sharedHeader > .oddk-sharedHeaderInner", "(min-width:1100px)")["grid-template-columns"], "minmax(0,1fr) 44px");
+  assert.equal(rule(".oddk-sharedHeader > .oddk-sharedHeaderInner", "(min-width:1100px)")["grid-template-columns"], "minmax(0,1fr) auto");
   assert.equal(rule(".oddk-page .oddk-sharedAccountHost > .oddk-accountFooter", "(min-width:1100px)").display, "grid");
   assert.equal(rule('.oddk-page[data-shared-shell="true"] .oddk-execution.oddk-executionDock', "(min-width:1100px)").left, "var(--oddk-sidebar-width)");
 });

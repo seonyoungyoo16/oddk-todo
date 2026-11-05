@@ -39,7 +39,8 @@ const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
 test("account tab immediately renders the three approved groups from current metadata without profile or sync entry buttons", () => {
   const h = account(), tree = h.render(), all = nodes(tree);
   assert.deepEqual(all.filter(n => n.type === h.SettingsCard).map(n => n.props.title), ["계정 정보", "이 기기·저장 상태", "개인정보·AI 사용"]);
-  for (const value of [state.displayName, state.name, "GitHub", state.message]) assert(text(tree).includes(value));
+  for (const value of [state.displayName, state.name, "GitHub", h.exports.syncStatusLabel(state)]) assert(text(tree).includes(value));
+  assert(!text(tree).includes(state.message), "duplicate storage prose is intentionally absent");
   assert(!button(tree, "내 정보")); assert(!button(tree, "동기화 관리")); assert(!all.some(n => n.type === "dialog" || n.type === h.PushSettings));
   assert(all.some(n => n.type === h.AIConsentSettings)); assert.deepEqual(h.calls, []);
   button(tree, "알림·백업").props.onClick(); assert.deepEqual(h.calls, [["data-tab"]]);

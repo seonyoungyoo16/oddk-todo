@@ -12,7 +12,7 @@ export function ExecutionHistoryPage({ scope, today, revision }: { scope: string
   const date = selectedDate || today;
   const { history, loading, error, load } = useDatedExecutionHistory(scope, date, revision);
   const records = history?.records.filter(record => record.endedAt !== null) ?? [];
-  return <section className="oddk-historyPage" aria-label="작업이력">
+  return <section className="oddk-historyPage" aria-label="이력">
     <div className="oddk-historyToolbar"><label htmlFor="history-date">조회 날짜<input id="history-date" type="date" min="0001-01-01" max="9999-12-31" value={date} onChange={event => { if (isPlanDate(event.target.value)) setDate(event.target.value); }} /></label><button type="button" onClick={() => setDate(today)}>오늘</button><button type="button" disabled={loading} onClick={() => void load()}>새로고침</button></div>
     <p className="oddk-historyScope">종료한 수행 기록 · 작업·휴식 시간은 조회 날짜 기준</p>
     {error && <p role="alert" className="oddk-error">{error}</p>}

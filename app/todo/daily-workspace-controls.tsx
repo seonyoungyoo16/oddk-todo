@@ -1,10 +1,8 @@
-import type { Plan } from "../../supabase/functions/_shared/plan";
 import { isPlanDate } from "../../supabase/functions/_shared/plan";
 import type { RangeScope } from "./calendar-range";
 import { dayLabel, weekDates } from "./calendar-range";
 import type { ClassificationFilter } from "./classification-actions";
-import { ClassificationFilters, defaultClassification } from "./classification-controls";
-import { HiOutlineCalendarDays, HiOutlineChevronDown, HiOutlineClock, HiOutlineFunnel, HiOutlineListBullet, HiOutlineXMark } from "react-icons/hi2";
+import { HiOutlineCalendarDays, HiOutlineChevronDown, HiOutlineClock, HiOutlineListBullet } from "react-icons/hi2";
 
 export function DailyDateControl({ date, today, range, onChange, fixed = false }: { date: string; today: string; range: RangeScope; onChange: (date: string, range: RangeScope) => void; fixed?: boolean }) {
   const dates = weekDates(date);
@@ -22,19 +20,11 @@ export function DailyDateControl({ date, today, range, onChange, fixed = false }
   </details>;
 }
 
-export function DailyPlanningControls({ plan, value, onChange, count, total, pane, onPaneChange, range }: {
-  plan: Plan; value: ClassificationFilter; onChange: (value: ClassificationFilter) => void; count: number; total: number; pane: "list" | "rhythm"; onPaneChange: (value: "list" | "rhythm") => void; range: RangeScope;
+export function DailyPlanningControls({ value, onChange, pane, onPaneChange, range, showPaneSwitch = true }: {
+  value: ClassificationFilter; onChange: (value: ClassificationFilter) => void; pane: "list" | "rhythm"; onPaneChange: (value: "list" | "rhythm") => void; range: RangeScope; showPaneSwitch?: boolean;
 }) {
-  const detailed = value.tags.length > 0 || value.search !== "";
-  const filtered = detailed || (value.status ?? "all") !== "all";
-  return <>
-    <div className="oddk-dailyControls">
-      {range === "day" ? <div className="oddk-paneSwitch" role="group" aria-label="하루 보기"><button type="button" aria-pressed={pane === "list"} onClick={() => onPaneChange("list")}><HiOutlineListBullet aria-hidden="true" />목록</button><button type="button" aria-pressed={pane === "rhythm"} onClick={() => onPaneChange("rhythm")}><HiOutlineClock aria-hidden="true" />시간표</button></div> : <span className="oddk-rangeLabel">{range === "week" ? "선택한 주의 할 일" : "모든 할 일"}</span>}
-      <label className="oddk-commonStatus"><span className="oddk-srOnly">상태</span><select aria-label="할 일 상태" value={value.status ?? "all"} onChange={event => onChange({ ...value, status: event.target.value as ClassificationFilter["status"] })}><option value="all">전체</option><option value="active">진행 중</option><option value="done">완료</option></select></label>
-      <details className="oddk-detailedFilters"><summary data-active={detailed}><HiOutlineFunnel aria-hidden="true" />필터{detailed && <span className="oddk-srOnly"> 적용 중</span>}</summary>
-        <div className="oddk-workspacePopover oddk-filterPopover"><h2>상세 필터</h2><ClassificationFilters plan={plan} value={value} onChange={onChange} count={count} total={total} showStatus={false} /></div>
-      </details>
-    </div>
-    {filtered && <div className="oddk-appliedFilters"><span role="status">{total}개 중 {count}개{value.tags.map(id => ` · #${plan.tags?.find(tag => tag.id === id)?.name ?? "삭제된 태그"}`).join("")}{value.search && ` · 검색: ${value.search}`}{value.status !== "all" && value.status && ` · ${value.status === "done" ? "완료" : "진행 중"}`}</span><button type="button" onClick={() => onChange(defaultClassification)}><HiOutlineXMark aria-hidden="true" />초기화</button></div>}
-  </>;
+  return <div className="oddk-dailyControls">
+    {showPaneSwitch ? <div className="oddk-paneSwitch" role="group" aria-label="하루 보기"><button type="button" aria-pressed={pane === "list"} onClick={() => onPaneChange("list")}><HiOutlineListBullet aria-hidden="true" />목록</button><button type="button" aria-pressed={pane === "rhythm"} onClick={() => onPaneChange("rhythm")}><HiOutlineClock aria-hidden="true" />시간표</button></div> : <span className="oddk-rangeLabel">{range === "week" ? "선택한 주의 할 일" : "모든 할 일"}</span>}
+    <label className="oddk-commonStatus"><span className="oddk-srOnly">상태</span><select aria-label="할 일 상태" value={value.status ?? "all"} onChange={event => onChange({ ...value, tags: [], status: event.target.value as ClassificationFilter["status"] })}><option value="all">전체</option><option value="active">진행 중</option><option value="done">완료</option></select></label>
+  </div>;
 }

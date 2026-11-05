@@ -1,14 +1,18 @@
 .oddk-aiConsent { width: min(560px, calc(100vw - 32px)); }
 .oddk-aiConsent .oddk-dialogForm { gap: 16px; }
+.oddk-aiConsentDescription { display:grid; gap:12px; min-width:0; line-height:1.6; overflow-wrap:anywhere; }
+.oddk-aiConsentDescription p { margin:0; }
 .oddk-aiConsentFacts { display: grid; gap: 16px; margin: 0; padding: 18px; border-radius: 10px; background: var(--oddk-soft); }
 .oddk-aiConsentFacts div { display: grid; grid-template-columns: 108px minmax(0, 1fr); gap: 12px; }
 .oddk-aiConsentFacts dt { font-weight: 600; }
 .oddk-aiConsentFacts dd { margin: 0; overflow-wrap: anywhere; }
 .oddk-aiConsentFacts dd span { display: block; margin-top: 5px; color: var(--oddk-muted); }
+.oddk-aiConsentFacts dd span:first-child { margin-top:0; color:inherit; }
 .oddk-aiConsentLinks { margin:0; font-size:var(--oddk-font-small); line-height:1.6; }
 .oddk-aiConsentLinks a { display:inline-flex; align-items:center; min-height:44px; color:var(--oddk-accent-text); text-decoration:underline; }
 .oddk-aiConsentCheck { display: flex; align-items: flex-start; gap: 10px; line-height: 1.6; cursor: pointer; }
 .oddk-aiConsentCheck input { flex-shrink: 0; width: 18px; height: 18px; margin-top: 3px; }
+.oddk-aiConsentCheck > span { min-width:0; overflow-wrap:anywhere; }
 .oddk-aiConsentOptional, .oddk-aiConsentNote { margin: 0; color: var(--oddk-muted); font-size: 13px; line-height: 1.6; }
 .oddk-aiConsentNote { display: block; margin-top: 8px; overflow-wrap: anywhere; }
 .oddk-aiConsentNote > svg { display: inline-block; width: 14px; height: 14px; margin-inline-end: 6px; vertical-align: -2px; }

@@ -13,12 +13,12 @@ import { timetableTaskDragType, timetableDropMinute } from "./timetable-drag";
 import type { PlanningIssue } from "./planning-alert-model";
 import { TimetableDetails } from "./timetable-details";
 
-type Props = { plan: Plan; tasks: Task[]; date: string; today: string; nativeToday?: string; onSelectDate: (date: string) => void; onEdit: (task: Task) => void; onMove: (task: Task, delta: number, days?: number) => void; onResize: (task: Task, minutes: number) => void; onPlace?: (id: string, date: string, time: string) => void; onCreate: (preview: NewTimetableTaskPreview) => string | null; newTaskContext?: { categoryId: string | null; tagIds: string[] }; highlightedIssues?: PlanningIssue[]; focusTaskId?: string };
+type Props = { plan: Plan; tasks: Task[]; date: string; today: string; nativeToday?: string; displayMode?: "day" | "week"; onToday?: () => void; onSelectDate: (date: string) => void; onEdit: (task: Task) => void; onMove: (task: Task, delta: number, days?: number) => void; onResize: (task: Task, minutes: number) => void; onPlace?: (id: string, date: string, time: string) => void; onCreate: (preview: NewTimetableTaskPreview) => string | null; newTaskContext?: { categoryId: string | null; tagIds: string[] }; highlightedIssues?: PlanningIssue[]; focusTaskId?: string };
 const pixelsPerMinute = 1;
 const weekdays = ["월", "화", "수", "목", "금", "토", "일"];
 const shortDate = (date: string) => date.slice(5).replace("-", ".");
 
-export function WeeklyTimetable({ plan, tasks, date, today, nativeToday = "", onSelectDate, onEdit, onMove, onResize, onPlace, onCreate, newTaskContext, highlightedIssues = [], focusTaskId }: Props) {
+export function WeeklyTimetable({ plan, tasks, date, today, nativeToday = "", displayMode = "week", onToday, onSelectDate, onEdit, onMove, onResize, onPlace, onCreate, newTaskContext, highlightedIssues = [], focusTaskId }: Props) {
   const [offset, setOffset] = useState(0);
   const [adding, setAdding] = useState<{ date: string; time: string } | null>(null);
   const [inspected, setInspected] = useState<{ id: string; date: string } | null>(null);
@@ -31,9 +31,15 @@ export function WeeklyTimetable({ plan, tasks, date, today, nativeToday = "", on
     return () => { document.removeEventListener("dragend", clear); document.removeEventListener("drop", clear); };
   }, []);
   const native = isPlanDate(nativeToday);
-  const anchor = native ? nativeToday : shiftDate(date, offset * 7) ?? date;
+  const singleDay = native || displayMode === "day";
+  const anchor = native ? nativeToday : singleDay ? date : shiftDate(date, offset * 7) ?? date;
   const selectedDate = native ? nativeToday : date;
-  const days = useMemo(() => buildTimetableDays(plan, anchor, tasks, native), [plan, anchor, tasks, native]);
+  const days = useMemo(() => buildTimetableDays(plan, anchor, tasks, singleDay), [plan, anchor, tasks, singleDay]);
+  const timetableTitle = singleDay ? native || selectedDate === today ? "오늘 시간표" : "하루 시간표" : "주간 시간표";
+  function navigateDate(direction: number) {
+    if (singleDay) { const next = shiftDate(date, direction); if (next) onSelectDate(next); }
+    else setOffset(value => value + direction);
+  }
   const inspectedDay = days.find(day => day.date === inspected?.date);
   const inspectedTask = inspectedDay?.tasks.find(task => task.id === inspected?.id);
   function inspect(id: string, date: string) {
@@ -48,12 +54,12 @@ export function WeeklyTimetable({ plan, tasks, date, today, nativeToday = "", on
   const shortTasks = days.flatMap(day => day.tasks.filter(task => task.segmentMinutes < 20 || task.segmentWork < 16).map(task => ({ date: day.date, task })));
   if (!days.length) return <p>시간표를 불러오고 있어요.</p>;
 
-  return <section className="oddk-weekTable" data-native-today={native || undefined} aria-label={native ? "오늘 시간표" : "주간 시간표"}>
-    <header className="oddk-weekToolbar"><div><h2 id="rhythm-title">{native ? "오늘 시간표" : "주간 시간표"}</h2><p>{native ? dayLabel(nativeToday) : `${shortDate(days[0].date)} – ${shortDate(days.at(-1)!.date)}`}</p></div>{!native && <nav aria-label="시간표 주 이동"><button type="button" aria-label="이전 주" disabled={!shiftDate(anchor, -7)} onClick={() => setOffset(value => value - 1)}><HiOutlineChevronLeft aria-hidden="true" /></button><button type="button" onClick={() => { setOffset(0); if (isPlanDate(today)) onSelectDate(today); }}>오늘</button><button type="button" aria-label="다음 주" disabled={!shiftDate(anchor, 7)} onClick={() => setOffset(value => value + 1)}><HiOutlineChevronRight aria-hidden="true" /></button></nav>}</header>
+  return <section className="oddk-weekTable" data-native-today={native || undefined} data-display-mode={singleDay ? "day" : "week"} aria-label={timetableTitle}>
+    <header className="oddk-weekToolbar"><div><h2 id="rhythm-title">{timetableTitle}</h2><p>{singleDay ? dayLabel(selectedDate) : `${shortDate(days[0].date)} – ${shortDate(days.at(-1)!.date)}`}</p></div>{!native && <nav aria-label={singleDay ? "시간표 날짜 이동" : "시간표 주 이동"}><button type="button" aria-label={singleDay ? "이전 날짜" : "이전 주"} disabled={!shiftDate(anchor, singleDay ? -1 : -7)} onClick={() => navigateDate(-1)}><HiOutlineChevronLeft aria-hidden="true" /></button><button type="button" onClick={() => { setOffset(0); if (isPlanDate(today)) { if (onToday) onToday(); else onSelectDate(today); } }}>오늘</button><button type="button" aria-label={singleDay ? "다음 날짜" : "다음 주"} disabled={!shiftDate(anchor, singleDay ? 1 : 7)} onClick={() => navigateDate(1)}><HiOutlineChevronRight aria-hidden="true" /></button></nav>}</header>
     <div className="oddk-weekMeta"><span className="oddk-pastelLegend"><i /><i /><i /><span>작업 + 여유</span></span><span className="oddk-weekAddHint">빈 칸에서 추가 · 목록에서 끌어 놓기</span></div>
-    <TimelineScroll key={anchor} initialMinute={initialMinute} pixelsPerMinute={pixelsPerMinute} initialDay={native ? 0 : Math.max(0, days.findIndex(day => day.date === date))} label={native ? "오늘 시간표. 일정 클릭으로 상세 보기, 오늘 안에서 드래그로 시간 이동, 아래쪽 드래그로 소요시간 조절, 빈 시간 클릭으로 할 일 추가." : "요일별 주간 시간표. 일정 클릭으로 수정, 드래그로 시간 이동, 아래쪽 드래그로 소요시간 조절, 빈 시간 클릭으로 할 일 추가."}>
+    <TimelineScroll key={anchor} initialMinute={initialMinute} pixelsPerMinute={pixelsPerMinute} initialDay={singleDay ? 0 : Math.max(0, days.findIndex(day => day.date === date))} label={native ? "오늘 시간표. 일정 클릭으로 상세 보기, 오늘 안에서 드래그로 시간 이동, 아래쪽 드래그로 소요시간 조절, 빈 시간 클릭으로 할 일 추가." : singleDay ? `${dayLabel(selectedDate)} 시간표. 일정 클릭으로 수정, 드래그로 시간 이동, 아래쪽 드래그로 소요시간 조절, 빈 시간 클릭으로 할 일 추가.` : "요일별 주간 시간표. 일정 클릭으로 수정, 드래그로 시간 이동, 아래쪽 드래그로 소요시간 조절, 빈 시간 클릭으로 할 일 추가."}>
       <div className="oddk-weekCanvas">
-        <div className="oddk-weekHeader"><span className="oddk-weekCorner" aria-hidden="true" />{days.map((day, index) => native ? <span className="oddk-weekTodayHeading" key={day.date}>{dayLabel(day.date)}</span> : <button key={day.date} type="button" data-today={day.date === today} data-selected={day.date === date} aria-label={`${dayLabel(day.date)} 할 일 보기`} aria-current={day.date === date ? "date" : undefined} onClick={() => onSelectDate(day.date)}><span>{weekdays[index]}</span><strong>{Number(day.date.slice(-2))}</strong></button>)}</div>
+        <div className="oddk-weekHeader"><span className="oddk-weekCorner" aria-hidden="true" />{days.map((day, index) => singleDay ? <span className="oddk-weekTodayHeading" key={day.date}>{dayLabel(day.date)}</span> : <button key={day.date} type="button" data-today={day.date === today} data-selected={day.date === date} aria-label={`${dayLabel(day.date)} 할 일 보기`} aria-current={day.date === date ? "date" : undefined} onClick={() => onSelectDate(day.date)}><span>{weekdays[index]}</span><strong>{Number(day.date.slice(-2))}</strong></button>)}</div>
         <div className="oddk-weekBody" style={{ height: 1440 * pixelsPerMinute }}>
           <div className="oddk-weekTimes" aria-hidden="true">{Array.from({ length: 24 }, (_, hour) => <time key={hour} style={{ top: hour * 60 * pixelsPerMinute }}>{String(hour).padStart(2, "0")}</time>)}</div>
           <div className="oddk-weekColumns">{days.map(day => <div key={day.date} className="oddk-weekColumn" data-date={day.date} data-timetable-date={onPlace ? day.date : undefined} data-pixels-per-minute={pixelsPerMinute} data-selected={day.date === selectedDate}
@@ -94,7 +100,7 @@ export function WeeklyTimetable({ plan, tasks, date, today, nativeToday = "", on
         </div>
       </div>
     </TimelineScroll>
-    {!days.some(day => day.tasks.length || day.fixed.length) && <p className="oddk-weekEmpty">빈 시간을 클릭해 {native ? "오늘의" : "이 주의"} 할 일을 추가해보세요.</p>}
+    {!days.some(day => day.tasks.length || day.fixed.length) && <p className="oddk-weekEmpty">빈 시간을 클릭해 {singleDay ? "선택한 날짜의" : "이 주의"} 할 일을 추가해보세요.</p>}
     {shortTasks.length > 0 && <div className="oddk-weekShort" aria-label="짧은 일정">{shortTasks.map(({ date: taskDate, task }) => <button key={`${taskDate}:${task.id}`} type="button" onClick={() => inspect(task.id, taskDate)}>{shortDate(taskDate)} {clockLabel(task.start)} · {task.title}</button>)}</div>}
     {inspectedTask && inspectedDay && <TimetableDetails key={inspectedDay.date + inspectedTask.id} task={inspectedTask} date={inspectedDay.date} start={inspectedTask.start} end={inspectedTask.end} work={inspectedTask.segmentWork} buffer={inspectedTask.segmentBuffer} conflict={inspectedTask.conflict} onClose={closeInspection} onEdit={() => { closeInspection(); onEdit(inspectedTask); }} />}
     {adding && <TimetableAddDialog plan={plan} date={adding.date} time={adding.time} context={newTaskContext} onClose={() => setAdding(null)} onCreate={onCreate} />}

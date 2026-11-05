@@ -87,7 +87,7 @@ test("native notification card has only its toggle content while the web title, 
 test("settings opens the existing history through one explicit action", () => {
   const h = settings();
   nodes(h.render()).find(node => node.props?.id === "settings-tab-data").props.onClick();
-  nodes(h.render()).find(node => node.type === "button" && node.props.children?.[0] === "작업이력 보기").props.onClick();
+  nodes(h.render()).find(node => node.type === "button" && node.props.children?.[0] === "이력 보기").props.onClick();
   assert.deepEqual(h.calls, ["history"]);
 });
 

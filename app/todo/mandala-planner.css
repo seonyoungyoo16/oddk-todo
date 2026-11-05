@@ -26,7 +26,7 @@
 .oddk-page[data-theme="dark"] .oddk-mandalaCanvas[data-layout="planner"] { --planner-rule:var(--oddk-border); --planner-grid:var(--oddk-border); background:transparent; }
 .oddk-page[data-theme="dark"] .oddk-mandalaFieldLabel { color:var(--oddk-muted); }
 /* Keep all grid slots so entering the core goal never moves the center table. */
-.oddk-goalSwitcher { display:flex; flex:1; align-items:center; flex-wrap:nowrap; gap:8px; min-width:0; }
+.oddk-goalSwitcher { display:grid; flex:1; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:8px; min-width:0; }
 .oddk-goalSwitcher label { display:flex; flex:1; align-items:center; gap:var(--oddk-space-2); min-width:0; color:var(--oddk-muted); font-size:16px; }
 .oddk-goalSwitcher select { width:100%; min-width:0; max-width:100%; min-height:var(--oddk-control-height); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); font:inherit; }
 .oddk-page .oddk-goalAdd { min-height:var(--oddk-control-height); gap:var(--oddk-space-2); padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); font-size:var(--goal-font-body,16px); }
@@ -68,7 +68,7 @@
 
 /* Page-scoped reading sizes: never shrink the text to fit the full planner. */
 .oddk-page .oddk-mandalaGoals { --goal-font-body:16px; --goal-font-help:14px; --goal-font-section:18px; --goal-font-core:20px; font-size:var(--goal-font-body); line-height:1.6; }
-.oddk-page .oddk-mandalaGoals .oddk-mandalaToolbar { flex-wrap:nowrap; gap:8px; min-width:0; }
+.oddk-page .oddk-mandalaGoals .oddk-mandalaToolbar { align-items:flex-start; flex-wrap:nowrap; gap:8px; min-width:0; }
 .oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalAdd { flex:0 0 44px; width:44px; min-width:44px; height:44px; padding:10px; gap:0; }
 .oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalAdd > svg { width:20px; height:20px; }
 .oddk-page .oddk-mandalaGoals .oddk-mandalaActions { flex:0 0 44px; width:44px; margin:0; }
@@ -90,12 +90,12 @@
 
 /* Goal selection, creation and management share the page context row. */
 .oddk-page .oddk-mandalaGoals .oddk-mandalaToolbar { position:relative; padding:0; margin:0 0 24px; border:0; }
-.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > label { flex:0 1 300px; }
-.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalAdd { flex:0 0 auto; width:auto; min-width:44px; margin-left:auto; padding:8px 12px; gap:8px; white-space:nowrap; }
-.oddk-page .oddk-mandalaGoals .oddk-goalManagement { flex:0 0 44px; min-width:0; }
-.oddk-page .oddk-mandalaGoals .oddk-goalManagement > summary { display:flex; align-items:center; justify-content:center; width:44px; min-height:44px; padding:10px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); list-style:none; cursor:pointer; }
+.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > label { grid-column:1; grid-row:1; width:100%; max-width:300px; }
+.oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalAdd { grid-column:2; grid-row:1; align-self:start; justify-self:end; width:auto; min-width:44px; margin-left:0; padding:8px 12px; gap:8px; white-space:nowrap; }
+.oddk-page .oddk-mandalaGoals .oddk-goalManagement { flex:0 0 44px; align-self:flex-start; min-width:0; margin:0; }
+.oddk-page .oddk-mandalaGoals .oddk-goalManagement > summary { display:flex; align-items:center; justify-content:center; box-sizing:border-box; width:44px; height:44px; min-height:44px; padding:10px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); list-style:none; cursor:pointer; }
 .oddk-goalManagement > summary::-webkit-details-marker { display:none; }
-.oddk-goalAddHint { flex:1 1 100%; color:var(--oddk-muted); font-size:var(--oddk-font-small); line-height:1.6; overflow-wrap:anywhere; }
+.oddk-goalAddHint { grid-column:1 / -1; grid-row:2; min-width:0; color:var(--oddk-muted); font-size:var(--oddk-font-small); line-height:1.6; overflow-wrap:anywhere; }
 .oddk-goalManagement > summary > svg { width:20px; height:20px; }
 .oddk-page .oddk-mandalaGoals .oddk-goalManagement[open] > summary { border-color:var(--oddk-focus); color:var(--oddk-accent-text); background:var(--oddk-highlight); }
 .oddk-goalManagementPopover { position:absolute; z-index:45; top:calc(100% + 8px); right:0; width:min(240px,100%); padding:16px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-card); background:var(--oddk-surface); box-shadow:0 12px 32px #1722391c; }
@@ -108,7 +108,7 @@
 .oddk-page .oddk-mandalaGoals .oddk-mandalaCanvas .oddk-mandalaCell[data-done="true"] .oddk-mandalaTask > span { text-decoration:none; }
 @media(max-width:1099px) {
   .oddk-page .oddk-mandalaGoals .oddk-mandalaToolbar { margin-bottom:20px; }
-  .oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > label { flex:1; }
+  .oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > label { max-width:none; }
   .oddk-page .oddk-mandalaGoals .oddk-goalSwitcher > .oddk-goalAdd { flex:0 0 44px; width:44px; margin-left:0; padding:10px; gap:0; }
   .oddk-goalSwitcher > .oddk-goalAdd > span { display:none; }
 }

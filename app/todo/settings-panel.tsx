@@ -128,13 +128,13 @@ export function SettingsPanel({ plan, onSave, theme, onThemeChange, fallback, on
     </div>
 
     <div role="tabpanel" id="settings-panel-data" aria-labelledby="settings-tab-data" hidden={tab !== "data"}>
-      <SettingsCard title="작업이력" description="기록한 작업·휴식 시간을 날짜별로 확인해요."><div className="oddk-settingActionRow"><div className="oddk-settingCopy"><strong>실제 수행 기록</strong><p>기존 기록을 그대로 조회해요.</p></div><button type="button" className="oddk-settingButton" disabled={!onShowHistory} onClick={onShowHistory}>작업이력 보기<HiOutlineArrowUpRight aria-hidden="true" /></button></div></SettingsCard>
+      <SettingsCard title="이력" description="기록한 작업·휴식 시간을 날짜별로 확인해요."><div className="oddk-settingActionRow"><button type="button" className="oddk-settingButton" disabled={!onShowHistory} onClick={onShowHistory}>이력 보기<HiOutlineArrowUpRight aria-hidden="true" /></button></div></SettingsCard>
       <SettingsCard title={nativeReminder ? undefined : "일정 알림"} description={nativeReminder ? undefined : "일정을 놓치지 않도록, 사용하는 기기마다 알림을 연결하세요."}>
         {tab === "data" && <AccountNotifications state={sync} />}
       </SettingsCard>
 
       <SettingsCard title="데이터 백업" description="할 일과 계획을 JSON 파일로 보관할 수 있어요.">
-        <div className="oddk-settingActionRow"><div className="oddk-settingCopy"><strong>현재 내용</strong><p>할 일, 목표, 날짜별 계획과 하루 점검을 함께 보관해요.</p></div><button type="button" className="oddk-settingButton" onClick={() => downloadBackup()}><HiOutlineArrowDownTray aria-hidden="true" />백업 받기</button></div>
+        <div className="oddk-settingActionRow"><button type="button" className="oddk-settingButton" onClick={() => downloadBackup()}><HiOutlineArrowDownTray aria-hidden="true" />백업 받기</button></div>
         {tab === "data" && <PlanBackupImport fallback={fallback} />}
         <p className={feedback ? "oddk-settingsFeedback" : "oddk-srOnly"} role="status" aria-live="polite">{feedback}</p>
       </SettingsCard>

@@ -22,16 +22,16 @@ export function AIConsentDialog({ context, onClose, onConfirm, mode = "analyze" 
   return <dialog ref={ref} className="oddk-dialog oddk-aiConsent" aria-labelledby="ai-consent-title" aria-describedby="ai-consent-description" onKeyDown={keepFocusInDialog} onCancel={event => { event.preventDefault(); onClose(); }}>
     <div className="oddk-dialogForm">
       <header className="oddk-dialogHeader"><h2 id="ai-consent-title">{renewal ? "AI 처리 안내가 바뀌었어요" : mode === "view" ? "AI 처리 안내" : mode === "grant" ? "AI 사용을 켤까요?" : "AI로 할 일을 나눌까요?"}</h2><button type="button" aria-label="AI 안내 닫기" onClick={onClose}><HiOutlineXMark aria-hidden="true" /></button></header>
-      <p id="ai-consent-description">{renewal ? "전송 대상이나 처리 항목 등 바뀐 내용을 확인해주세요. 다시 동의하기 전에는 AI 분석을 시작하지 않아요." : `입력한 문장을 ${local ? "이 기기의 Ollama" : "oddk 운영자의 AI 서버"}로 보내 할 일 후보를 만들어요. 확인한 후보만 목록에 추가돼요.`}</p>
+      <div id="ai-consent-description" className="oddk-aiConsentDescription">{renewal ? <><p>전송 대상이나 처리 항목 등 바뀐 내용을 확인해주세요.</p><p>다시 동의하기 전에는 AI 분석을 시작하지 않아요.</p></> : <><p>입력한 문장을 {local ? "이 기기의 Ollama" : "oddk 운영자의 AI 서버"}로 보내 할 일 후보를 만들어요.</p><p>확인한 후보만 목록에 추가돼요.</p></>}</div>
       {renewal && <p>변경 항목: {changes.join(", ")}</p>}
       <dl className="oddk-aiConsentFacts">
-        <div><dt>보내는 곳</dt><dd>{local ? "이 기기의 Ollama" : "oddk 운영자의 AI 서버"} · {AI_MODEL}</dd></div>
-        <div><dt>보내는 내용</dt><dd>{local ? "분석할 입력 문장" : "분석할 입력 문장과 로그인 인증 토큰"}</dd></div>
+        <div><dt>보내는 곳</dt><dd><span>{local ? "이 기기의 Ollama" : "oddk 운영자의 AI 서버"}</span><span>{AI_MODEL}</span></dd></div>
+        <div><dt>보내는 내용</dt><dd><span>분석할 입력 문장</span>{!local && <span>로그인 인증 토큰</span>}</dd></div>
       </dl>
       <p className="oddk-aiConsentOptional">동의하지 않아도 일반 추가와 계획은 그대로 사용할 수 있어요.</p>
       <p className="oddk-aiConsentOptional">보관 기간은 확인 중이에요.</p>
       <p className="oddk-aiConsentLinks"><a href={`${base}/privacy/`} target="_blank" rel="noreferrer">개인정보처리방침</a> · <a href={`${base}/support/`} target="_blank" rel="noreferrer">지원·문의</a></p>
-      {mode !== "view" && <label className="oddk-aiConsentCheck"><input type="checkbox" checked={checked} onChange={event => setChecked(event.target.checked)} />위 내용과 전송 범위를 확인했고, AI 분석에 동의해요.</label>}
+      {mode !== "view" && <label className="oddk-aiConsentCheck"><input type="checkbox" checked={checked} onChange={event => setChecked(event.target.checked)} /><span>위 내용과 전송 범위를 확인했고, AI 분석에 동의해요.</span></label>}
       {error && <p role="alert" className="oddk-aiSplitError">{error}</p>}
       <footer className="oddk-dialogActions"><button type="button" onClick={onClose}>{mode === "view" ? "닫기" : "지금은 안 할게요"}</button>{mode !== "view" && <button type="button" className="oddk-primary" disabled={!checked} onClick={() => { if (!checked) return; try { onConfirm(); } catch (error) { setError(error instanceof Error ? error.message : "동의를 저장하지 못했어요. 전송하지 않았어요."); } }}>{mode === "analyze" ? renewal ? "다시 동의하고 분석" : "동의하고 분석" : "동의하고 사용"}</button>}</footer>
     </div>
