@@ -30,11 +30,12 @@
 .oddk-page[data-content-view="day"] .oddk-composer .oddk-composerFooter > .oddk-inputCount { grid-column:1; grid-row:2; margin:0; font-size:14px; }
 .oddk-page[data-content-view="day"] .oddk-composer .oddk-composerFooter > .oddk-inputCount:empty { display:none; }
 .oddk-page[data-content-view="day"] .oddk-composer .oddk-composerFooter > :is(.oddk-aiSplitError,.oddk-manualNote),.oddk-page[data-content-view="day"] .oddk-composer .oddk-aiConsentNote { grid-column:1 / -1; min-width:0; }
-.oddk-page .oddk-dailyControls { position:relative; display:grid; grid-template-columns:minmax(0,1fr) 104px 88px; align-items:center; gap:8px; margin:0 0 24px; }
+.oddk-page { --list-control-width:min(188px,45vw); }
+.oddk-page .oddk-dailyControls { position:relative; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,var(--list-control-width)); align-items:center; gap:8px; margin:0 0 24px; }
 .oddk-commonStatus { display:block; min-width:0; }
 .oddk-commonStatus > select { width:100%; min-height:44px; min-width:0; padding:8px 10px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); font-size:16px; }
 .oddk-detailedFilters { position:relative; min-width:0; }
-.oddk-page .oddk-detailedFilters > summary { display:flex; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:8px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); font-size:14px; list-style:none; cursor:pointer; }
+.oddk-page .oddk-detailedFilters > summary { display:flex; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:8px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); font-size:16px; list-style:none; cursor:pointer; }
 .oddk-detailedFilters > summary > svg { width:18px; height:18px; }
 .oddk-detailedFilters > summary[data-active="true"] { color:var(--oddk-accent-text); background:var(--oddk-highlight); }
 .oddk-page .oddk-filterPopover .oddk-classificationFilters { padding:0; margin:0; border:0; }
@@ -50,8 +51,8 @@
 .oddk-page[data-content-view="day"] .oddk-mobileListHeading { flex:1; min-width:0; margin:0; font-size:18px; font-weight:600; }
 .oddk-page[data-content-view="day"] .oddk-mobileListHeading > span { font-size:14px; font-weight:400; color:var(--oddk-muted); }
 .oddk-page[data-content-view="day"] .oddk-startSort > summary { width:auto; min-width:44px; height:44px; display:flex; align-items:center; gap:4px; font-size:14px; }
-.oddk-page .oddk-sortControl { min-width:0; max-width:100%; }
-.oddk-page .oddk-sortControl select { min-width:148px; max-width:100%; min-height:44px; padding:8px 32px 8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); font-size:16px; }
+.oddk-page .oddk-sortControl { flex:0 0 auto; width:min(100%,var(--list-control-width)); min-width:0; max-width:100%; }
+.oddk-page .oddk-sortControl select { width:100%; min-width:0; max-width:100%; min-height:44px; padding:8px 32px 8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-heading); background:var(--oddk-surface); font-size:16px; }
 .oddk-historyContext { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
 .oddk-historyContext h2 { margin:0; font-size:var(--oddk-font-section); }
 .oddk-page .oddk-historyContext button { min-height:44px; padding:8px 12px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); color:var(--oddk-accent-text); }
@@ -72,7 +73,7 @@
 .oddk-page[data-content-view="day"] .oddk-dayProgress { margin-top:14px; font-size:14px; }
 .oddk-page[data-content-view="day"] .oddk-dayProgress > progress { display:none; }
 @media(max-width:1099px) {
-  .oddk-page .oddk-dailyControls { grid-template-columns:minmax(0,1fr) 94px 76px; }
+  .oddk-page { --list-control-width:min(160px,45vw); }
   .oddk-page .oddk-taskArea { padding-left:0; border:0; }
 }
 @media(max-width:480px) {

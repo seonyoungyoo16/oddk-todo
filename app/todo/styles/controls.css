@@ -1,4 +1,7 @@
 /* Shared button, field and dialog primitives. Feature-specific exceptions stay scoped. */
+.oddk-page button.oddk-backButton[aria-label] { display:inline-flex; flex:none; align-items:center; justify-content:center; box-sizing:border-box; width:44px; min-width:44px; height:44px; min-height:44px; margin:0; padding:10px; border:1px solid var(--oddk-border); border-radius:var(--oddk-radius-control); background:var(--oddk-surface); color:var(--oddk-heading); }
+.oddk-page button.oddk-backButton > svg { flex:none; width:20px; height:20px; }
+.oddk-page button.oddk-backButton:focus-visible { outline:2px solid var(--oddk-focus); outline-offset:2px; }
 
 .oddk-dialog { color-scheme: inherit; }
 .oddk-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.4; border: 0; background: var(--oddk-brand); color: var(--oddk-brand-foreground); border-radius: var(--oddk-radius-control); font-size: var(--oddk-font-body); font-weight: 600; min-width: 88px; padding: 0 24px; white-space: nowrap; min-height: var(--oddk-button-height); }

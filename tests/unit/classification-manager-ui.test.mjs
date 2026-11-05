@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
 import * as actions from "../../app/todo/classification-actions.ts";
+import { taskTagLimit, normalizeTagName } from "../../supabase/functions/_shared/taxonomy.ts";
 import { emptyClassificationDraft, validClassificationDraft } from "../../app/todo/classification-draft.ts";
 import { sameValue } from "../../app/todo/json-equality.ts";
 import { saveDraft, decodeDraft, draftKey } from "../../app/todo/draft-store.ts";
@@ -28,7 +29,7 @@ function manager(initial = emptyTagDraft, plan = fixturePlan()) {
     if (name === "react") return { useState: () => [error, next => { error = next; }] };
     if (name === "react/jsx-runtime") return { jsx: element, jsxs: element };
     if (name === "react-icons/hi2") return {};
-    if (name.includes("_shared/taxonomy")) return { taskTagLimit: 10 };
+    if (name.includes("_shared/taxonomy")) return { taskTagLimit, normalizeTagName };
     if (name === "./classification-actions") return actions;
     if (name === "./classification-draft") return { emptyClassificationDraft, validClassificationDraft };
     if (name === "./use-local-draft") return { useLocalDraft(key, initial, valid) {
@@ -52,6 +53,7 @@ test("only tag management is offered; legacy categories and pending draft bytes 
     assert.deepEqual(all.filter(n => n.type === "h3").map(text), ["태그"]);
     assert.deepEqual(all.filter(n => n.props?.className === "oddk-definitionLimit").map(text), ["1/100"]);
     assert(!all.some(n => n.type === "select" || n.props?.type === "color"));
+    assert.equal(text(all.find(n => n.props?.["aria-live"] === "polite")), `${normalizeTagName(draft.name).length}/30`);
     assert.deepEqual(h.value, draft); assert.equal(h.sets.length, 0); assert.equal(JSON.stringify(p), before);
   }
 });
@@ -78,11 +80,9 @@ test("tag edit and removal remain available and never reassign legacy categories
   assert.deepEqual(removing.saves[0].tags, []); assert.deepEqual(removing.saves[0].categories, fixturePlan().categories);
 });
 
-test("filter, badge and editor never expose categories but keep tags visible", () => {
+test("removed filter stays absent while badges and editor retain tags without category controls", () => {
   const h = manager(), p = fixturePlan(), c = h.components;
-  const filters = c.ClassificationFilters({ plan: p, value: { category: "category:cat", tags: [], search: "" }, onChange() {}, total: 2, count: 2 });
-  assert(!text(filters).includes("카테고리"));
-  assert(!nodes(filters).some(n => n.type === "select" && n.props.value === "category:cat"));
+  assert.equal(c.ClassificationFilters, undefined);
   const badges = c.ClassificationBadges({ plan: p, task: { categoryId: "cat", tagIds: ["tag"] }, showCategory: true });
   assert.equal(text(badges), "#기존 태그");
   const editor = c.TaskClassificationFields({ plan: p, categoryId: "cat", tagIds: ["tag"], onChange() {} });

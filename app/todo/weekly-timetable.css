@@ -21,6 +21,10 @@
 .oddk-weekTable[data-native-today="true"] .oddk-weekCanvas { min-width:0; }
 .oddk-weekTable[data-native-today="true"] .oddk-weekHeader { grid-template-columns:44px minmax(0,1fr); }
 .oddk-weekTable[data-native-today="true"] .oddk-weekColumns { grid-template-columns:minmax(0,1fr); }
+/* Presentation only: keep the surrounding timetable/list grid at its existing width. */
+.oddk-weekTable[data-display-mode="day"] .oddk-weekCanvas { width:100%; min-width:0; }
+.oddk-weekTable[data-display-mode="day"] .oddk-weekHeader { grid-template-columns:44px minmax(0,1fr); }
+.oddk-weekTable[data-display-mode="day"] .oddk-weekColumns { grid-template-columns:minmax(0,1fr); }
 .oddk-weekTodayHeading { display:flex; align-items:center; justify-content:center; min-width:0; padding:8px; font-size:16px; color:var(--oddk-heading); }
 .oddk-weekHeader { display:grid; grid-template-columns:44px repeat(7,minmax(80px,1fr)); position:sticky; top:0; z-index:12; height:54px; background:var(--oddk-surface); border-bottom:1px solid var(--tt-line); }
 .oddk-weekCorner { position:sticky; left:0; z-index:2; border-right:1px solid var(--tt-line); background:var(--oddk-surface); }

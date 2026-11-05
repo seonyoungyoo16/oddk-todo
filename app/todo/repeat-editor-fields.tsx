@@ -1,4 +1,5 @@
 "use client";
+import { BackButton } from "./ui/back-button";
 import { useEffect, useRef } from "react";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan";
 import { reminderOptions } from "../../supabase/functions/_shared/recurrence";
@@ -31,5 +32,5 @@ export function RepeatEditorFields({ task, plan, value, reminder, scheduled, can
 export function RepeatEditSummary({ preview, stale, onBack }: { preview: RepeatEditPreview; stale: boolean; onBack: () => void }) {
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => { title.current?.focus(); title.current?.scrollIntoView({ block: "nearest" }); }, []);
-  return <section className="oddk-repeatConfirm" aria-labelledby="repeat-confirm-title" role="status"><h3 ref={title} tabIndex={-1} id="repeat-confirm-title">변경 범위를 확인해주세요</h3><p>추가 {preview.created}개 · 수정 {preview.changed}개 · 삭제 {preview.removed}개 · 완료 기록 {preview.protectedDone}개 유지</p><p>범위: {preview.draft.action === "create" ? "반복 시작" : preview.draft.action === "detach" ? "이 일정만 분리" : preview.draft.scope === "this" ? "이번만" : preview.draft.scope === "future" ? "원래 발생일부터 이후" : "전체"}</p><p>저장 후 실행 취소로 되돌릴 수 있어요.{preview.draft.action === "create" || preview.draft.action === "update" ? " 앞으로31일 범위의 발생을 먼저 준비해요." : ""}</p>{stale && <p role="alert">계획이 바뀌었어요. 입력을 유지한 채 변경 범위를 다시 확인해주세요.</p>}<button type="button" onClick={onBack}>설정으로 돌아가기</button></section>;
+  return <section className="oddk-repeatConfirm" aria-labelledby="repeat-confirm-title" role="status"><h3 ref={title} tabIndex={-1} id="repeat-confirm-title">변경 범위를 확인해주세요</h3><p>추가 {preview.created}개 · 수정 {preview.changed}개 · 삭제 {preview.removed}개 · 완료 기록 {preview.protectedDone}개 유지</p><p>범위: {preview.draft.action === "create" ? "반복 시작" : preview.draft.action === "detach" ? "이 일정만 분리" : preview.draft.scope === "this" ? "이번만" : preview.draft.scope === "future" ? "원래 발생일부터 이후" : "전체"}</p><p>저장 후 실행 취소로 되돌릴 수 있어요.{preview.draft.action === "create" || preview.draft.action === "update" ? " 앞으로31일 범위의 발생을 먼저 준비해요." : ""}</p>{stale && <p role="alert">계획이 바뀌었어요. 입력을 유지한 채 변경 범위를 다시 확인해주세요.</p>}<BackButton label="반복 설정으로 돌아가기" onClick={onBack} /></section>;
 }

@@ -6,6 +6,7 @@ import ts from "typescript";
 import { filterClassifiedTasks } from "../../app/todo/classification-actions.ts";
 import { selectDay } from "../../app/todo/day-selectors.ts";
 import { availabilitySummary } from "../../app/todo/availability.ts";
+import * as dialogFocus from "../../app/todo/dialog-focus.ts";
 
 const source = file => readFileSync(new URL(`../../app/todo/${file}`, import.meta.url), "utf8");
 const node = (type, props) => ({ type, props });
@@ -15,7 +16,8 @@ function component(file) {
   const exports = {};
   vm.runInNewContext(ts.transpileModule(source(file), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX } }).outputText, { exports, require(name) {
     if (name === "react/jsx-runtime") return { jsx: node, jsxs: node };
-    if (name === "react") return { useState() {} };
+    if (name === "react") return { useState() {}, useRef: initial => ({ current: initial }), useId: () => "search-test" };
+    if (name === "./dialog-focus") return dialogFocus;
     if (name.includes("taxonomy")) return { taskTagLimit: 10 };
     return {};
   } });
@@ -39,16 +41,23 @@ test("hidden active events still occupy time and collide in original day calcula
   assert.equal(day.occupiedMinutes, 90); assert.equal(day.freeMinutes, 450); assert.equal(day.overlapMinutes, 30);
 });
 
-test("common filter status options retain other filters, and reset restores status all", () => {
-  const { ClassificationFilters, defaultClassification } = component("classification-controls.tsx");
-  let value = { category: "category:work", tags: ["dev"], search: "개발", status: "done" };
-  const render = () => nodes(ClassificationFilters({ plan: { categories: [], tags: [] }, value, onChange: next => { value = next; }, count: 1, total: 20 }));
+test("shared status and header search retain each other, clear obsolete tags and can return to all tasks", () => {
+  const { DailyPlanningControls } = component("daily-workspace-controls.tsx");
+  const { TaskSearchControl } = component("task-search-control.tsx");
+  const { defaultClassification } = component("classification-controls.tsx");
+  let value = { category: "all", tags: ["dev"], search: "개발", status: "done" };
+  const render = () => nodes(DailyPlanningControls({ value, onChange: next => { value = next; }, pane: "list", onPaneChange() {}, range: "day" }));
+  const search = () => nodes(TaskSearchControl({ value: value.search, onChange: query => { value = { ...value, tags: [], search: query }; } }));
   const select = render().find(n => n.type === "select" && n.props.value === "done");
   assert.deepEqual(nodes(select).filter(n => n.type === "option").map(text), ["전체", "진행 중", "완료"]);
   select.props.onChange({ target: { value: "active" } });
-  assert.equal(value.category, "category:work"); assert.equal(value.search, "개발"); assert.equal(value.tags[0], "dev"); assert.equal(value.status, "active");
-  render().find(n => n.type === "button" && text(n) === "필터 초기화").props.onClick();
-  assert.equal(value, defaultClassification); assert.equal(value.status, "all"); assert.equal(value.category, "all"); assert.equal(value.tags.length, 0); assert.equal(value.search, "");
+  assert.equal(value.category, "all"); assert.equal(value.search, "개발"); assert.equal(value.tags.length, 0); assert.equal(value.status, "active");
+  search().find(n => n.type === "input").props.onChange({ target: { value: "리뷰" } });
+  assert.equal(value.search, "리뷰"); assert.equal(value.status, "active");
+  search().find(n => n.type === "button" && text(n) === "검색어 지우기").props.onClick();
+  assert.equal(value.search, ""); assert.equal(value.status, "active");
+  render().find(n => n.type === "select").props.onChange({ target: { value: "all" } });
+  assert.equal(JSON.stringify(value), JSON.stringify(defaultClassification));
 });
 
 test("one/two/twenty-row bodies expose a keyboard region without including filters or composer", () => {
@@ -68,8 +77,8 @@ test("one/two/twenty-row bodies expose a keyboard region without including filte
 test("page uses one shared status control and timetable filter, preserving full plan for calculations", () => {
   const page = source("page.tsx");
   assert.match(page, /currentFilters = \{ \.\.\.classification, category: "all" as const, status: filter \}/);
-  assert.match(page, /DailyPlanningControls plan=\{plan\} value=\{currentFilters\}/);
-  assert.match(page, /setClassification\(\{ \.\.\.next, status: "all" \}\); setFilter\(next.status \?\? "all"\)/);
+  assert.match(page, /DailyPlanningControls value=\{currentFilters\}/);
+  assert.match(page, /setClassification\(\{ \.\.\.next, category: "all", tags: \[\], status: "all" \}\); setFilter\(next.status \?\? "all"\)/);
   assert.match(page, /tasks=\{filterClassifiedTasks\(plan.tasks, currentFilters\)\}/);
   assert.match(page, /const day = selectDay\(plan.tasks, planDate\)/);
   assert.doesNotMatch(page, /className="oddk-listTabs"/);

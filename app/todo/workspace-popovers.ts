@@ -1,4 +1,4 @@
-const selector = "details.oddk-goalManagement[open], details.oddk-dailyDate[open], details.oddk-detailedFilters[open], details.oddk-planTools[open], details.oddk-startSort[open]";
+const selector = "details.oddk-goalManagement[open], details.oddk-dailyDate[open], details.oddk-detailedFilters[open], details.oddk-planTools[open], details.oddk-startSort[open], details.oddk-headerSearch[open]";
 
 /** Close transient menus only. Accordions, inputs and saved drafts stay untouched. */
 export function closeWorkspacePopovers(root: HTMLElement, target?: Node | null) {

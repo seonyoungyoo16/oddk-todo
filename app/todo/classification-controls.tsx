@@ -2,7 +2,7 @@ import { useState } from "react";
 import { HiOutlineChevronDown, HiOutlinePencilSquare, HiOutlineTrash, HiOutlineXMark } from "react-icons/hi2";
 import type { Plan, Task } from "../../supabase/functions/_shared/plan";
 import type { Tag } from "../../supabase/functions/_shared/taxonomy";
-import { taskTagLimit } from "../../supabase/functions/_shared/taxonomy";
+import { taskTagLimit, normalizeTagName } from "../../supabase/functions/_shared/taxonomy";
 import { saveTag, removeTag } from "./classification-actions";
 import type { ClassificationFilter } from "./classification-actions";
 import { emptyClassificationDraft, validClassificationDraft } from "./classification-draft";
@@ -15,17 +15,6 @@ const validTagDraft = (value: unknown): value is typeof emptyClassificationDraft
 export const defaultClassification: ClassificationFilter = { category: "all", tags: [], search: "", status: "all" };
 export function ClassificationBadges({ task, plan }: { task: Task; plan: Plan; showCategory?: boolean }) {
   return <span className="oddk-classificationBadges">{(task.tagIds ?? []).map(id => <span key={id}>#{plan.tags?.find(tag => tag.id === id)?.name ?? "삭제된 태그"}</span>)}</span>;
-}
-export function ClassificationFilters({ plan, value, onChange, count, total, showStatus = true }: { plan: Plan; value: ClassificationFilter; onChange: (value: ClassificationFilter) => void; count: number; total: number; showStatus?: boolean }) {
-  const selectedTags = [...(plan.tags ?? []), ...value.tags.filter(id => !plan.tags?.some(t => t.id === id)).map(id => ({ id, name: "삭제된 태그" }))];
-  const changed = value.tags.length > 0 || value.search !== "" || (value.status ?? "all") !== "all";
-  return <section className="oddk-classificationFilters" aria-label="할 일 상태·태그와 검색">
-    {showStatus && <label className="oddk-statusFilter">상태<select value={value.status ?? "all"} onChange={e => onChange({ ...value, status: e.target.value as ClassificationFilter["status"] })}><option value="all">전체</option><option value="active">진행 중</option><option value="done">완료</option></select></label>}
-    <div className="oddk-filterFields"><label className="oddk-searchField"><span className="oddk-srOnly">검색</span><input type="search" maxLength={120} value={value.search} placeholder="제목·상세 메모 검색" onChange={e => onChange({ ...value, category: "all", search: e.target.value })} /></label></div>
-    {selectedTags.length > 0 && <fieldset className="oddk-tagOptions"><legend>태그 <small>선택한 태그를 모두 포함</small></legend>{selectedTags.map(tag => <button type="button" key={tag.id} aria-pressed={value.tags.includes(tag.id)} disabled={!value.tags.includes(tag.id) && value.tags.length >= taskTagLimit} onClick={() => onChange({ ...value, tags: value.tags.includes(tag.id) ? value.tags.filter(id => id !== tag.id) : [...value.tags, tag.id] })}>#{tag.name}</button>)}</fieldset>}
-    <div className={"oddk-filterSummary" + (changed ? "" : " oddk-srOnly")}><span role="status">이 날짜 범위 {total}개 중 {count}개{changed ? " · 필터 적용 중" : ""}</span>{changed && <button type="button" onClick={() => onChange(defaultClassification)}><HiOutlineXMark aria-hidden="true" />필터 초기화</button>}</div>
-    {changed && <small>목록·시간표·분석에 같은 필터를 적용해요. 빈 시간과 충돌은 숨긴 일정을 포함한 하루 전체 기준이에요.</small>}
-  </section>;
 }
 export function TaskClassificationFields({ plan, tagIds, onChange }: { plan: Plan; categoryId: string | null; tagIds: string[]; onChange: (patch: { categoryId?: string | null; tagIds?: string[] }) => void }) {
   return <TaskTagFields plan={plan} tagIds={tagIds} onChange={onChange} />;
@@ -50,7 +39,7 @@ export function ClassificationManager({ plan, onSave, initiallyOpen = false }: {
   return <details className="oddk-classificationManager" open={initiallyOpen}><summary><HiOutlineChevronDown aria-hidden="true" />태그 관리{(value.name || value.id) && <small>작성 중</small>}</summary>
     <div className="oddk-definitionLists oddk-tagOnlyLists"><section aria-label="태그 목록"><header className="oddk-definitionHeading"><h3>태그</h3><small className="oddk-definitionLimit">{plan.tags?.length ?? 0}/100</small></header><ul>{(plan.tags ?? []).map(entry => <li key={entry.id}><span>#{entry.name}</span><button type="button" aria-label={`${entry.name} 태그 수정`} onClick={() => edit(entry)}><HiOutlinePencilSquare aria-hidden="true" /></button><button type="button" aria-label={`${entry.name} 태그 삭제`} onClick={() => remove(entry.id)}><HiOutlineTrash aria-hidden="true" /></button></li>)}</ul></section></div>
     <form onSubmit={event => { event.preventDefault(); if (conflict) { setError("편집 중인 태그가 변경되거나 삭제됐어요. 초안을 백업한 뒤 다시 확인해주세요."); return; } try { const id = value.id ?? crypto.randomUUID(); const next = saveTag(plan, { id, name: value.name }); if (onSave(next, "태그를 저장했어요.")) { draft.set({ ...emptyClassificationDraft, kind: "tag" }); setError(""); } else setError("저장하지 못했어요. 입력은 초안으로 남아 있어요."); } catch (e) { setError((e as Error).message); } }}>
-      <div className="oddk-filterFields"><label className="oddk-searchField">태그 이름<input value={value.name} maxLength={120} required placeholder="예: 운동" onChange={e => { draft.set({ ...value, name: e.target.value }); setError(""); }} /><small>저장할 이름은30자까지</small></label></div>
+      <div className="oddk-filterFields"><label className="oddk-searchField">태그 이름<input value={value.name} maxLength={120} required placeholder="예: 운동" onChange={e => { draft.set({ ...value, name: e.target.value }); setError(""); }} /><small role="status" aria-live="polite" aria-atomic="true">{normalizeTagName(value.name).length}/30</small></label></div>
       {conflict && <div role="alert" className="oddk-draftConflict"><strong>저장된 태그가 바뀌었어요. 입력은 유지했어요.</strong><button type="button" onClick={() => { draft.download(); draft.set(emptyTagDraft); setError(""); }}>초안 백업 후 새로 작성</button>{current && <button type="button" onClick={() => { draft.download(); draft.set({ ...value, base: current }); setError(""); }}>백업 후 내 초안 계속 편집</button>}</div>}{error && <p role="alert" className="oddk-error">{error}</p>}<div className="oddk-availabilityActions"><button type="submit" disabled={conflict}>{value.id ? "태그 변경 저장" : "태그 추가"}</button></div><DraftFeedback draft={draft} />
     </form></details>;
 }

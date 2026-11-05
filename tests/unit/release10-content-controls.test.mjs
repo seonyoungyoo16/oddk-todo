@@ -21,8 +21,7 @@ function load(file, hooks = {}) {
     if (name === "react") return hooks;
     if (name.includes("_shared/plan")) return { isPlanDate };
     if (name === "./calendar-range") return { dayLabel, weekDates };
-    if (name === "./classification-controls") return { ClassificationFilters: "ClassificationFilters", defaultClassification: defaults };
-    if (name === "./activity-hours-model") return { activityHoursValue };
+        if (name === "./activity-hours-model") return { activityHoursValue };
     if (name === "./json-equality") return { sameValue };
     if (name === "./ui/dialog-header") return { DialogHeader: "DialogHeader" };
     if (name === "./dialog-focus") return dialogFocus;
@@ -32,21 +31,18 @@ function load(file, hooks = {}) {
 }
 const { DailyDateControl, DailyPlanningControls } = load("daily-workspace-controls.tsx");
 
-test("one status control preserves detailed AND filters and collapsed conditions remain outside the popup", () => {
+test("one status control preserves the search, clears obsolete tag conditions and exposes no filter popup", () => {
   const plan = { categories: [{ id: "work", name: "업무" }], tags: [{ id: "tag", name: "검토" }] }, original = structuredClone(plan);
-  let value = { category: "category:work", tags: ["tag"], search: "중요", status: "active" }, pane = "list";
-  const render = () => DailyPlanningControls({ plan, value, onChange: next => { value = next; }, count: 2, total: 20, pane, onPaneChange: next => { pane = next; }, range: "day" });
+  let value = { category: "all", tags: ["tag"], search: "중요", status: "active" }, pane = "list";
+  const render = () => DailyPlanningControls({ value, onChange: next => { value = next; }, pane, onPaneChange: next => { pane = next; }, range: "day" });
   let all = nodes(render());
   const select = all.filter(n => n.type === "select"); assert.equal(select.length, 1);
+  assert.deepEqual(nodes(select[0]).filter(n => n.type === "option").map(text), ["전체", "진행 중", "완료"]);
   select[0].props.onChange({ target: { value: "done" } });
-  assert.equal(value.category, "category:work"); assert.equal(value.tags[0], "tag"); assert.equal(value.search, "중요"); assert.equal(value.status, "done");
+  assert.equal(value.category, "all"); assert.equal(value.tags.length, 0); assert.equal(value.search, "중요"); assert.equal(value.status, "done");
   all = nodes(render());
-  const applied = all.find(n => n.props?.className === "oddk-appliedFilters");
-  assert.match(text(applied), /20개 중 2개.*#검토.*검색: 중요.*완료/);
-  assert.doesNotMatch(text(applied), /업무|카테고리/);
-  const popup = all.find(n => n.type === "details"); assert(!nodes(popup).includes(applied));
-  assert.equal(all.find(n => n.type === "ClassificationFilters").props.showStatus, false);
-  all.find(n => n.type === "button" && text(n) === "초기화").props.onClick(); assert.equal(value, defaults);
+  assert(!all.some(n => n.type === "details" || n.props?.className === "oddk-appliedFilters" || n.type === "input"));
+  assert(!all.some(n => n.type === "button" && /필터|초기화/.test(text(n))));
   assert.deepEqual(plan, original);
 });
 

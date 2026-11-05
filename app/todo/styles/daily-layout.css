@@ -1,6 +1,7 @@
 /* Sole owner of the timetable/list split and compact view switch.
    1100px is the single breakpoint: below it only the selected pane is visible. */
 .oddk-paneSwitch { display:none; }
+.oddk-dailyControls > .oddk-paneSwitch { min-width:0; flex-wrap:wrap; }
 @media (min-width:1100px) {
   .oddk-page .oddk-contentGrid.oddk-dailyGrid {
     display:grid;

@@ -14,7 +14,7 @@ import { PushSettings } from "./push-settings";
 import { openSettingsDialog } from "./settings-events";
 
 export function syncStatusLabel(state: SyncStatus) {
-  return !state.connected ? "이 기기에 저장 중" : {
+  return {
     local: "이 기기에 저장 중", syncing: "동기화 중", synced: "동기화됨",
     waiting: "저장 대기", conflict: "충돌 확인 필요", error: "연결 확인 필요",
   }[state.phase];
@@ -64,7 +64,7 @@ export function AccountSettings({ state, fallback, onShowNotifications }: {
     </SettingsCard>
 
     <SettingsCard title="이 기기·저장 상태">
-      <div className="oddk-settingActionRow oddk-accountSyncRow"><div className="oddk-settingCopy"><strong>할 일 · 목표 · 하루 점검</strong><p>{state.message}</p></div><span className="oddk-settingStatus" data-attention={state.phase === "conflict" || state.phase === "error"}><HiOutlineCloud aria-hidden="true" />{syncStatusLabel(state)}</span>
+      <div className="oddk-settingActionRow oddk-accountSyncRow"><div className="oddk-settingCopy"><strong>할 일 · 목표 · 하루 점검</strong></div><span className="oddk-settingStatus" data-attention={state.phase === "conflict" || state.phase === "error"}><HiOutlineCloud aria-hidden="true" />{syncStatusLabel(state)}</span>
         {state.connected && state.phase !== "conflict" && <button type="button" className="oddk-settingButton" disabled={busy} onClick={() => void perform(syncNow)}>지금 동기화</button>}
       </div>
       {state.refreshRequired && <button type="button" className="oddk-settingTextButton" onClick={() => window.location.reload()}>새로고침하고 다시 연결</button>}
@@ -77,7 +77,6 @@ export function AccountSettings({ state, fallback, onShowNotifications }: {
 
     <SettingsCard title="개인정보·AI 사용">
       <AIConsentSettings />
-      <p className="oddk-settingsFootnote">이 기기의 {state.connected ? "현재 계정" : "로그인 전 저장 공간"}에 적용해요.</p>
       <AccountHelpLinks>{(state.connected || state.deletionPending) && <button type="button" className="oddk-deleteAccountLink" onClick={() => openSettingsDialog("delete")}>{state.deletionPending ? "계정 삭제 결과 확인" : "계정 삭제"}</button>}</AccountHelpLinks>
     </SettingsCard>
   </>;
@@ -85,5 +84,5 @@ export function AccountSettings({ state, fallback, onShowNotifications }: {
 
 export function AccountNotifications({ state }: { state: SyncStatus }) {
   if (state.connected) return <PushSettings key={getPlanScope()} userId={getPlanScope()} />;
-  return <DeviceReminderSettings><div className="oddk-settingActionRow"><div className="oddk-settingCopy"><strong>이 기기의 알림</strong><p>계정을 연결한 뒤 기기 알림을 설정할 수 있어요.</p></div><button type="button" className="oddk-settingButton" onClick={() => openSettingsDialog("sync")}>로그인하고 설정</button></div></DeviceReminderSettings>;
+  return <DeviceReminderSettings><div className="oddk-settingActionRow"><button type="button" className="oddk-settingButton" onClick={() => openSettingsDialog("sync")}>로그인하고 설정</button></div></DeviceReminderSettings>;
 }

@@ -30,6 +30,7 @@ function load(file, runtime, dependencies = {}, extra = {}) {
       if (name === "react") return runtime.api;
       if (name === "react/jsx-runtime") return { jsx: element, jsxs: element };
       if (name === "react-icons/hi2") return {};
+      if (name === "./ui/back-button") return load("ui/back-button.tsx", runtime);
       if (name in dependencies) return dependencies[name];
       throw Error(name);
     },
@@ -183,7 +184,10 @@ test("compact overview displays the goal only in its center and retains area hea
   tree = h.render(); assert.equal(nodes(tree).find(n => n.type === "h3").props.children, "첫 세부목표");
   const edit = nodes(tree).find(n => n.props?.className === "oddk-mandalaTask"); edit.props.onClick(); assert.equal(h.edits[0].id, "linked");
   nodes(tree).find(n => n.props?.className === "oddk-mandalaUnlink").props.onClick(); assert.equal(h.board.areas[0].taskIds[0], "");
-  nodes(h.render()).find(n => n.props?.className === "oddk-mandalaBack").props.onClick();
+  const backComponent = nodes(h.render()).find(n => n.props?.label === "핵심목표로 돌아가기");
+  const back = backComponent.type(backComponent.props);
+  assert.equal(back.props["aria-label"], "핵심목표로 돌아가기"); assert.equal(back.props.title, back.props["aria-label"]);
+  back.props.onClick();
   assert.equal(nodes(h.render()).find(n => n.props?.className === "oddk-mandalaCompactGrid").props["data-level"], "overview");
   assert.equal(JSON.stringify(board), original);
 });
