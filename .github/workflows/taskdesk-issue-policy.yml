@@ -1,4 +1,5 @@
 name: TaskDesk issue policy
+run-name: "Check issue link for PR #${{ github.event.pull_request.number || inputs.pr }}"
 
 on:
   pull_request_target:
@@ -11,7 +12,6 @@ on:
         type: number
 
 permissions:
-  checks: write
   issues: read
   pull-requests: read
 
@@ -21,36 +21,29 @@ concurrency:
 
 jobs:
   verify:
+    name: TaskDesk issue link
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
       PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
     steps:
-      - name: Verify linked issue on the pull request head
+      - name: Verify the branch and linked issue
         shell: bash
         run: |
-          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          fail_check() {
+            printf '::error::%s\n' "$1"
+            exit 1
+          }
+
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || fail_check "Invalid pull request number."
           pr="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER")"
-          sha="$(jq -r .head.sha <<< "$pr")"
           ref="$(jq -r .head.ref <<< "$pr")"
           base="$(jq -r .base.ref <<< "$pr")"
           default_branch="$(jq -r .base.repo.default_branch <<< "$pr")"
           pr_created="$(jq -r .created_at <<< "$pr")"
-          [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
           if [[ "$base" != main && "$base" != "$default_branch" ]]; then exit 0; fi
-          endpoint="repos/$GITHUB_REPOSITORY/check-runs"
-          url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          check_id="$(gh api --method POST "$endpoint" -f name="TaskDesk / linked issue" \
-            -f head_sha="$sha" -f status=in_progress -f details_url="$url" --jq .id)"
-          finish() {
-            gh api --method PATCH "$endpoint/$check_id" -f status=completed -f conclusion="$1" \
-              -f "output[title]=$2" -f "output[summary]=$3" >/dev/null
-          }
-          fail_check() {
-            finish failure "Linked issue required" "$1"
-            exit 1
-          }
+
           if [[ ! "$ref" =~ ^issue/([1-9][0-9]*)-[A-Za-z0-9][A-Za-z0-9._/-]*$ ]]; then
             fail_check "Use issue/NUMBER-description for the pull request branch."
           fi
@@ -62,8 +55,9 @@ jobs:
           if [[ ! "$created" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ || "$created" > "$pr_created" ]]; then
             fail_check "Create the issue in this repository before opening the PR."
           fi
+
           body="$(jq -r '.body // ""' <<< "$pr" | tr -d '\r')"
           if ! grep -Eiq "^[[:blank:]]*Closes[[:blank:]]+#${issue}[[:blank:]]*$" <<< "$body"; then
             fail_check "Add a separate Closes #$issue line to the PR description."
           fi
-          finish success "Verified issue #$issue" "The work branch and PR both reference issue #$issue."
+          printf 'Verified linked issue #%s\n' "$issue"
